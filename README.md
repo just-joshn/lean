@@ -79,6 +79,8 @@ bun start --provider anthropic --model claude-sonnet-5-5 "Explain this repositor
 
 Anthropic defaults to `claude-sonnet-5-5`. OpenAI still uses `--model`, then `OPENAI_MODEL`, then the SDK default. Lean checks the id against its built-in catalog. A catalog entry does not mean your account can use that model.
 
+OpenAI subscriptions send tools as functions. Lean translates shell and patch calls to native SDK items, so the usual approvals and saved history still apply.
+
 Sign out of one provider without starting a conversation or removing the other:
 
 ```bash
