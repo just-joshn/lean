@@ -168,6 +168,12 @@ def probe(scenario):
             result["verdict"] = "VERIFIED"
             return result
         finally:
+            if status is None:
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                os.waitpid(pid, 0)
             stop.set()
             server.shutdown()
             server.server_close()

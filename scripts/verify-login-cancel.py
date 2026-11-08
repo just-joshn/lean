@@ -88,6 +88,12 @@ for provider, cancel_at in [('openai', 'auth_url'), ('anthropic', 'select'), ('a
         except Exception as error:
             result = {'provider': provider, 'stage': cancel_at, 'verdict': 'NOT VERIFIED', 'error': str(error)}
         finally:
+            if status is None:
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                os.waitpid(pid, 0)
             os.close(fd)
             (output / (provider + '-' + cancel_at + '.txt')).write_bytes(screen)
         results.append(result)
