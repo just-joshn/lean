@@ -17,6 +17,7 @@ from pathlib import Path
 parser = argparse.ArgumentParser()
 parser.add_argument("entry")
 parser.add_argument("output")
+parser.add_argument("--tool", choices=["shell", "apply_patch"], default="shell")
 args = parser.parse_args()
 entry = str(Path(args.entry).resolve())
 output = Path(args.output).resolve()
@@ -74,17 +75,28 @@ class Handler(BaseHTTPRequestHandler):
         requests[provider].append(body)
         if self.headers.get("Authorization") != "Bearer " + access(provider):
             failures.append(provider + " did not use the current OAuth bearer token")
+        unsupported = next((tool.get("type") for tool in body.get("tools", []) if tool.get("type") != "function"), None)
+        native_history = next((item.get("type") for item in body.get("input", []) if item.get("type") in {"shell_call", "shell_call_output", "apply_patch_call", "apply_patch_call_output"}), None)
+        if provider == "openai" and (unsupported or native_history):
+            detail = "Unsupported tool type: " + unsupported if unsupported else "Unsupported input type: " + native_history
+            encoded = json.dumps({"detail": detail}, separators=(",", ":")).encode()
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(encoded)))
+            self.end_headers()
+            self.wfile.write(encoded)
+            return
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Connection", "close")
         self.end_headers()
         first = len(requests[provider]) == 1
         action = {"commands": ["printf x >> count.txt"], "timeoutMs": 1000, "maxOutputLength": 1000}
+        operation = {"type": "create_file", "path": "count.txt", "diff": "+x"}
         if provider == "openai":
-            native = any(t.get("type") == "shell" for t in body.get("tools", []))
-            tool = next((t for t in body.get("tools", []) if t.get("name") == "shell"), {})
-            arguments = {"action": action} if "action" in tool.get("parameters", {}).get("properties", {}) else action
-            item = {"id": "shell_fixture", "type": "shell_call", "call_id": "call_fixture", "status": "completed", "action": {"commands": action["commands"], "timeout_ms": 1000, "max_output_length": 1000}} if native else {"id": "tool_fixture", "type": "function_call", "call_id": "call_fixture", "name": "shell", "arguments": json.dumps(arguments), "status": "completed"}
+            tool = next((t for t in body.get("tools", []) if t.get("name") == args.tool), {})
+            arguments = {"operation": operation} if args.tool == "apply_patch" else ({"action": action} if "action" in tool.get("parameters", {}).get("properties", {}) else action)
+            item = {"id": "tool_fixture", "type": "function_call", "call_id": "call_fixture", "name": args.tool, "arguments": json.dumps(arguments), "status": "completed"}
             if not first:
                 item = {"id": "msg_fixture", "type": "message", "role": "assistant", "status": "completed", "content": [{"type": "output_text", "text": "Finished.", "annotations": []}]}
             response = {"id": "resp_fixture_" + str(len(requests[provider])), "object": "response", "created_at": 1, "model": body.get("model", "gpt-5.4"), "status": "completed", "output": [item], "usage": {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15, "input_tokens_details": {"cached_tokens": 0}, "output_tokens_details": {"reasoning_tokens": 0}}}
@@ -104,9 +116,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_event({"type": "content_block_delta", "index": 0, "delta": {"type": "thinking_delta", "thinking": "Use the approved tool."}})
                 self.send_event({"type": "content_block_delta", "index": 0, "delta": {"type": "signature_delta", "signature": "synthetic-thinking-signature"}})
                 self.send_event({"type": "content_block_stop", "index": 0})
-                tool = next(t for t in body["tools"] if t["name"] == "shell")
-                arguments = {"action": action} if "action" in tool.get("input_schema", {}).get("properties", {}) else action
-                self.send_event({"type": "content_block_start", "index": 1, "content_block": {"type": "tool_use", "id": "toolu_fixture", "name": "shell", "input": {}}})
+                tool = next(t for t in body["tools"] if t["name"] == args.tool)
+                arguments = {"operation": operation} if args.tool == "apply_patch" else ({"action": action} if "action" in tool.get("input_schema", {}).get("properties", {}) else action)
+                self.send_event({"type": "content_block_start", "index": 1, "content_block": {"type": "tool_use", "id": "toolu_fixture", "name": args.tool, "input": {}}})
                 self.send_event({"type": "content_block_delta", "index": 1, "delta": {"type": "input_json_delta", "partial_json": json.dumps(arguments)}})
                 self.send_event({"type": "content_block_stop", "index": 1})
             else:
@@ -246,9 +258,9 @@ try:
         if provider == "anthropic":
             assert "synthetic-thinking-signature" in body, "thinking signature lost after reload"
         history = (workspace / ".lean/history.json").read_text()
-        assert "shell_call_output" in history
+        assert args.tool + "_call_output" in history
         assert access(provider) not in history
-        results.append({"provider": provider, "login_callback": True, "private_persistence": True, "refresh": True, "approved_once": True, "resumed_once": True, "verdict": "VERIFIED"})
+        results.append({"provider": provider, "tool": args.tool, "login_callback": True, "private_persistence": True, "refresh": True, "approved_once": True, "resumed_once": True, "verdict": "VERIFIED"})
     run_cli("openai-logout", "openai", ["--logout", "openai"])
     assert all("openai" not in c["access"] for _, c in credentials())
     assert any("anthropic" in c["access"] for _, c in credentials())

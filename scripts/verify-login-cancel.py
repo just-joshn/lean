@@ -79,6 +79,7 @@ for provider, cancel_at in [('openai', 'auth_url'), ('anthropic', 'select'), ('a
             assert not list(home.glob('*.lock')), 'cancelled login left a credential lock'
             if callback_port is not None:
                 with socket.socket() as listener:
+                    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                     listener.bind(('127.0.0.1', callback_port))
             result = {'provider': provider, 'stage': cancel_at, 'exit_code': code, 'callback_port_released': callback_port, 'credentials_absent': True, 'verdict': 'VERIFIED'}
             results.append(result)
