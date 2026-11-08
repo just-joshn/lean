@@ -243,6 +243,45 @@ test("patch creates, updates, deletes, and moves without clobbering on failure",
   expect(missing?.status).toBe("failed");
 });
 
+test("a failed move reports the patched destination left in place", async () => {
+  const cwd = await directory();
+  const sourceDir = join(cwd, "locked");
+  await mkdir(sourceDir);
+  await writeFile(join(sourceDir, "source.txt"), "before");
+  await chmod(sourceDir, 0o555);
+  try {
+    const { applyPatch } = host(cwd);
+    const operation = {
+      type: "update_file" as const,
+      path: "locked/source.txt",
+      moveTo: "moved.txt",
+      diff: "@@\n-before\n+after\n",
+    };
+    const result = await applyPatch.editor.updateFile(operation);
+    expect(result).toMatchObject({
+      status: "failed",
+      output: expect.stringContaining(
+        "Move left moved.txt in place; could not remove locked/source.txt:",
+      ),
+    });
+    expect(result?.output).toMatch(/EACCES|EPERM/);
+    expect(await readFile(join(sourceDir, "source.txt"), "utf8")).toBe(
+      "before",
+    );
+    expect(await readFile(join(cwd, "moved.txt"), "utf8")).toBe("after");
+    expect(await applyPatch.editor.updateFile(operation)).toEqual({
+      status: "failed",
+      output: "Move target already exists.",
+    });
+    expect(await readFile(join(sourceDir, "source.txt"), "utf8")).toBe(
+      "before",
+    );
+    expect(await readFile(join(cwd, "moved.txt"), "utf8")).toBe("after");
+  } finally {
+    await chmod(sourceDir, 0o755);
+  }
+});
+
 test.for([
   { mode: 0o600, moveTo: undefined },
   { mode: 0o755, moveTo: undefined },
