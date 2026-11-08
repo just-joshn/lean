@@ -20,7 +20,15 @@ const execFileAsync = promisify(execFile);
 const cleanup: (() => Promise<void>)[] = [];
 
 afterEach(async () => {
-  for (const close of cleanup.splice(0).reverse()) await close();
+  const errors: unknown[] = [];
+  for (const close of cleanup.splice(0).reverse()) {
+    try {
+      await close();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (errors.length > 0) throw errors[0];
 });
 
 async function directory() {
@@ -72,14 +80,18 @@ test("shell preserves stdout, stderr, and a nonzero exit", async () => {
   });
 });
 
-test("shell uses sh -c and honors a lower output limit", async () => {
+test("shell output behavior keeps a successful command's bounded prefix", async () => {
   const cwd = await directory();
   const { shell } = host(cwd);
   const limited = await shell.shell.run({
     commands: ["printf 1234567890"],
     maxOutputLength: 4,
   });
-  expect(limited.output[0]?.stdout.length).toBeLessThanOrEqual(4);
+  expect(limited.output[0]).toEqual({
+    stdout: "1234",
+    stderr: "",
+    outcome: { type: "exit", exitCode: 0 },
+  });
   expect(limited.maxOutputLength).toBe(4);
 });
 
@@ -104,12 +116,17 @@ test("abort kills the command group and the shell call settles", async () => {
     commands: ["sleep 30 & echo $! > child.pid; wait"],
     timeoutMs: 20_000,
   });
-  const pid = await waitForPid(join(cwd, "child.pid"));
-  controller.abort();
-  const result = await pending;
-  expect(result.output[0]?.outcome).toEqual({ type: "timeout" });
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  expect(alive(pid)).toBe(false);
+  try {
+    const pid = await waitForPid(join(cwd, "child.pid"));
+    controller.abort();
+    const result = await pending;
+    expect(result.output[0]?.outcome).toEqual({ type: "timeout" });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(alive(pid)).toBe(false);
+  } finally {
+    controller.abort();
+    await pending;
+  }
 });
 
 test("read returns a bounded page and refuses paths outside the workspace", async () => {

@@ -7,24 +7,33 @@ import { runTurn } from "../agent.ts";
 import { openSession } from "../session.ts";
 import { createSubscriptions, openCredentialStore } from "./auth.ts";
 
-const directories: string[] = [];
+const cleanup: (() => Promise<void>)[] = [];
 const access = "sk-ant-oat-synthetic-access";
 const refresh = "synthetic-anthropic-refresh";
 const signature = "synthetic-thinking-signature";
 
+function trackSession(opened: Awaited<ReturnType<typeof openSession>>) {
+  cleanup.push(() => opened.close());
+  return opened;
+}
+
 afterEach(async () => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  await Promise.all(
-    directories
-      .splice(0)
-      .map((directory) => rm(directory, { recursive: true, force: true })),
-  );
+  const errors: unknown[] = [];
+  for (const close of cleanup.splice(0).reverse()) {
+    try {
+      await close();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (errors.length > 0) throw errors[0];
 });
 
 async function directory(): Promise<string> {
   const created = await mkdtemp(join(tmpdir(), "lean-anthropic-"));
-  directories.push(created);
+  cleanup.push(() => rm(created, { recursive: true, force: true }));
   return created;
 }
 
@@ -351,14 +360,12 @@ test("an unknown Anthropic model and a provider error stay free of token text", 
     model: "claude-sonnet-5-5",
   });
   if (typeof model === "string") throw new Error("Expected a model.");
-  await expect(model.getResponse(request("Hello"))).rejects.toThrow(
-    /redacted|400/,
-  );
-  try {
-    await model.getResponse(request("Hello"));
-  } catch (error) {
-    expect(subscriptions.redact(error)).not.toContain(access);
-  }
+  const pending = model.getResponse(request("Hello"));
+  const caught = await pending.catch((error: unknown) => error);
+  const message = caught instanceof Error ? caught.message : undefined;
+  expect(caught).toBeInstanceOf(Error);
+  expect(message).toMatch(/redacted|400/);
+  expect(subscriptions.redact(caught)).not.toContain(access);
   await subscriptions.close();
 });
 
@@ -393,10 +400,12 @@ test("an approved patch is applied once", async () => {
       headers: { "content-type": "text/event-stream" },
     });
   });
-  const opened = await openSession({
-    file: join(cwd, ".lean/history.json"),
-    cwd,
-  });
+  const opened = trackSession(
+    await openSession({
+      file: join(cwd, ".lean/history.json"),
+      cwd,
+    }),
+  );
   let approvals = 0;
   await runTurn({
     cwd,
@@ -452,10 +461,12 @@ test("an approved shell runs once and its signature survives a restarted session
       headers: { "content-type": "text/event-stream" },
     });
   });
-  const opened = await openSession({
-    file: join(cwd, ".lean/history.json"),
-    cwd,
-  });
+  const opened = trackSession(
+    await openSession({
+      file: join(cwd, ".lean/history.json"),
+      cwd,
+    }),
+  );
   const visible: string[] = [];
   const signal = new AbortController().signal;
   await runTurn({
@@ -471,10 +482,12 @@ test("an approved shell runs once and its signature survives a restarted session
   await opened.close();
   expect(await readFile(join(cwd, "count.txt"), "utf8")).toBe("x");
   expect(visible.join("")).not.toContain("Use the approved tool.");
-  const resumed = await openSession({
-    file: join(cwd, ".lean/history.json"),
-    cwd,
-  });
+  const resumed = trackSession(
+    await openSession({
+      file: join(cwd, ".lean/history.json"),
+      cwd,
+    }),
+  );
   await runTurn({
     cwd,
     input: "Continue",

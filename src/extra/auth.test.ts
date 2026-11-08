@@ -282,16 +282,21 @@ test("cancelling a queued credential write does not replace the saved token", as
     },
   );
   controller.abort();
-  await expect(second).rejects.toThrow(/abort/i);
-  release();
-  await first;
-  const saved = JSON.parse(
-    await readFile(join(directory, "openai.json"), "utf8"),
-  ) as {
-    access: string;
-  };
-  expect(saved.access).toBe("synthetic-access-first");
-  await store.close();
+  try {
+    await expect(second).rejects.toThrow(/abort/i);
+    release();
+    await first;
+    const saved = JSON.parse(
+      await readFile(join(directory, "openai.json"), "utf8"),
+    ) as {
+      access: string;
+    };
+    expect(saved.access).toBe("synthetic-access-first");
+  } finally {
+    release();
+    await first.catch(() => undefined);
+    await store.close();
+  }
 });
 
 test.for([false, true])(
@@ -336,7 +341,8 @@ test.for([false, true])(
     } finally {
       releaseFirst();
       releaseSecond();
-      await Promise.all([first, outcome, closing]);
+      await closing;
+      await Promise.all([first, outcome]);
     }
     expect(closed).toBe(true);
     const saved = JSON.parse(
@@ -442,7 +448,12 @@ test("one saved subscription is selected and two require a provider", async () =
     env: { OPENAI_API_KEY: "" },
   });
   const model = await only.resolveModel({});
-  expect(typeof model).not.toBe("string");
+  expect(model).toEqual(
+    expect.objectContaining({
+      getResponse: expect.any(Function),
+      getStreamedResponse: expect.any(Function),
+    }),
+  );
   await only.close();
   const bothStore = openCredentialStore(directory);
   await bothStore.modify("openai", async () =>
@@ -469,15 +480,13 @@ test("an explicit provider does not fall back when refresh fails", async () => {
     async () => new Response("secret-body", { status: 401 }),
   );
   const selected = await modelFor(directory, "openai", "gpt-5.4");
-  await expect(
-    selected.model.getResponse(request("Say hello")),
-  ).rejects.toThrow(/redacted|401/);
-  try {
-    await selected.model.getResponse(request("Say hello"));
-  } catch (error) {
-    expect(selected.redact(error)).not.toContain("secret-body");
-    expect(selected.redact(error)).not.toContain("synthetic-openai-access");
-  }
+  const pending = selected.model.getResponse(request("Say hello"));
+  const caught = await pending.catch((error: unknown) => error);
+  const message = caught instanceof Error ? caught.message : undefined;
+  expect(caught).toBeInstanceOf(Error);
+  expect(message).toMatch(/redacted|401/);
+  expect(selected.redact(caught)).not.toContain("secret-body");
+  expect(selected.redact(caught)).not.toContain("synthetic-openai-access");
   const saved = JSON.parse(
     await readFile(join(directory, "openai.json"), "utf8"),
   ) as {

@@ -14,8 +14,21 @@ import { openSession } from "./session.ts";
 
 const cleanup: (() => Promise<void>)[] = [];
 
+function trackSession(opened: Awaited<ReturnType<typeof openSession>>) {
+  cleanup.push(() => opened.close());
+  return opened;
+}
+
 afterEach(async () => {
-  for (const close of cleanup.splice(0).reverse()) await close();
+  const errors: unknown[] = [];
+  for (const close of cleanup.splice(0).reverse()) {
+    try {
+      await close();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (errors.length > 0) throw errors[0];
 });
 
 async function directory() {
@@ -32,11 +45,12 @@ async function turn(options: {
   signal?: AbortSignal;
   trace?: boolean;
 }) {
-  const opened = await openSession({
-    file: join(options.cwd, "session.json"),
-    cwd: options.cwd,
-  });
-  cleanup.push(() => opened.close());
+  const opened = trackSession(
+    await openSession({
+      file: join(options.cwd, "session.json"),
+      cwd: options.cwd,
+    }),
+  );
   const text: string[] = [];
   const details: string[] = [];
   try {
@@ -229,7 +243,7 @@ test("a saved session continues and the earlier user text appears once", async (
   const file = join(cwd, "history.json");
   const firstModel = new ScriptedModel();
   firstModel.enqueue([assistantMessage("Remembered.")]);
-  const first = await openSession({ file, cwd });
+  const first = trackSession(await openSession({ file, cwd }));
   await runTurn({
     cwd,
     input: "Remember the word apricot.",
@@ -242,7 +256,7 @@ test("a saved session continues and the earlier user text appears once", async (
   await first.save();
   await first.close();
 
-  const second = await openSession({ file, cwd });
+  const second = trackSession(await openSession({ file, cwd }));
   const model = new ScriptedModel();
   model.enqueue([assistantMessage("Apricot.")]);
   await runTurn({
@@ -266,7 +280,7 @@ test("a failed turn does not replace the saved history", async () => {
   const file = join(cwd, "history.json");
   const model = new ScriptedModel();
   model.enqueue(modelError(new Error("boom")));
-  const opened = await openSession({ file, cwd });
+  const opened = trackSession(await openSession({ file, cwd }));
   await expect(
     runTurn({
       cwd,
@@ -307,26 +321,31 @@ test("abort settles and kills a descendant of the shell", async () => {
     () => "resolved",
     () => "rejected",
   );
-  const started = Date.now();
-  let pid = 0;
-  while (Date.now() - started < 2_000) {
-    try {
-      pid = Number((await readFile(join(cwd, "child.pid"), "utf8")).trim());
-      if (pid > 0) break;
-    } catch {}
-    await new Promise((resolve) => setTimeout(resolve, 20));
-  }
-  expect(pid).toBeGreaterThan(0);
-  controller.abort();
-  expect(await pending).toBe("rejected");
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  let living = true;
   try {
-    process.kill(pid, 0);
-  } catch {
-    living = false;
+    const started = Date.now();
+    let pid = 0;
+    while (Date.now() - started < 2_000) {
+      try {
+        pid = Number((await readFile(join(cwd, "child.pid"), "utf8")).trim());
+        if (pid > 0) break;
+      } catch {}
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    expect(pid).toBeGreaterThan(0);
+    controller.abort();
+    expect(await pending).toBe("rejected");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    let living = true;
+    try {
+      process.kill(pid, 0);
+    } catch {
+      living = false;
+    }
+    expect(living).toBe(false);
+  } finally {
+    controller.abort();
+    await pending;
   }
-  expect(living).toBe(false);
 }, 10_000);
 
 test.for([
