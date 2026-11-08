@@ -79,7 +79,10 @@ def probe(scenario):
                 os.close(read_fd)
             elif not scenario.startswith("repl"):
                 args.append("Run the requested task.")
-            os.execvpe("bun", args, env)
+            try:
+                os.execvpe("bun", args, env)
+            except OSError:
+                os._exit(127)
         screen = b""
         approved = False
         interrupted = False
@@ -158,7 +161,10 @@ def probe(scenario):
                 assert len(requests) == 2, result
             else:
                 assert interrupted and code == 130, result
-                assert not child_alive, result
+                if scenario == "shell-cancel":
+                    assert not child_alive, result
+                if scenario == "approval-cancel":
+                    assert result["file_contents"] is None and result["file_existed_before_approval"] is False, result
             result["verdict"] = "VERIFIED"
             return result
         finally:

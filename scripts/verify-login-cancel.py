@@ -25,7 +25,10 @@ for provider, cancel_at in [('openai', 'auth_url'), ('anthropic', 'select'), ('a
         if pid == 0:
             os.chdir(root)
             env = dict(os.environ, LEAN_HOME=str(home), OPENAI_API_KEY='', OPENAI_AGENTS_DISABLE_TRACING='1')
-            os.execvpe('bun', ['bun', '--no-env-file', 'run', '--preload', str(guard), entry, '--login', provider], env)
+            try:
+                os.execvpe('bun', ['bun', '--no-env-file', 'run', '--preload', str(guard), entry, '--login', provider], env)
+            except OSError:
+                os._exit(127)
         screen = b''
         cancelled = False
         selected = False
@@ -82,9 +85,12 @@ for provider, cancel_at in [('openai', 'auth_url'), ('anthropic', 'select'), ('a
                     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                     listener.bind(('127.0.0.1', callback_port))
             result = {'provider': provider, 'stage': cancel_at, 'exit_code': code, 'callback_port_released': callback_port, 'credentials_absent': True, 'verdict': 'VERIFIED'}
-            results.append(result)
-            print(json.dumps(result), flush=True)
+        except Exception as error:
+            result = {'provider': provider, 'stage': cancel_at, 'verdict': 'NOT VERIFIED', 'error': str(error)}
         finally:
             os.close(fd)
             (output / (provider + '-' + cancel_at + '.txt')).write_bytes(screen)
+        results.append(result)
+        print(json.dumps(result), flush=True)
 (output / 'results.json').write_text(json.dumps(results, indent=2))
+sys.exit(0 if all(result['verdict'] == 'VERIFIED' for result in results) else 1)

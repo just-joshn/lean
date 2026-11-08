@@ -163,7 +163,10 @@ def run_cli(label, provider, argv, login=False, approve=False):
     if pid == 0:
         os.chdir(workspace)
         env = {**os.environ, "LEAN_HOME": str(home), "OPENAI_API_KEY": "", "ANTHROPIC_API_KEY": "", "ANTHROPIC_OAUTH_TOKEN": "", "OPENAI_AGENTS_DISABLE_TRACING": "1", "TERM": "xterm-256color"}
-        os.execvpe("bun", ["bun", "--no-env-file", "run", "--preload", str(hook), entry, *argv], env)
+        try:
+            os.execvpe("bun", ["bun", "--no-env-file", "run", "--preload", str(hook), entry, *argv], env)
+        except OSError:
+            os._exit(127)
     screen = b""
     callback_sent = False
     choice_sent = False
@@ -254,6 +257,7 @@ try:
         assert len(requests[provider]) == 3, provider + " had unexpected model calls"
         body = json.dumps(requests[provider][2])
         assert body.count("First fixture task.") == 1
+        assert body.count("apricot") == 1
         assert "call_fixture" in body if provider == "openai" else "toolu_fixture" in body
         if provider == "anthropic":
             assert "synthetic-thinking-signature" in body, "thinking signature lost after reload"
