@@ -495,8 +495,43 @@ test("ChatGPT requests use the subscription token and omit unsupported settings"
   expect(body.temperature).toBeUndefined();
   expect(body.max_output_tokens).toBeUndefined();
   expect(body.prompt_cache_retention).toBeUndefined();
-  expect(JSON.stringify(body.tools)).toContain('"type":"shell"');
-  expect(JSON.stringify(body.tools)).toContain('"type":"apply_patch"');
+  expect(body.tools).toEqual([
+    expect.objectContaining({
+      type: "function",
+      name: "shell",
+      description: "Run shell commands in the workspace.",
+      strict: false,
+      parameters: expect.objectContaining({
+        type: "object",
+        required: ["action"],
+        additionalProperties: false,
+        properties: {
+          action: expect.objectContaining({
+            type: "object",
+            required: ["commands"],
+            additionalProperties: false,
+          }),
+        },
+      }),
+    }),
+    expect.objectContaining({
+      type: "function",
+      name: "apply_patch",
+      description: "Create, update, or delete a workspace file.",
+      strict: false,
+      parameters: expect.objectContaining({
+        type: "object",
+        required: ["operation"],
+        additionalProperties: false,
+        properties: {
+          operation: expect.objectContaining({ oneOf: expect.any(Array) }),
+        },
+      }),
+    }),
+  ]);
+  expect(JSON.stringify(body.tools)).not.toContain("$schema");
+  expect(JSON.stringify(body.tools)).not.toContain('"type":"shell"');
+  expect(JSON.stringify(body.tools)).not.toContain('"type":"apply_patch"');
   expect(response.output).toEqual([
     expect.objectContaining({
       role: "assistant",

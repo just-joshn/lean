@@ -27,6 +27,7 @@ import { anthropicProvider } from "@earendil-works/pi-ai/providers/anthropic";
 import { openaiProvider } from "@earendil-works/pi-ai/providers/openai";
 import { z } from "zod";
 import { createAnthropicModel } from "./anthropic-model.ts";
+import { streamSubscriptionTools } from "./openai-subscription-tools.ts";
 
 export type ProviderId = "openai" | "anthropic";
 
@@ -440,7 +441,7 @@ function createOpenAISubscriptionModel(options: {
         });
         providerRef.current = provider;
         const inner = await provider.getModel(options.modelId);
-        yield* inner.getStreamedResponse(prepared);
+        yield* streamSubscriptionTools(inner, prepared);
       } catch (error) {
         throw error instanceof Error && error.message === options.redact(error)
           ? error
