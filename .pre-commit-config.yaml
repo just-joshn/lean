@@ -1,0 +1,21 @@
+repos:
+  - repo: local
+    hooks:
+      - id: format
+        name: Check formatting
+        entry: bun run format:check
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: typecheck
+        name: Check types
+        entry: bun run typecheck
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: test
+        name: Run tests
+        entry: bun run test
+        language: system
+        pass_filenames: false
+        always_run: true
