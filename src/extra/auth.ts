@@ -319,7 +319,7 @@ function applySecrets(text: string, secrets: readonly string[]): string {
 
 export function redactText(text: string, secrets: readonly string[]): string {
   const hidden = applySecrets(text, secrets)
-    .replace(/body=[^;\n]*/g, "body=[redacted]")
+    .replace(/body=[\s\S]*/g, "body=[redacted]")
     .replace(/(token request failed \(\d+\): )[\s\S]*/g, "$1[redacted]");
   return hidden.replace(
     /\{[^{}]*"(?:access_token|refresh_token)"[\s\S]*$/g,

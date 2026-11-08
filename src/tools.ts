@@ -425,7 +425,10 @@ async function updateFile(
     try {
       await unlink(source);
     } catch (error) {
-      return failed(error);
+      return {
+        status: "failed",
+        output: `Move left ${operation.moveTo} in place; could not remove ${operation.path}: ${failed(error).output}`,
+      };
     }
     return {
       status: "completed",

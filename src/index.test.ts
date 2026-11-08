@@ -78,7 +78,15 @@ const entry = fileURLToPath(new URL("./index.ts", import.meta.url));
 const cleanup: (() => Promise<void>)[] = [];
 
 afterEach(async () => {
-  for (const close of cleanup.splice(0).reverse()) await close();
+  const errors: unknown[] = [];
+  for (const close of cleanup.splice(0).reverse()) {
+    try {
+      await close();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (errors.length > 0) throw errors[0];
 });
 
 async function workspace() {
@@ -474,18 +482,42 @@ test("an explicit provider does not fall back to an API key", async () => {
 test("logout removes nothing else and does not start a session", async () => {
   const cwd = await workspace();
   const home = await workspace();
+  const openai = {
+    type: "oauth",
+    access: "synthetic-openai-access",
+    refresh: "synthetic-openai-refresh",
+    expires: 1_800_000_000_000,
+  };
+  const anthropic = {
+    type: "oauth",
+    access: "sk-ant-oat-synthetic-access",
+    refresh: "synthetic-anthropic-refresh",
+    expires: 1_800_000_000_000,
+  };
+  await writeFile(join(home, "openai.json"), `${JSON.stringify(openai)}\n`, {
+    mode: 0o600,
+  });
+  const sibling = `${JSON.stringify(anthropic)}\n`;
+  await writeFile(join(home, "anthropic.json"), sibling, { mode: 0o600 });
+  const api = await endpoint(() => []);
   const result = await cli(["--logout", "openai"], "leftover prompt", {
     cwd,
     home,
+    env: api.env,
   });
   expect(result.code, result.stderr).toBe(0);
   expect(result.stdout).toBe("");
-  expect(result.stderr).toContain("OpenAI");
+  expect(result.stderr).toBe("Signed out of OpenAI.\n");
+  await expect(readFile(join(home, "openai.json"))).rejects.toMatchObject({
+    code: "ENOENT",
+  });
+  expect(await readFile(join(home, "anthropic.json"), "utf8")).toBe(sibling);
   await expect(readFile(join(cwd, ".lean/history.json"))).rejects.toMatchObject(
     {
       code: "ENOENT",
     },
   );
+  expect(api.requests).toHaveLength(0);
 });
 
 test("piped input is saved and included once in the next invocation", async () => {
@@ -530,6 +562,7 @@ test("a session cleanup failure still drains credential writes", async () => {
   } finally {
     credentialDrain.release();
     stderr.mockRestore();
+    await pending.catch(() => undefined);
   }
   await expect(pending).rejects.toThrow("session cleanup failed");
   const saved = JSON.parse(

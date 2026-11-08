@@ -102,7 +102,7 @@ async function approve(
     );
     return false;
   }
-  process.stderr.write(`${detail}\nApprove? [y/N] `);
+  const prompt = `${detail}\nApprove? [y/N] `;
   let answer: string | undefined;
   if (process.stdin.isTTY) {
     const reader =
@@ -112,9 +112,15 @@ async function approve(
         output: process.stderr,
         terminal: true,
       });
-    answer = await nextLine(reader, signal);
-    if (rl === undefined) reader.close();
+    if (rl === undefined) reader.on("SIGINT", () => process.emit("SIGINT"));
+    try {
+      process.stderr.write(prompt);
+      answer = await nextLine(reader, signal);
+    } finally {
+      if (rl === undefined) reader.close();
+    }
   } else {
+    process.stderr.write(prompt);
     answer = await readTtyLine(signal);
   }
   if (answer === undefined) return false;

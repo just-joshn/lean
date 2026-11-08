@@ -8,6 +8,7 @@ import select
 import signal
 import sys
 import tempfile
+import termios
 import threading
 import time
 
@@ -79,7 +80,10 @@ def probe(scenario):
                 os.close(read_fd)
             elif not scenario.startswith("repl"):
                 args.append("Run the requested task.")
-            os.execvpe("bun", args, env)
+            try:
+                os.execvpe("bun", args, env)
+            except OSError:
+                os._exit(127)
         screen = b""
         approved = False
         interrupted = False
@@ -110,7 +114,15 @@ def probe(scenario):
                     if eof_ready and not sent_eof:
                         os.write(fd, b"\x04")
                         sent_eof = True
-                if not approved and scenario != "model-cancel" and (b"[y/n]" in lower or b"(y/n)" in lower or b"approve?" in lower):
+                if (
+                    not approved
+                    and scenario != "model-cancel"
+                    and (b"[y/n]" in lower or b"(y/n)" in lower or b"approve?" in lower)
+                    and (
+                        scenario != "approval-cancel"
+                        or (termios.tcgetattr(fd)[3] & (termios.ICANON | termios.ISIG)) == 0
+                    )
+                ):
                     existed_before = (root / "count.txt").exists()
                     if scenario == "approval-cancel":
                         os.write(fd, b"\x03")
@@ -158,10 +170,20 @@ def probe(scenario):
                 assert len(requests) == 2, result
             else:
                 assert interrupted and code == 130, result
-                assert not child_alive, result
+                if scenario == "shell-cancel":
+                    assert not child_alive, result
+                if scenario == "approval-cancel":
+                    assert result["file_contents"] is None and result["file_existed_before_approval"] is False, result
+                    assert len(requests) == 1, result
             result["verdict"] = "VERIFIED"
             return result
         finally:
+            if status is None:
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                os.waitpid(pid, 0)
             stop.set()
             server.shutdown()
             server.server_close()
