@@ -9,6 +9,7 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "test": "vitest run",
+    "test:terminal": "python3 scripts/verify-cli.py src/index.ts .lean/terminal-checks",
     "typecheck": "bun check",
     "format": "bun fmt src package.json README.md .pre-commit-config.yaml",
     "format:check": "bun fmt --check src package.json README.md .pre-commit-config.yaml"

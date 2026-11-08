@@ -78,6 +78,14 @@ pre-commit install
 pre-commit run --all-files
 ```
 
-The Vitest tests use temporary workspaces and the SDK's scripted model. They do not require an OpenAI API key.
+The Vitest tests use temporary workspaces, the SDK's scripted model, and a local Responses API endpoint. They do not require an OpenAI API key.
+
+Run the optional terminal checks with Python 3:
+
+```bash
+bun run test:terminal
+```
+
+These checks use a local API endpoint and synthetic credentials. They cover approval, denial, patching, cancellation, piped input, and the interactive prompt. Transcripts and request fixtures are saved under `.lean/terminal-checks/`.
 
 Run `bun run format` to format the implementation and project files without changing `AGENTS.md`.
