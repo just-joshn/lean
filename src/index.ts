@@ -5,6 +5,12 @@ import { resolve, join } from "node:path";
 import { parseArgs } from "node:util";
 import { getGlobalTraceProvider } from "@openai/agents";
 import { runTurn } from "./agent.ts";
+import {
+  createSubscriptions,
+  isProviderId,
+  providerLabel,
+  type ProviderId,
+} from "./extra/auth.ts";
 import { openSession, type OpenedSession } from "./session.ts";
 
 const USAGE = `Usage: lean [options] [message]
@@ -12,17 +18,31 @@ const USAGE = `Usage: lean [options] [message]
 Talk to a coding agent in the current workspace.
 
 Options:
-  --help           Show this help
-  --model <name>   Model to use
-  --session <path> Session file, default .lean/history.json
-  --trace          Enable metadata-only tracing
+  --help                 Show this help
+  --model <name>         Model to use
+  --session <path>       Session file, default .lean/history.json
+  --trace                Enable metadata-only tracing
+  --login <provider>     Sign in to openai or anthropic
+  --logout <provider>    Remove a saved subscription
+  --provider <provider>  Use a saved openai or anthropic subscription
 `;
 
-function formatError(error: unknown): string {
+function formatError(
+  error: unknown,
+  redact?: (error: unknown) => string,
+): string {
+  if (redact) return redact(error);
   const message = error instanceof Error ? error.message : String(error);
   const key = process.env.OPENAI_API_KEY;
   if (!key) return message;
   return message.split(key).join("[redacted]");
+}
+
+function providerFlag(value: string | undefined): ProviderId {
+  if (value !== undefined && isProviderId(value)) return value;
+  throw new Error(
+    `Unknown provider "${value ?? ""}". Expected openai or anthropic.`,
+  );
 }
 
 async function readStdin(): Promise<string> {
@@ -107,6 +127,9 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     model?: string;
     session?: string;
     trace?: boolean;
+    login?: string;
+    logout?: string;
+    provider?: string;
   };
   let positionals: string[];
   try {
@@ -117,6 +140,9 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
         model: { type: "string" },
         session: { type: "string" },
         trace: { type: "boolean" },
+        login: { type: "string" },
+        logout: { type: "string" },
+        provider: { type: "string" },
       },
       strict: true,
       allowPositionals: true,
@@ -132,23 +158,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     return 0;
   }
 
-  const positional = positionals.join(" ");
-  const interactive = Boolean(process.stdin.isTTY) && positional.trim() === "";
-  let piped = "";
-  if (!interactive && positional.trim() === "") {
-    piped = await readStdin();
-    if (piped.trim() === "") {
-      process.stderr.write(
-        "No prompt was provided. Pass a message or run lean in a terminal.\n",
-      );
-      return 1;
-    }
-  }
-  if (!process.env.OPENAI_API_KEY?.trim()) {
-    process.stderr.write("Set OPENAI_API_KEY to run the agent.\n");
-    return 1;
-  }
-
+  const subscriptions = createSubscriptions();
   const controller = new AbortController();
   let interrupts = 0;
   const onSigint = () => {
@@ -160,6 +170,44 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
   const cwd = process.cwd();
   let opened: OpenedSession | undefined;
   try {
+    if (values.login !== undefined && values.logout !== undefined) {
+      throw new Error("Pass either --login or --logout.");
+    }
+    if (values.provider !== undefined && !isProviderId(values.provider)) {
+      throw new Error(
+        `Unknown provider "${values.provider}". Expected openai or anthropic.`,
+      );
+    }
+    if (values.login !== undefined) {
+      const provider = providerFlag(values.login);
+      await subscriptions.login(provider, controller.signal);
+      process.stderr.write(`Signed in to ${providerLabel(provider)}.\n`);
+      return 0;
+    }
+    if (values.logout !== undefined) {
+      const provider = providerFlag(values.logout);
+      await subscriptions.logout(provider);
+      process.stderr.write(`Signed out of ${providerLabel(provider)}.\n`);
+      return 0;
+    }
+
+    const positional = positionals.join(" ");
+    const interactive =
+      Boolean(process.stdin.isTTY) && positional.trim() === "";
+    let piped = "";
+    if (!interactive && positional.trim() === "") {
+      piped = await readStdin();
+      if (piped.trim() === "") {
+        process.stderr.write(
+          "No prompt was provided. Pass a message or run lean in a terminal.\n",
+        );
+        return 1;
+      }
+    }
+    const model = await subscriptions.resolveModel({
+      provider: values.provider,
+      model: values.model,
+    });
     const session = await openSession({
       file: resolve(cwd, values.session ?? join(".lean", "history.json")),
       cwd,
@@ -172,7 +220,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
         input: message,
         session: session.session,
         signal: controller.signal,
-        model: values.model,
+        model,
         trace: values.trace === true,
         onText(delta) {
           text += delta;
@@ -210,11 +258,15 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     return 0;
   } catch (error) {
     if (controller.signal.aborted) return 130;
-    process.stderr.write(`${formatError(error)}\n`);
+    process.stderr.write(`${formatError(error, subscriptions.redact)}\n`);
     return 1;
   } finally {
     process.off("SIGINT", onSigint);
-    await opened?.close();
+    try {
+      await opened?.close();
+    } finally {
+      await subscriptions.close();
+    }
     if (values.trace) await getGlobalTraceProvider().forceFlush();
   }
 }

@@ -3,8 +3,76 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { setImmediate } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
+import { main } from "./index.ts";
+
+const credentialDrain = vi.hoisted(() => {
+  let releaseWrite = () => {};
+  return {
+    directory: "",
+    wait: new Promise<void>((resolve) => {
+      releaseWrite = resolve;
+    }),
+    release: () => {
+      releaseWrite();
+    },
+  };
+});
+
+vi.mock(import("./session.ts"), async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./session.ts")>();
+  const { MemorySession } = await import("@openai/agents");
+  return {
+    ...actual,
+    openSession: async () => ({
+      session: new MemorySession(),
+      save: async () => {},
+      close: async () => {
+        throw new Error("session cleanup failed");
+      },
+    }),
+  };
+});
+
+vi.mock(import("./agent.ts"), async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./agent.ts")>();
+  const runTurn: typeof actual.runTurn = () => {
+    throw new Error("cleanup coverage does not call the model");
+  };
+  return { ...actual, runTurn };
+});
+
+vi.mock(import("./extra/auth.ts"), async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./extra/auth.ts")>();
+  return {
+    ...actual,
+    createSubscriptions() {
+      const store = actual.openCredentialStore(credentialDrain.directory);
+      void store.modify("openai", async () => {
+        await credentialDrain.wait;
+        return {
+          type: "oauth" as const,
+          access: "synthetic-drained",
+          refresh: "synthetic-refresh",
+          expires: 1_800_000_000_000,
+        };
+      });
+      return {
+        redact(error: unknown) {
+          return error instanceof Error ? error.message : String(error);
+        },
+        async login() {},
+        async logout() {},
+        async resolveModel() {
+          return "gpt-5.4";
+        },
+        close: () => store.close(),
+      };
+    },
+  };
+});
 
 const entry = fileURLToPath(new URL("./index.ts", import.meta.url));
 const cleanup: (() => Promise<void>)[] = [];
@@ -19,11 +87,17 @@ async function workspace() {
   return cwd;
 }
 
-function cli(
+async function cli(
   args: string[],
   input = "",
-  options: { cwd?: string; env?: NodeJS.ProcessEnv; script?: string } = {},
+  options: {
+    cwd?: string;
+    env?: NodeJS.ProcessEnv;
+    script?: string;
+    home?: string;
+  } = {},
 ) {
+  const leanHome = options.home ?? (await workspace());
   return new Promise<{
     code: number | string | null;
     stdout: string;
@@ -41,6 +115,7 @@ function cli(
         OPENAI_API_KEY: "",
         OPENAI_BASE_URL: "http://127.0.0.1:1/v1",
         OPENAI_AGENTS_DISABLE_TRACING: "1",
+        LEAN_HOME: leanHome,
         ...options.env,
       },
     });
@@ -169,6 +244,40 @@ test("help describes how to run the CLI without an API key", async () => {
   expect(result.stdout).toContain("Usage:");
   expect(result.stdout).toContain("--help");
   expect(result.stderr).toBe("");
+});
+
+test("help exposes subscription sign-in without requiring an API key", async () => {
+  const result = await cli(["--help"]);
+  expect(result.code).toBe(0);
+  for (const flag of ["--login", "--logout", "--provider"]) {
+    expect(result.stdout).toContain(flag);
+  }
+  expect(result.stderr).toBe("");
+});
+
+test("OAuth sign-in rejects piped input instead of treating it as a code", async () => {
+  const cwd = await workspace();
+  const result = await cli(
+    ["--login", "openai"],
+    "not-an-authorization-code\n",
+    { cwd },
+  );
+  expect(result.code).toBe(1);
+  expect(result.stdout).toBe("");
+  expect(result.stderr).toMatch(/terminal/i);
+  expect(result.stderr).not.toContain("not-an-authorization-code");
+  await expect(readFile(join(cwd, ".lean/history.json"))).rejects.toMatchObject(
+    { code: "ENOENT" },
+  );
+});
+
+test("an unknown OAuth provider fails with supported choices", async () => {
+  const result = await cli(["--provider", "not-a-provider", "Say hello"]);
+  expect(result.code).toBe(1);
+  expect(result.stdout).toBe("");
+  expect(result.stderr).toContain("not-a-provider");
+  expect(result.stderr).toContain("openai");
+  expect(result.stderr).toContain("anthropic");
 });
 
 test("unknown options fail before starting an agent", async () => {
@@ -304,6 +413,81 @@ test("noninteractive input cannot approve a native shell call", async () => {
   });
 });
 
+test("an unknown provider fails before an API key is required", async () => {
+  const result = await cli(["--provider", "not-a-provider", "Say hello"]);
+  expect(result.code).not.toBe(0);
+  expect(result.stdout).toBe("");
+  expect(result.stderr).toContain("not-a-provider");
+  expect(result.stderr).not.toContain("OPENAI_API_KEY");
+  expect(result.stderr).not.toContain("local-test-key");
+});
+
+test("login does not read a piped value as an authorization code", async () => {
+  const cwd = await workspace();
+  const home = await workspace();
+  const result = await cli(
+    ["--login", "openai"],
+    "https://example.test/callback?code=synthetic-secret",
+    {
+      cwd,
+      home,
+    },
+  );
+  expect(result.code).not.toBe(0);
+  expect(result.stdout).toBe("");
+  expect(result.stderr.toLowerCase()).toContain("terminal");
+  expect(result.stderr).not.toContain("synthetic-secret");
+  await expect(readFile(join(cwd, ".lean/history.json"))).rejects.toMatchObject(
+    {
+      code: "ENOENT",
+    },
+  );
+});
+
+test("an API key does not read subscription files", async () => {
+  const cwd = await workspace();
+  const home = await workspace();
+  await writeFile(join(home, "openai.json"), "{");
+  const api = await endpoint(() => [message("Key path.")]);
+  const result = await cli(["Say hello"], "", { cwd, home, env: api.env });
+  expect(result.code, result.stderr).toBe(0);
+  expect(result.stdout).toBe("Key path.\n");
+  expect(api.requests).toHaveLength(1);
+});
+
+test("an explicit provider does not fall back to an API key", async () => {
+  const cwd = await workspace();
+  const home = await workspace();
+  const api = await endpoint(() => [message("Should not run.")]);
+  const result = await cli(["--provider", "openai", "Say hello"], "", {
+    cwd,
+    home,
+    env: api.env,
+  });
+  expect(result.code).not.toBe(0);
+  expect(result.stdout).toBe("");
+  expect(result.stderr).toContain("openai");
+  expect(result.stderr).not.toContain("local-test-key");
+  expect(api.requests).toHaveLength(0);
+});
+
+test("logout removes nothing else and does not start a session", async () => {
+  const cwd = await workspace();
+  const home = await workspace();
+  const result = await cli(["--logout", "openai"], "leftover prompt", {
+    cwd,
+    home,
+  });
+  expect(result.code, result.stderr).toBe(0);
+  expect(result.stdout).toBe("");
+  expect(result.stderr).toContain("OpenAI");
+  await expect(readFile(join(cwd, ".lean/history.json"))).rejects.toMatchObject(
+    {
+      code: "ENOENT",
+    },
+  );
+});
+
 test("piped input is saved and included once in the next invocation", async () => {
   const cwd = await workspace();
   const session = join(cwd, "conversation.json");
@@ -325,4 +509,33 @@ test("piped input is saved and included once in the next invocation", async () =
   expect(input).toContain("What word?");
   expect(input).toContain("Remembered.");
   expect(await readFile(session, "utf8")).toContain("apricot");
+});
+
+test("a session cleanup failure still drains credential writes", async () => {
+  const directory = await workspace();
+  credentialDrain.directory = directory;
+  const stderr = vi
+    .spyOn(process.stderr, "write")
+    .mockImplementation(() => true);
+  let settled = false;
+  const pending = main(["Say hello"]);
+  void pending
+    .finally(() => {
+      settled = true;
+    })
+    .catch(() => undefined);
+  try {
+    await setImmediate();
+    expect(settled).toBe(false);
+  } finally {
+    credentialDrain.release();
+    stderr.mockRestore();
+  }
+  await expect(pending).rejects.toThrow("session cleanup failed");
+  const saved = JSON.parse(
+    await readFile(join(directory, "openai.json"), "utf8"),
+  ) as {
+    access: string;
+  };
+  expect(saved.access).toBe("synthetic-drained");
 });
