@@ -223,7 +223,10 @@ def run_cli(label, provider, argv, login=False, approve=False):
         return workspace
     finally:
         if status is None:
-            os.killpg(pid, signal.SIGKILL)
+            try:
+                os.killpg(pid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                os.kill(pid, signal.SIGKILL)
             os.waitpid(pid, 0)
         os.close(master)
 
