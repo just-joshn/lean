@@ -8,6 +8,7 @@ import select
 import signal
 import sys
 import tempfile
+import termios
 import threading
 import time
 
@@ -113,7 +114,15 @@ def probe(scenario):
                     if eof_ready and not sent_eof:
                         os.write(fd, b"\x04")
                         sent_eof = True
-                if not approved and scenario != "model-cancel" and (b"[y/n]" in lower or b"(y/n)" in lower or b"approve?" in lower):
+                if (
+                    not approved
+                    and scenario != "model-cancel"
+                    and (b"[y/n]" in lower or b"(y/n)" in lower or b"approve?" in lower)
+                    and (
+                        scenario != "approval-cancel"
+                        or (termios.tcgetattr(fd)[3] & (termios.ICANON | termios.ISIG)) == 0
+                    )
+                ):
                     existed_before = (root / "count.txt").exists()
                     if scenario == "approval-cancel":
                         os.write(fd, b"\x03")
@@ -165,6 +174,7 @@ def probe(scenario):
                     assert not child_alive, result
                 if scenario == "approval-cancel":
                     assert result["file_contents"] is None and result["file_existed_before_approval"] is False, result
+                    assert len(requests) == 1, result
             result["verdict"] = "VERIFIED"
             return result
         finally:
