@@ -128,25 +128,18 @@ async function loadRecord(file: string, cwd: string) {
     if (isCode(error, "ENOENT")) {
       return { version: 1 as const, id: randomUUID(), cwd, items: [] };
     }
-    throw new Error(`Session file ${file} is corrupt and was left unchanged.`, {
-      cause: error,
-    });
+    throw error;
   }
+  let record: z.infer<typeof sessionRecordSchema>;
   try {
-    const record = sessionRecordSchema.parse(JSON.parse(text));
-    if (record.cwd !== cwd) {
-      throw new Error(`Session file belongs to ${record.cwd}, not ${cwd}.`);
-    }
-    return record;
+    record = sessionRecordSchema.parse(JSON.parse(text));
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.startsWith("Session file belongs")
-    ) {
-      throw error;
-    }
     throw new Error(`Session file ${file} is corrupt and was left unchanged.`, {
       cause: error,
     });
   }
+  if (record.cwd !== cwd) {
+    throw new Error(`Session file belongs to ${record.cwd}, not ${cwd}.`);
+  }
+  return record;
 }

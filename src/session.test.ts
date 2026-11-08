@@ -1,6 +1,9 @@
 import {
+  chmod,
+  mkdir,
   mkdtemp,
   readFile,
+  realpath,
   rm,
   stat,
   symlink,
@@ -96,6 +99,33 @@ test("a corrupt session file is rejected and left unchanged", async () => {
   await again.close();
 });
 
+test.for(["EACCES", "EISDIR"] as const)(
+  "a session read failure preserves %s and releases the lock",
+  async (code) => {
+    const cwd = await directory();
+    const file = join(cwd, "history.json");
+    if (code === "EISDIR") {
+      await mkdir(file);
+    } else {
+      await writeFile(file, "{}");
+      await chmod(file, 0o000);
+    }
+    try {
+      await expect(openSession({ file, cwd })).rejects.toMatchObject({ code });
+      await expect(stat(`${file}.lock`)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+    } finally {
+      if (code === "EACCES") await chmod(file, 0o600);
+    }
+    if (code === "EACCES") {
+      expect(await readFile(file, "utf8")).toBe("{}");
+    } else {
+      expect((await stat(file)).isDirectory()).toBe(true);
+    }
+  },
+);
+
 test("an invalid history item does not replace the last good snapshot", async () => {
   const cwd = await directory();
   const file = join(cwd, "history.json");
@@ -121,7 +151,9 @@ test("a session from another workspace is rejected", async () => {
   await opened.save();
   await opened.close();
   const before = await readFile(file, "utf8");
-  await expect(openSession({ file, cwd: other })).rejects.toThrow(/belongs/i);
+  await expect(openSession({ file, cwd: other })).rejects.toThrow(
+    `Session file belongs to ${await realpath(cwd)}, not ${await realpath(other)}.`,
+  );
   expect(await readFile(file, "utf8")).toBe(before);
 });
 
