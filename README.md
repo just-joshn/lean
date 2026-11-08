@@ -11,7 +11,7 @@ bun install
 cp .env.example .env
 ```
 
-Set `OPENAI_API_KEY` in `.env`. Set `OPENAI_MODEL` to a model available to your account that supports the Responses API shell and apply-patch tools.
+Set `OPENAI_API_KEY` in `.env` for the API-key path. Set `OPENAI_MODEL` to a model available to your account that supports the Responses API shell and apply-patch tools. To use a Claude Pro or Max plan, or ChatGPT, sign in instead and leave the key empty.
 
 ## Run a task
 
@@ -48,7 +48,44 @@ bun start --help
 
 Lean includes the complete workspace `AGENTS.md` text in the agent's instructions. Review proposed commands and patches in the terminal before approving them. Piped prompt text cannot approve a tool call. Without a terminal, Lean denies commands and patches, then lets the agent respond to the denial.
 
-Assistant text goes to stdout. Approval prompts and errors go to stderr. Press Ctrl-C to cancel an active turn and exit. Cancellation does not undo actions that already completed.
+Assistant text goes to stdout. Approval prompts and errors go to stderr. Press Ctrl-C to cancel the active turn. Lean finishes an in-flight subscription token write before it exits. Press Ctrl-C again to exit immediately. Cancellation does not undo actions that already completed.
+
+## Sign in with a subscription
+
+Sign in before starting a conversation:
+
+```bash
+bun start --login openai
+bun start --login anthropic
+```
+
+Lean prints an authorization URL on stderr. Open that URL and finish sign-in in your browser. Lean does not open a browser. Sign-in needs a terminal, and a piped value is not treated as an authorization code.
+
+Credentials are stored under `~/.lean`, or `$LEAN_HOME` when that variable is set. Each provider has its own file, readable only by your user. Lean does not read Pi, Codex, or Claude credential files.
+
+With one saved subscription and no API key, run Lean as usual:
+
+```bash
+bun start "Explain this repository"
+```
+
+When both providers are signed in, pass `--provider`.
+
+```bash
+bun start --provider anthropic --model claude-sonnet-5-5 "Explain this repository"
+```
+
+`--provider` uses that subscription. If refresh fails, Lean does not fall back to `OPENAI_API_KEY`. With no `--provider`, a non-empty `OPENAI_API_KEY` keeps the API-key path and does not read subscription files.
+
+Anthropic defaults to `claude-sonnet-5-5`. OpenAI still uses `--model`, then `OPENAI_MODEL`, then the SDK default. Lean checks the id against its built-in catalog. A catalog entry does not mean your account can use that model.
+
+Sign out of one provider without starting a conversation or removing the other:
+
+```bash
+bun start --logout openai
+```
+
+Sign-in and refresh operations use per-provider lock files. Before removing a leftover lock file, confirm that the process that used it has stopped. Lean does not take over stale locks.
 
 ## Continue a conversation
 
@@ -84,8 +121,10 @@ Run the optional terminal checks with Python 3:
 
 ```bash
 bun run test:terminal
+bun run test:subscriptions
+bun run test:login-cancel
 ```
 
-These checks use a local API endpoint and synthetic credentials. They cover approval, denial, patching, cancellation, piped input, and the interactive prompt. Transcripts and request fixtures are saved under `.lean/terminal-checks/`.
+These checks use local API endpoints and synthetic credentials. They cover tool approval, cancellation, interactive prompts, subscription callbacks, token refresh, and saved-history continuation. They do not use your accounts. Transcripts and results are saved under `.lean/terminal-checks/`, `.lean/subscription-checks/`, and `.lean/login-cancel-checks/`.
 
 Run `bun run format` to format the implementation and project files without changing `AGENTS.md`.

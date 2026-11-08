@@ -10,6 +10,8 @@
     "start": "bun run src/index.ts",
     "test": "vitest run",
     "test:terminal": "python3 scripts/verify-cli.py src/index.ts .lean/terminal-checks",
+    "test:subscriptions": "python3 scripts/verify-subscriptions.py src/index.ts .lean/subscription-checks",
+    "test:login-cancel": "python3 scripts/verify-login-cancel.py src/index.ts .lean/login-cancel-checks",
     "typecheck": "bun check",
     "format": "bun fmt src package.json README.md .pre-commit-config.yaml",
     "format:check": "bun fmt --check src package.json README.md .pre-commit-config.yaml"
@@ -28,6 +30,7 @@
   },
   "dependencies": {
     "@openai/agents": "^0.21.0",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "@earendil-works/pi-ai": "1.5.0"
   }
 }
