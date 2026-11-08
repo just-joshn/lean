@@ -402,6 +402,23 @@ test("redaction removes access tokens, refresh tokens, and raw provider bodies",
   expect(text).toContain("[redacted]");
 });
 
+test.for([
+  {
+    label: "json body with a semicolon before unknown tokens",
+    text: '401 body={"error":"bad;token","access_token":"SECRET-ACCESS-TOKEN-VALUE","refresh_token":"SECRET-REFRESH-TOKEN-VALUE"}; details=401',
+  },
+  {
+    label: "form body with a semicolon",
+    text: "401 body=error=invalid_grant; access_token=SECRET-ACCESS-TOKEN-VALUE; refresh_token=SECRET-REFRESH-TOKEN-VALUE; details=401",
+  },
+  {
+    label: "multiline body",
+    text: '401 body={"error":"bad\ntoken","access_token":"SECRET-ACCESS-TOKEN-VALUE","refresh_token":"SECRET-REFRESH-TOKEN-VALUE"}',
+  },
+])("redacts an unknown $label", ({ text }) => {
+  expect(redactText(text, [])).toBe("401 body=[redacted]");
+});
+
 test("an API key is selected without reading a saved subscription", async () => {
   const directory = await home();
   await writeFile(join(directory, "openai.json"), "{", { mode: 0o600 });
