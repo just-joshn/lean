@@ -31,10 +31,11 @@
     "node": ">=26.13.0 <27"
   },
   "dependencies": {
+    "@earendil-works/pi-ai": "1.5.0",
     "@openai/agents": "^0.21.0",
     "@rezi-ui/core": "0.1.0-beta.2",
     "@rezi-ui/node": "0.1.0-beta.2",
-    "zod": "^4.6.7",
-    "@earendil-works/pi-ai": "1.5.0"
+    "shiki": "4.6.0",
+    "zod": "^4.6.7"
   }
 }
