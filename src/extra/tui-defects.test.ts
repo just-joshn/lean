@@ -656,6 +656,11 @@ test("shows the same readable text for a whole control and a control split acros
     ["\tgoal", "\tgoal"],
     ["hello\rX", "Xello"],
     ["a\r\nb", "a\nb"],
+    ["你b\rX", "X b"],
+    ["你好\rA", "A 好"],
+    ["\uD83D\uDC4Db\rX", "X b"],
+    ["ab你cd\rXYZ", "XYZ cd"],
+    ["hello\tworld\rX", "Xello\tworld"],
   ] as const;
   for (const [raw, expected] of cases) {
     const replayed = await open({
@@ -875,4 +880,60 @@ test("keeps a makefile tab so @ stays keyword purple and the indent is eight spa
     })
     .toBe(0xc678dd);
   expect(render(controller, 80, 24).toText()).toContain("        @echo hello");
+});
+
+test("ignores a callback retained from an earlier successful turn", async () => {
+  let retained: ((delta: string) => void) | null = null;
+  let turn = 0;
+  const controller = await open({
+    history: null,
+    driver: async (input) => {
+      turn += 1;
+      if (turn === 1) {
+        retained = input.onText;
+        input.onText("SECRET");
+        return;
+      }
+      input.onText("visible");
+      retained?.("STALE");
+    },
+  });
+  controller.editDraft("first");
+  await controller.submit();
+  controller.editDraft("second");
+  await controller.submit();
+  expect(assistantText(controller)).toBe("SECRET\nvisible");
+});
+
+test("ignores a callback retained from a cancelled turn", async () => {
+  let retained: ((delta: string) => void) | null = null;
+  let during = "";
+  let turn = 0;
+  const controller = await open({
+    history: null,
+    driver: async (input) => {
+      turn += 1;
+      if (turn === 1) {
+        retained = input.onText;
+        input.onText("SECRET");
+        input.signal.addEventListener("abort", () => {
+          input.onText("LEAK");
+          during = assistantText(controller);
+        });
+        await waitForAbort(input.signal);
+        input.signal.throwIfAborted();
+      }
+      input.onText("visible");
+      retained?.("STALE");
+    },
+  });
+  controller.editDraft("first");
+  const cancelled = controller.submit();
+  await expect.poll(() => controller.state.phase.kind).toBe("running");
+  controller.key("ctrl+c");
+  await cancelled;
+  expect(during).toBe("SECRET");
+  controller.editDraft("second");
+  await controller.submit();
+  expect(assistantText(controller)).toBe("visible");
 });
