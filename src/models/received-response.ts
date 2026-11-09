@@ -4,6 +4,7 @@ export interface ReceivedResponse {
   readonly status: number;
   readonly statusText: string;
   readonly ok: boolean;
+  readonly headers?: Headers;
 }
 
 export class ResponseReadError extends Error {
@@ -29,5 +30,6 @@ export async function receiveResponse(
     status: response.status,
     statusText: response.statusText,
     ok: response.ok,
+    headers: response.headers,
   };
 }

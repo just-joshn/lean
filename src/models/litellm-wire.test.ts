@@ -4,6 +4,7 @@ import { FormatError } from "../exceptions.ts";
 import { UnsupportedParamsError } from "./errors.ts";
 import { getModel, getModelClass } from "./index.ts";
 import { LitellmModel, LitellmModelConfig } from "./litellm-model.ts";
+import { ProviderParityGateError } from "./route.ts";
 import { GLOBAL_MODEL_STATS } from "./stats.ts";
 import { DEFAULT_MULTIMODAL_REGEX } from "./utils/multimodal.ts";
 
@@ -241,7 +242,7 @@ describe("litellm wire", () => {
     expect(requests).toHaveLength(0);
   });
 
-  test("merges openai extra_body and does not speak bedrock", async () => {
+  test("merges openai extra_body and reaches the Bedrock Converse transport", async () => {
     await mockResponse(() => ({
       body: {
         choices: [
@@ -295,9 +296,11 @@ describe("litellm wire", () => {
     const previousStop = process.env.MSWEA_MODEL_RETRY_STOP_AFTER_ATTEMPT;
     process.env.MSWEA_MODEL_RETRY_STOP_AFTER_ATTEMPT = "1";
     try {
-      await expect(
-        bedrock.query([{ role: "user", content: "task" }]),
-      ).rejects.toThrow(/bedrock/);
+      const query = bedrock.query([{ role: "user", content: "task" }]);
+      await expect(query).rejects.toBeInstanceOf(ProviderParityGateError);
+      await expect(query).rejects.toThrow(
+        /Bedrock response conversion and usage remain unproven/,
+      );
     } finally {
       if (previousStop === undefined) {
         delete process.env.MSWEA_MODEL_RETRY_STOP_AFTER_ATTEMPT;
@@ -305,7 +308,15 @@ describe("litellm wire", () => {
         process.env.MSWEA_MODEL_RETRY_STOP_AFTER_ATTEMPT = previousStop;
       }
     }
-    expect(requests).toHaveLength(1);
+    expect(requests).toHaveLength(2);
+    expect(requests[1]?.url).toBe(
+      "/model/anthropic.claude-3-haiku-20240307-v1%3A0/converse",
+    );
+    expect(requests[1]?.body).toMatchObject({
+      messages: [{ role: "user", content: [{ text: "task" }] }],
+      inferenceConfig: {},
+      toolConfig: { tools: [{ toolSpec: { name: "bash" } }] },
+    });
   });
 
   test("sends a multimodal tool observation as an anthropic image block", async () => {
@@ -455,7 +466,8 @@ describe("litellm wire", () => {
     expect(
       getModelClass("", "minisweagent.models.litellm_model.LitellmModel").name,
     ).toBe("LitellmModel");
-    expect(() => getModelClass("", "openrouter")).toThrow(
+    expect(getModelClass("", "openrouter").name).toBe("OpenRouterModel");
+    expect(() => getModelClass("", "not-a-model-class")).toThrow(
       /Unknown model class/,
     );
   });

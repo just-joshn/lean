@@ -4,11 +4,27 @@ import { LitellmTextbasedModel } from "./litellm-textbased-model.ts";
 import type { Model } from "../protocols.ts";
 import { copyConfig, loadClass } from "../utils/load.ts";
 import { ValueError } from "../config/errors.ts";
+import {
+  OpenRouterModel,
+  PortkeyModel,
+  RequestyModel,
+} from "./provider-models.ts";
 
 const MODELS: Record<string, new (data: Record<string, unknown>) => Model> = {
   litellm: LitellmModel,
   litellm_textbased: LitellmTextbasedModel,
   litellm_response: LitellmResponseModel,
+  openrouter: OpenRouterModel,
+  portkey: PortkeyModel,
+  requesty: RequestyModel,
+  "minisweagent.models.openrouter_model.OpenRouterModel": OpenRouterModel,
+  "minisweagent.models.portkey_model.PortkeyModel": PortkeyModel,
+  "minisweagent.models.requesty_model.RequestyModel": RequestyModel,
+  "minisweagent.models.litellm_model.LitellmModel": LitellmModel,
+  "minisweagent.models.litellm_textbased_model.LitellmTextbasedModel":
+    LitellmTextbasedModel,
+  "minisweagent.models.litellm_response_model.LitellmResponseModel":
+    LitellmResponseModel,
 };
 
 export function getModelName(

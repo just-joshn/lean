@@ -158,7 +158,7 @@ describe("LitellmModel", () => {
     expect(calls).toBe(3);
   });
 
-  test("retries a server error with the tenacity delays and then parses text", async () => {
+  test("keeps the outer four-second retry floor when SDK retries are disabled", async () => {
     let calls = 0;
     await mockResponse(() => {
       calls += 1;
@@ -181,13 +181,14 @@ describe("LitellmModel", () => {
     const delays: number[] = [];
     const model = new LitellmTextbasedModel({
       model_name: "gpt-4o",
-      model_kwargs: { api_base: "http://model.test/v1" },
+      model_kwargs: { api_base: "http://model.test/v1", num_retries: 0 },
     });
     model.sleep = async (milliseconds) => {
       delays.push(milliseconds);
     };
     const message = await model.query([{ role: "user", content: "go" }]);
     expect(delays).toEqual([4000, 4000]);
+    expect(calls).toBe(3);
     expect(requests.every((request) => request.body.tools === undefined)).toBe(
       true,
     );

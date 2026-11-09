@@ -1,10 +1,17 @@
 import type { Message } from "../protocols.ts";
 import { ResponseResult } from "./response-result.ts";
+import { bedrockConverseBody } from "./bedrock.ts";
+import type { ReceivedResponse } from "./received-response.ts";
 import {
-  receiveResponse,
-  ResponseReadError,
-  type ReceivedResponse,
-} from "./received-response.ts";
+  attemptResponse,
+  type AttemptDependencies,
+  type AttemptPolicy,
+} from "./attempt.ts";
+import {
+  chatHandler,
+  isProviderPrefix,
+  ProviderParityGateError,
+} from "./route.ts";
 import { lookupModelInfo } from "./utils/cost.ts";
 import {
   AuthenticationError,
@@ -27,6 +34,7 @@ const CLIENT_KEYS = new Set([
   "num_retries",
   "max_retries",
   "extra_headers",
+  "text_completion",
 ]);
 
 const OPENAI_PARAMS = new Set([
@@ -85,30 +93,6 @@ const ANTHROPIC_PARAMS = new Set([
   "service_tier",
 ]);
 
-const UNIMPLEMENTED = new Set([
-  "bedrock",
-  "vertex_ai",
-  "azure",
-  "azure_ai",
-  "gemini",
-  "cohere",
-  "groq",
-  "mistral",
-  "openrouter",
-  "huggingface",
-  "sagemaker",
-  "ollama",
-  "watsonx",
-  "databricks",
-  "voyage",
-  "ai21",
-  "fireworks_ai",
-  "deepseek",
-  "perplexity",
-  "cloudflare",
-  "text-completion-openai",
-]);
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -151,11 +135,7 @@ function providerOf(model: string, explicit: unknown): string {
   const slash = model.indexOf("/");
   if (slash > 0) {
     const prefix = model.slice(0, slash);
-    if (
-      prefix === "anthropic" ||
-      prefix === "openai" ||
-      UNIMPLEMENTED.has(prefix)
-    ) {
+    if (isProviderPrefix(prefix)) {
       return prefix;
     }
   }
@@ -163,8 +143,11 @@ function providerOf(model: string, explicit: unknown): string {
   if (typeof info?.litellm_provider === "string" && info.litellm_provider) {
     return info.litellm_provider;
   }
-  if (model.toLowerCase().startsWith("claude")) return "anthropic";
-  return "openai";
+  if (info) return "openai";
+  throw new ProviderParityGateError(
+    model,
+    "provider inference outside explicit prefixes and the model catalog",
+  );
 }
 
 function headerMap(value: unknown): Record<string, string> {
@@ -189,6 +172,7 @@ interface SplitKwargs {
   dropParams: boolean;
   timeoutSeconds?: number;
   retries: number;
+  sdkRetries: number;
   extraHeaders: Record<string, string>;
   extraBody?: Record<string, unknown>;
   params: Record<string, unknown>;
@@ -235,12 +219,12 @@ export function splitKwargs(
       for (const key of unsupported) delete params[key];
     }
   }
-  const retries = Math.max(
-    0,
-    Math.trunc(
-      finiteNumber(modelKwargs.num_retries ?? modelKwargs.max_retries) ?? 0,
-    ),
-  );
+  const router =
+    isRecord(modelKwargs.metadata) &&
+    Object.hasOwn(modelKwargs.metadata, "model_group");
+  const retries = router
+    ? 0
+    : Math.max(0, Math.trunc(finiteNumber(modelKwargs.num_retries) ?? 0));
   return {
     apiKey:
       typeof modelKwargs.api_key === "string" ? modelKwargs.api_key : undefined,
@@ -254,6 +238,15 @@ export function splitKwargs(
     dropParams,
     timeoutSeconds: finiteNumber(modelKwargs.timeout),
     retries,
+    sdkRetries: router
+      ? 0
+      : Math.max(
+          0,
+          Math.trunc(
+            finiteNumber(modelKwargs.num_retries ?? modelKwargs.max_retries) ??
+              2,
+          ),
+        ),
     extraHeaders: headerMap(modelKwargs.extra_headers),
     extraBody: isRecord(modelKwargs.extra_body)
       ? modelKwargs.extra_body
@@ -263,9 +256,10 @@ export function splitKwargs(
 }
 
 export function requireProvider(provider: string, allowed: string[]): void {
-  if (UNIMPLEMENTED.has(provider) || !allowed.includes(provider)) {
-    throw new Error(
-      `Transport does not implement provider ${provider}. Supported here: ${allowed.join(", ")}.`,
+  if (!allowed.includes(provider)) {
+    throw new ProviderParityGateError(
+      provider,
+      "API-specific request and response controls have not been established",
     );
   }
 }
@@ -274,48 +268,36 @@ export async function postResponse(
   url: string,
   headers: Record<string, string>,
   body: unknown,
-  signal: AbortSignal | undefined,
-  retries: number,
+  policy: AttemptPolicy,
+  execution?: AttemptDependencies,
 ): Promise<ReceivedResponse> {
-  let attempt = 0;
-  for (;;) {
-    let response: ReceivedResponse;
-    try {
-      response = await receiveResponse(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-        signal,
-      });
-    } catch (error) {
-      if (error instanceof ResponseReadError) throw error.cause;
-      if (signal?.aborted || attempt >= retries) throw error;
-      attempt += 1;
-      continue;
-    }
-    if (response.ok) return response;
-    const error = statusError(
-      response.status,
-      response.text || response.statusText,
-    );
-    Object.assign(error, {
-      rawText: response.text,
-      statusCode: response.status,
-    });
-    const retryable = response.status >= 500 || response.status === 429;
-    if (!retryable || attempt >= retries) throw error;
-    attempt += 1;
-  }
+  const response = await attemptResponse(
+    url,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    },
+    policy,
+    execution,
+  );
+  if (response.ok) return response;
+  const error = statusError(
+    response.status,
+    response.text || response.statusText,
+  );
+  Object.assign(error, { rawText: response.text, statusCode: response.status });
+  throw error;
 }
 
 async function postJson(
   url: string,
   headers: Record<string, string>,
   body: unknown,
-  signal: AbortSignal | undefined,
-  retries: number,
+  policy: AttemptPolicy,
+  execution?: AttemptDependencies,
 ): Promise<Record<string, unknown>> {
-  const received = await postResponse(url, headers, body, signal, retries);
+  const received = await postResponse(url, headers, body, policy, execution);
   let parsed: unknown = {};
   if (received.text) {
     try {
@@ -328,18 +310,6 @@ async function postJson(
     throw new Error("Model response was not a JSON object.");
   }
   return parsed;
-}
-
-export function signalFor(
-  signal: AbortSignal | undefined,
-  timeoutSeconds: number | undefined,
-): AbortSignal | undefined {
-  const timeout =
-    timeoutSeconds === undefined
-      ? undefined
-      : AbortSignal.timeout(timeoutSeconds * 1000);
-  if (signal && timeout) return AbortSignal.any([signal, timeout]);
-  return signal ?? timeout;
 }
 
 function imageBlock(block: Record<string, unknown>): Record<string, unknown> {
@@ -652,7 +622,7 @@ function openaiBody(
   const params = { ...split.params };
   delete params.tools;
   const body: Record<string, unknown> = {
-    model: stripProvider(model, "openai"),
+    model: stripProvider(model, split.provider),
     messages,
     ...(tools ? { tools } : {}),
     ...params,
@@ -740,37 +710,119 @@ export async function completeChat(options: {
   tools?: unknown[];
   modelKwargs?: Record<string, unknown>;
   signal?: AbortSignal;
+  execution?: AttemptDependencies;
 }): Promise<ResponseResult> {
-  const split = splitKwargs(options.model, options.modelKwargs ?? {});
-  requireProvider(split.provider, ["anthropic", "openai"]);
-  const signal = signalFor(options.signal, split.timeoutSeconds);
-  if (split.provider === "anthropic") {
-    const key = split.apiKey || process.env.ANTHROPIC_API_KEY || "";
-    const body = await postJson(
-      joinUrl(split.apiBase || "https://api.anthropic.com", "/v1/messages"),
-      {
-        "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-        ...split.extraHeaders,
-      },
-      anthropicBody(options.model, options.messages, options.tools, split),
-      signal,
-      split.retries,
+  const kwargs = options.modelKwargs ?? {};
+  if (kwargs.fallbacks != null || kwargs.model_list != null) {
+    throw new ProviderParityGateError(
+      "completion",
+      "fallback and model-list dispatch before provider routing",
     );
-    return fromAnthropic(body);
   }
-  const key = split.apiKey || process.env.OPENAI_API_KEY || "";
-  const body = await postJson(
-    joinUrl(split.apiBase || "https://api.openai.com/v1", "/chat/completions"),
+  const split = splitKwargs(options.model, kwargs);
+  if (split.params.stream || split.extraBody?.stream) {
+    throw new ProviderParityGateError(split.provider, "streaming");
+  }
+  const wrapperPolicy: AttemptPolicy = {
+    sdkRetries: 0,
+    wrapperAttempts: split.retries,
+    timeoutSeconds: split.timeoutSeconds,
+    signal: options.signal,
+  };
+  const openai = async (): Promise<ResponseResult> => {
+    const key =
+      split.apiKey ||
+      (split.provider === "openai" ? process.env.OPENAI_API_KEY : "") ||
+      "";
+    return responseOf(
+      await postJson(
+        joinUrl(
+          split.apiBase || "https://api.openai.com/v1",
+          "/chat/completions",
+        ),
+        {
+          "content-type": "application/json",
+          ...(key ? { authorization: `Bearer ${key}` } : {}),
+          ...split.extraHeaders,
+        },
+        openaiBody(options.model, options.messages, options.tools, split),
+        { ...wrapperPolicy, sdkRetries: split.sdkRetries },
+        options.execution,
+      ),
+    );
+  };
+  const handler = chatHandler(
+    split.provider,
+    options.model,
+    kwargs.text_completion === true,
     {
-      "content-type": "application/json",
-      ...(key ? { authorization: `Bearer ${key}` } : {}),
-      ...split.extraHeaders,
+      openai,
+      compatible: async () => {
+        if (!split.apiBase)
+          throw new ProviderParityGateError(
+            split.provider,
+            "default endpoint, credentials, and provider-specific conversion",
+          );
+        return openai();
+      },
+      anthropic: async () => {
+        const key = split.apiKey || process.env.ANTHROPIC_API_KEY || "";
+        return fromAnthropic(
+          await postJson(
+            joinUrl(
+              split.apiBase || "https://api.anthropic.com",
+              "/v1/messages",
+            ),
+            {
+              "content-type": "application/json",
+              "x-api-key": key,
+              "anthropic-version": "2023-06-01",
+              ...split.extraHeaders,
+            },
+            anthropicBody(
+              options.model,
+              options.messages,
+              options.tools,
+              split,
+            ),
+            wrapperPolicy,
+            options.execution,
+          ),
+        );
+      },
+      bedrock: async () => {
+        if (!split.apiBase)
+          throw new ProviderParityGateError(
+            "bedrock",
+            "AWS endpoint selection and SigV4 signing",
+          );
+        if (split.extraBody)
+          throw new ProviderParityGateError(
+            "bedrock",
+            "Converse extra_body mapping",
+          );
+        await postResponse(
+          joinUrl(
+            split.apiBase,
+            `/model/${encodeURIComponent(stripProvider(options.model, "bedrock"))}/converse`,
+          ),
+          { "content-type": "application/json", ...split.extraHeaders },
+          bedrockConverseBody(options.messages, options.tools, split.params),
+          wrapperPolicy,
+          options.execution,
+        );
+        throw new ProviderParityGateError(
+          "bedrock",
+          "Bedrock response conversion and usage remain unproven",
+        );
+      },
+      unproven: (provider) => async () => {
+        throw new ProviderParityGateError(
+          provider,
+          "source-reachable handler body, credentials, and response conversion remain unproven",
+        );
+      },
     },
-    openaiBody(options.model, options.messages, options.tools, split),
-    signal,
-    split.retries,
   );
-  return responseOf(body);
+  return handler();
 }

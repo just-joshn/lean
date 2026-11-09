@@ -1,10 +1,11 @@
 import type { Message } from "../protocols.ts";
 import type { ReceivedResponse } from "./received-response.ts";
+import type { AttemptDependencies } from "./attempt.ts";
+import { ProviderParityGateError } from "./route.ts";
 import {
   joinUrl,
   postResponse,
   requireProvider,
-  signalFor,
   splitKwargs,
   stripProvider,
 } from "./transport.ts";
@@ -358,9 +359,13 @@ export async function completeResponses(options: {
   tools?: unknown[];
   modelKwargs?: Record<string, unknown>;
   signal?: AbortSignal;
+  execution?: AttemptDependencies;
 }): Promise<ResponsesResult> {
   const split = splitKwargs(options.model, options.modelKwargs ?? {});
   requireProvider(split.provider, ["openai"]);
+  if (split.params.stream || split.extraBody?.stream) {
+    throw new ProviderParityGateError(split.provider, "Responses streaming");
+  }
   const params = { ...split.params };
   delete params.tools;
   const key = split.apiKey || process.env.OPENAI_API_KEY || "";
@@ -378,8 +383,13 @@ export async function completeResponses(options: {
       ...params,
       ...(split.extraBody ?? {}),
     },
-    signalFor(options.signal, split.timeoutSeconds),
-    split.retries,
+    {
+      sdkRetries: 0,
+      wrapperAttempts: split.retries,
+      timeoutSeconds: split.timeoutSeconds,
+      signal: options.signal,
+    },
+    options.execution,
   );
   return fromReceived(received);
 }
