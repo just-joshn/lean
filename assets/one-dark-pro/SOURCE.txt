@@ -1,0 +1,9 @@
+One Dark Pro
+Upstream: https://github.com/Binaryify/OneDark-Pro
+Commit: 75c80ab18d90655e05ad837bb8d89f5e68d5ce53
+Extension version: 3.20.6
+File: OneDark-Pro.json
+SHA-256: bd098a63d2fdcb932ea67caaf66eb25a51cda1c2179ff37048fe1db7fe13461f
+License: LICENSE.txt (MIT, copyright 2013-2022 Binaryify)
+
+One Dark Pro does not set button.foreground. The primary button label uses #ffffff, which is VS Code's Color.white fallback for that missing key.

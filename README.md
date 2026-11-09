@@ -237,22 +237,30 @@ The flags below are the whole set. An unknown flag fails before a model call and
 
 Exit 0 means help, sign-in, sign-out, or the task finished. An interactive session also exits 0 when Ctrl-D closes the prompt. Exit 1 means a usage error, a missing prompt, a missing credential, or a failed turn. Exit 130 means Ctrl-C cancelled the process.
 
-## Terminal chat is not in this branch
+## Open the terminal chat
 
-This branch has no `tui` script. `bun run tui` does not start a chat here. The behavior below is from an unfinished terminal chat in another worktree. Do not expect these commands to work on this branch.
+Open the same agent in a terminal chat, or preview the interface without credentials.
+
+```bash
+bun run tui
+bun run tui --demo
+bun run tui --help
+```
 
 That chat needs a terminal. If stdin or stdout is not a terminal, it exits 1 and prints `The TUI needs a terminal.` Otherwise it signs in, or uses an API key, the same way `bun start` does. It accepts `--model`, `--provider`, `--session`, and `--trace`. It does not take a message argument. `--demo` uses no credentials, opens no session file, and runs no commands. Its sample rows are marked `synthetic`. Combining `--demo` with `--provider`, `--session`, or `--trace` is an error.
 
-`/help` lists `/help`, `/theme`, `/model`, `/status`, `/clear`, and `/exit`. Outside `--demo`, `/model <name>` resolves the model for the next turn with the same rules as the line interface. In `--demo`, `/model` accepts only ASCII letters, digits, `_`, `.`, `:`, and `-`. It does not call a provider. `/clear` clears the screen and does not delete the saved session. `/exit` leaves the chat.
+`/help` lists `/help`, `/theme`, `/model`, `/status`, `/clear`, and `/exit`. The chat opens in the `one-dark-pro` theme. `/theme` cycles that theme and the built-in `dark`, `light`, `dimmed`, `high-contrast`, `nord`, and `dracula` presets. `/theme <name>` selects one of those names. `NO_COLOR` or `NO_COLOR=1` keeps every theme monochrome, including after `/theme`. Outside `--demo`, `/model <name>` resolves the model for the next turn with the same rules as the line interface. In `--demo`, `/model` accepts only ASCII letters, digits, `_`, `.`, `:`, and `-`. It does not call a provider. `/clear` clears the screen and does not delete the saved session. `/exit` leaves the chat.
 
-Enter sends the draft. A trailing `\` then Enter inserts a newline only when the draft is one line and the cursor is still at the end.
+Enter sends the draft. After typing a trailing `\`, press Enter to append a newline. This shortcut works only on a single-line draft and uses the caret position from the last edit. It cannot detect later arrow-only caret movement. Multiline paste is supported.
 
-During approval, with an empty draft, `y` or Allow approves a proposed shell command or patch. Enter, Escape, `n`, or Deny rejects it. Page Up and Page Down scroll a long proposal. Nothing runs before you approve it.
+With an empty draft, `y` approves a proposed shell command or patch, and Enter or `n` rejects it. Escape rejects it regardless of the draft. The Allow and Deny buttons also record your decision. Page Up and Page Down scroll a long proposal. Nothing runs before you approve it.
 
 Ctrl-C during a turn cancels that turn and does not quit. The chat saves a turn only after it finishes. A cancelled or failed turn restores the in-memory session from a snapshot taken before the session is cleared. If that restore fails, later turns are refused. A command or patch that already finished stays on disk.
 
-After a turn is saved, and when a saved session is reopened, completed tool calls are paired with their results by call id. The row shows that result's status, or `no result` when the call has no saved result. Ctrl-O opens the selected result when the chat is idle. While the draft is empty, Tab switches Output and Raw result, and Left and Right select another saved result. Escape closes the panel. Unified diff lines on the Output tab are colored. Other output is not. The panel stays closed while a turn is running.
+After a turn is saved, and when a saved session is reopened, completed tool calls are paired with their results by call id. The row shows that result's status, or `no result` when the call has no saved result. Ctrl-O opens the selected result when the chat is idle. While the draft is empty, Tab switches Output and Raw result, and Left and Right select another saved result. Escape closes the panel. The panel stays closed while a turn is running.
+
+With `one-dark-pro` selected, Markdown in the transcript, JSON in a proposal, unified diffs, and recognized file output use that theme's syntax colors. A line that merely starts with `+` or `-` is not treated as a diff. An unknown file type stays readable without a syntax color. Other themes keep their own colors and do not reuse One Dark Pro syntax. Saved sessions store the conversation, not colors or syntax spans. The chat does not change the terminal font, cursor color, or cursor shape, and it does not reproduce VS Code semantic highlighting.
 
 Ctrl-C on an empty draft asks for a second Ctrl-C to exit. The notice is `Press Ctrl+C again to exit.` If the draft is not empty, the first Ctrl-C clears it and shows that notice. `q` does not exit while the prompt is focused.
 
-The screen is created with inline mode and 1024 rows. It does not show a model-call count or the Claude Code command list. During a proposal it shows `Proposed call. Nothing has run.`
+The screen stays in a fixed viewport. The installed Rezi release cannot append each message to the shell scrollback. It does not show a model-call count or the Claude Code command list. During a proposal it shows `Proposed call. Nothing has run.`
