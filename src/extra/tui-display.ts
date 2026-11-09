@@ -8,84 +8,50 @@ type Atom = {
   cells: number;
 };
 
+type Line = {
+  atoms: Atom[];
+  end: number;
+};
+
 type Mode = "ground" | "esc" | "csi" | "osc" | "osc-esc";
 
 export function displayText(raw: string): string {
-  const lines: Atom[][] = [[]];
+  const lines: Line[] = [];
+  let line = blank();
+  lines.push(line);
   let column = 0;
-  let mode: Mode = "ground";
-  let index = 0;
-
-  const line = () => lines[lines.length - 1] ?? [];
-
-  while (index < raw.length) {
-    const code = raw.charCodeAt(index);
-    if (mode === "esc") {
-      index += 1;
-      if (code === 0x5b) mode = "csi";
-      else if (code === 0x5d) mode = "osc";
-      else mode = "ground";
-      continue;
-    }
-    if (mode === "csi") {
-      index += 1;
-      if (code === 0x1b) mode = "esc";
-      else if (code >= 0x40 && code <= 0x7e) mode = "ground";
-      continue;
-    }
-    if (mode === "osc") {
-      index += 1;
-      if (code === 0x07) mode = "ground";
-      else if (code === 0x1b) mode = "osc-esc";
-      continue;
-    }
-    if (mode === "osc-esc") {
-      index += 1;
-      if (code === 0x5c) mode = "ground";
-      else if (code === 0x5b) mode = "csi";
-      else if (code === 0x5d) mode = "osc";
-      else mode = "ground";
-      continue;
-    }
-    if (code === 0x1b) {
-      mode = "esc";
-      index += 1;
-      continue;
-    }
-    if (code === 0x0d) {
-      if (raw.charCodeAt(index + 1) === 0x0a) {
-        index += 1;
-        continue;
+  for (const { segment } of graphemes.segment(stripControls(raw))) {
+    if (hasLayout(segment)) {
+      for (const char of segment) {
+        if (char === "\n") {
+          line = blank();
+          lines.push(line);
+          column = 0;
+          continue;
+        }
+        if (char === "\r") {
+          column = 0;
+          continue;
+        }
+        if (char === "\t") {
+          const width = TAB_STOP - (column % TAB_STOP);
+          column = place(line, column, { text: "\t", cells: width });
+          continue;
+        }
+        const measured = measureTextCells(char);
+        column = place(line, column, {
+          text: char,
+          cells: measured > 0 ? measured : 0,
+        });
       }
-      column = 0;
-      index += 1;
       continue;
     }
-    if (code === 0x0a) {
-      lines.push([]);
-      column = 0;
-      index += 1;
-      continue;
-    }
-    if (code === 0x09) {
-      const width = TAB_STOP - (column % TAB_STOP);
-      column = writeAtom(line(), column, { text: "\t", cells: width });
-      index += 1;
-      continue;
-    }
-    if (code < 0x20 || code === 0x7f) {
-      index += 1;
-      continue;
-    }
-    const segment = graphemeAt(raw, index);
     const measured = measureTextCells(segment);
-    column = writeAtom(line(), column, {
+    column = place(line, column, {
       text: segment,
       cells: measured > 0 ? measured : 0,
     });
-    index += segment.length;
   }
-
   return lines.map(lineText).join("\n");
 }
 
@@ -99,72 +65,130 @@ export function joinSections(parts: readonly string[]): string {
   return out;
 }
 
-function graphemeAt(text: string, index: number): string {
-  const next = graphemes.segment(text.slice(index))[Symbol.iterator]().next();
-  return next.value?.segment ?? text[index] ?? "";
+function blank(): Line {
+  return { atoms: [], end: 0 };
 }
 
-function lineText(atoms: readonly Atom[]): string {
+function hasLayout(segment: string): boolean {
+  return (
+    segment.includes("\n") || segment.includes("\r") || segment.includes("\t")
+  );
+}
+
+function lineText(line: Line): string {
   let text = "";
-  for (const atom of atoms) text += atom.text;
+  for (const atom of line.atoms) text += atom.text;
   return text;
 }
 
-function writeAtom(atoms: Atom[], column: number, atom: Atom): number {
+function place(line: Line, column: number, atom: Atom): number {
   if (atom.text === "") return column;
-  const end = widthOf(atoms);
-  const at = Math.min(column, end);
-  if (at === end) {
-    const last = atoms[atoms.length - 1];
-    if (atom.cells === 0 && last) {
-      last.text += atom.text;
-      return at;
-    }
-    atoms.push(atom);
-    return at + atom.cells;
+  if (atom.cells === 0) return placeMark(line, column, atom.text);
+  if (column >= line.end) {
+    line.atoms.push(atom);
+    line.end += atom.cells;
+    return line.end;
   }
-  const cells = explode(atoms);
-  const incoming =
-    atom.text === "\t" ? Array<string>(atom.cells).fill(" ") : explode([atom]);
-  for (let offset = 0; offset < incoming.length; offset += 1) {
-    const next = incoming[offset];
-    if (next === undefined) continue;
-    const slot = at + offset;
-    if (slot < cells.length) cells[slot] = next;
-    else cells.push(next);
-  }
-  atoms.splice(0, atoms.length, ...collapse(cells));
-  return at + incoming.length;
-}
-
-function widthOf(atoms: readonly Atom[]): number {
-  let total = 0;
-  for (const atom of atoms) total += atom.cells;
-  return total;
-}
-
-function explode(atoms: readonly Atom[]): string[] {
-  const cells: string[] = [];
-  for (const atom of atoms) {
-    if (atom.text === "\t") {
-      for (let index = 0; index < atom.cells; index += 1) cells.push(" ");
+  const writing =
+    atom.text === "\t"
+      ? { text: " ".repeat(atom.cells), cells: atom.cells }
+      : atom;
+  const start = column;
+  const endCol = column + writing.cells;
+  const next: Atom[] = [];
+  let cursor = 0;
+  let inserted = false;
+  for (const current of line.atoms) {
+    const atomStart = cursor;
+    const atomEnd = cursor + current.cells;
+    if (current.cells === 0) {
+      if (atomStart < start || atomStart >= endCol) next.push(current);
       continue;
     }
-    const width = Math.max(atom.cells, atom.text === "" ? 0 : 1);
-    cells.push(atom.text);
-    for (let index = 1; index < width; index += 1) cells.push("\0");
+    cursor = atomEnd;
+    if (atomEnd <= start || atomStart >= endCol) {
+      next.push(current);
+      continue;
+    }
+    const left = Math.max(0, start - atomStart);
+    const right = Math.max(0, atomEnd - endCol);
+    if (left > 0) next.push({ text: " ".repeat(left), cells: left });
+    if (!inserted) {
+      next.push(writing);
+      inserted = true;
+    }
+    if (right > 0) next.push({ text: " ".repeat(right), cells: right });
   }
-  return cells;
+  if (!inserted) next.push(writing);
+  line.atoms = next;
+  line.end = 0;
+  for (const item of next) line.end += item.cells;
+  return endCol;
 }
 
-function collapse(cells: readonly string[]): Atom[] {
-  const atoms: Atom[] = [];
-  for (let index = 0; index < cells.length; index += 1) {
-    const text = cells[index];
-    if (text === undefined || text === "\0") continue;
-    let width = 1;
-    while (cells[index + width] === "\0") width += 1;
-    atoms.push({ text, cells: width });
+function placeMark(line: Line, column: number, text: string): number {
+  if (line.atoms.length === 0 || column >= line.end) {
+    const last = line.atoms[line.atoms.length - 1];
+    if (last && last.text !== "\t") last.text += text;
+    else line.atoms.push({ text, cells: 0 });
+    return column;
   }
-  return atoms;
+  let cursor = 0;
+  for (const [index, atom] of line.atoms.entries()) {
+    const atomEnd = cursor + atom.cells;
+    const covers =
+      atom.cells > 0 ? column >= cursor && column < atomEnd : column === cursor;
+    if (covers) {
+      if (atom.text === "\t") {
+        line.atoms.splice(index + 1, 0, { text, cells: 0 });
+      } else atom.text += text;
+      return column;
+    }
+    if (atom.cells > 0) cursor = atomEnd;
+  }
+  line.atoms.push({ text, cells: 0 });
+  return column;
+}
+
+function stripControls(raw: string): string {
+  const out: string[] = [];
+  let mode: Mode = "ground";
+  for (let index = 0; index < raw.length; index += 1) {
+    const code = raw.charCodeAt(index);
+    const kept = raw.charAt(index);
+    if (mode === "esc") {
+      if (code === 0x5b) mode = "csi";
+      else if (code === 0x5d) mode = "osc";
+      else mode = "ground";
+      continue;
+    }
+    if (mode === "csi") {
+      if (code === 0x1b) mode = "esc";
+      else if (code >= 0x40 && code <= 0x7e) mode = "ground";
+      continue;
+    }
+    if (mode === "osc") {
+      if (code === 0x07) mode = "ground";
+      else if (code === 0x1b) mode = "osc-esc";
+      continue;
+    }
+    if (mode === "osc-esc") {
+      if (code === 0x5c) mode = "ground";
+      else if (code === 0x5b) mode = "csi";
+      else if (code === 0x5d) mode = "osc";
+      else mode = "ground";
+      continue;
+    }
+    if (code === 0x1b) {
+      mode = "esc";
+      continue;
+    }
+    if (code === 0x0d || code === 0x0a || code === 0x09) {
+      out.push(kept);
+      continue;
+    }
+    if (code < 0x20 || code === 0x7f) continue;
+    out.push(kept);
+  }
+  return out.join("");
 }

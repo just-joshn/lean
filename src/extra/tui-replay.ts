@@ -227,7 +227,7 @@ function describe(
     number,
     summary: displayText(summaryOf(call, result)),
     status: displayText(statusOf(result)),
-    output: displayText(outputOf(call, result)),
+    output: outputOf(call, result),
     raw: rawOf(result ?? call ?? { callId }),
     sourcePath: readPath(call),
   };

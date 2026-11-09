@@ -208,7 +208,6 @@ export async function createTuiController(options: {
   let sink: ScreenSink | null = null;
   let publish = false;
   let abort: AbortController | null = null;
-  let stream: AbortController | null = null;
   let rawTurn = "";
   let pending: ((allowed: boolean) => void) | null = null;
   let proposalAt = -1;
@@ -371,11 +370,8 @@ export async function createTuiController(options: {
     });
   }
 
-  function onText(delta: string) {
-    const current = stream;
-    if (!current || current !== abort || current.signal.aborted || stopped) {
-      return;
-    }
+  function onText(controller: AbortController, delta: string) {
+    if (stopped || abort !== controller || controller.signal.aborted) return;
     rawTurn += delta;
     const visible = displayText(rawTurn);
     const transcript = state.transcript.slice();
@@ -750,7 +746,6 @@ export async function createTuiController(options: {
     const start = state.transcript.length;
     const controller = new AbortController();
     abort = controller;
-    stream = controller;
     rawTurn = "";
     streamAt = -1;
     proposalAt = -1;
@@ -772,7 +767,7 @@ export async function createTuiController(options: {
         text,
         model: backendModel,
         signal: controller.signal,
-        onText,
+        onText: (delta) => onText(controller, delta),
         approve,
       });
       if (controller.signal.aborted) throw cancelledError();
@@ -789,11 +784,10 @@ export async function createTuiController(options: {
         }
       }
     } finally {
-      if (stream === controller) {
-        stream = null;
+      if (abort === controller) {
+        abort = null;
         rawTurn = "";
       }
-      if (abort === controller) abort = null;
       streamAt = -1;
       if (pending) {
         const resolveApproval = pending;
