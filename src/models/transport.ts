@@ -212,8 +212,9 @@ export function splitKwargs(
         !allowed.has(key),
     );
     if (unsupported.length > 0 && !dropParams) {
+      const listed = `['${unsupported.join("', '")}']`;
       throw new UnsupportedParamsError(
-        `anthropic does not support parameters: ${JSON.stringify(unsupported)}, for model=${stripProvider(model, "anthropic")}. To drop these, set \`litellm.drop_params=True\` or for proxy:\n\n\`litellm_settings:\n drop_params: true\`\n. \n If you want to use these params dynamically send allowed_openai_params=${JSON.stringify(unsupported)} in your request.`,
+        `anthropic does not support parameters: ${listed}, for model=${stripProvider(model, "anthropic")}. To drop these, set \`litellm.drop_params=True\` or for proxy:\n\n\`litellm_settings:\n drop_params: true\`\n. \n If you want to use these params dynamically send allowed_openai_params=${listed} in your request.`,
       );
     }
     if (dropParams) {

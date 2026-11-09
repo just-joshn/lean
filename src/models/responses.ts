@@ -1,6 +1,7 @@
 import type { Message } from "../protocols.ts";
 import type { ReceivedResponse } from "./received-response.ts";
 import type { AttemptDependencies } from "./attempt.ts";
+import { responsesRequest } from "./responses-request.ts";
 import { ProviderParityGateError } from "./route.ts";
 import {
   joinUrl,
@@ -366,8 +367,14 @@ export async function completeResponses(options: {
   if (split.params.stream || split.extraBody?.stream) {
     throw new ProviderParityGateError(split.provider, "Responses streaming");
   }
-  const params = { ...split.params };
-  delete params.tools;
+  const body = responsesRequest({
+    model: stripProvider(options.model, "openai"),
+    input: options.input,
+    tools: options.tools,
+    params: split.params,
+    dropParams: split.dropParams,
+    apiBase: split.apiBase,
+  });
   const key = split.apiKey || process.env.OPENAI_API_KEY || "";
   const received = await postResponse(
     joinUrl(split.apiBase || "https://api.openai.com/v1", "/responses"),
@@ -377,10 +384,7 @@ export async function completeResponses(options: {
       ...split.extraHeaders,
     },
     {
-      model: stripProvider(options.model, "openai"),
-      input: options.input,
-      ...(options.tools ? { tools: options.tools } : {}),
-      ...params,
+      ...body,
       ...(split.extraBody ?? {}),
     },
     {

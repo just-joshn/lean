@@ -26,6 +26,14 @@ const fixtures: { cases: Fixture[] } = JSON.parse(
     "utf8",
   ),
 );
+const requestFixtures: {
+  cases: { name: string; body?: { input: unknown[] } }[];
+} = JSON.parse(
+  readFileSync(
+    new URL("./fixtures/responses-request.json", import.meta.url),
+    "utf8",
+  ),
+);
 const receive = vi.mocked(receiveResponse);
 
 function received(text: string, status = 200): ReceivedResponse {
@@ -211,11 +219,11 @@ describe("Responses received return", () => {
       const returned = structuredClone(first.output);
       await model().query([first]);
       const sent = JSON.parse(String(receive.mock.calls.at(-1)?.[1].body));
-      expect(sent.input).toEqual(
-        (first.output as Record<string, unknown>[]).map(
-          ({ extra: _extra, ...item }) => item,
-        ),
+      const request = requestFixtures.cases.find(
+        (entry) => entry.name === `return replay ${name}`,
       );
+      if (!request?.body) throw new Error("missing source request fixture");
+      expect(sent.input).toEqual(request.body.input);
       expect(first.output).toEqual(returned);
     },
   );
