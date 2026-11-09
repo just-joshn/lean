@@ -1,0 +1,1272 @@
+{
+  "provenance": "121 finite cases. Outcomes are from the Jinja2 3.1.6 Template oracle for mini-swe-agent strict rendering. The renderer under test is TypeScript on @huggingface/jinja 0.5.11. This fixture is not full Jinja2 equivalence. It does not cover empty or singleton tuple syntax, or the globals cycler, dict, joiner, and lipsum.",
+  "cases": [
+    {
+      "id": "missing-print",
+      "source": "{{ missing }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "missing-attr",
+      "source": "{{ missing.attr }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "missing-attr-default",
+      "source": "{{ missing.attr | default('x') }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "missing-slice",
+      "source": "{{ missing[:1] }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "obj-missing-print",
+      "source": "{{ obj.missing }}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'dict object' has no attribute 'missing'"
+    },
+    {
+      "id": "obj-missing-more",
+      "source": "{{ obj.missing.more }}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'dict object' has no attribute 'missing'"
+    },
+    {
+      "id": "obj-missing-default",
+      "source": "{{ obj.missing | default('x') }}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "ok",
+      "output": "x"
+    },
+    {
+      "id": "obj-missing-if",
+      "source": "{% if obj.missing %}yes{% else %}no{% endif %}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'dict object' has no attribute 'missing'"
+    },
+    {
+      "id": "obj-missing-defined",
+      "source": "{% if obj.missing is defined %}yes{% else %}no{% endif %}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "missing-defined",
+      "source": "{% if missing is defined %}yes{% else %}no{% endif %}",
+      "context": {},
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "missing-defined-print",
+      "source": "{{ missing is defined }}",
+      "context": {},
+      "status": "ok",
+      "output": "False"
+    },
+    {
+      "id": "missing-default",
+      "source": "{{ missing | default('x') }}",
+      "context": {},
+      "status": "ok",
+      "output": "x"
+    },
+    {
+      "id": "missing-default-bool",
+      "source": "{{ missing | default('x', true) }}",
+      "context": {},
+      "status": "ok",
+      "output": "x"
+    },
+    {
+      "id": "default-bare",
+      "source": "{{ missing | default }}",
+      "context": {},
+      "status": "ok",
+      "output": ""
+    },
+    {
+      "id": "empty-default-bool",
+      "source": "{{ name | default('x', true) }}",
+      "context": {
+        "name": ""
+      },
+      "status": "ok",
+      "output": "x"
+    },
+    {
+      "id": "false-default-bool",
+      "source": "{{ flag | default('x', true) }}",
+      "context": {
+        "flag": false
+      },
+      "status": "ok",
+      "output": "x"
+    },
+    {
+      "id": "zero-default",
+      "source": "{{ n | default('x') }}",
+      "context": {
+        "n": 0
+      },
+      "status": "ok",
+      "output": "0"
+    },
+    {
+      "id": "zero-default-bool",
+      "source": "{{ n | default('x', true) }}",
+      "context": {
+        "n": 0
+      },
+      "status": "ok",
+      "output": "x"
+    },
+    {
+      "id": "none-default",
+      "source": "{{ obj.a | default('x') }}",
+      "context": {
+        "obj": {
+          "a": null
+        }
+      },
+      "status": "ok",
+      "output": "None"
+    },
+    {
+      "id": "dead-if",
+      "source": "{% if false %}{{ missing }}{% else %}ok{% endif %}",
+      "context": {},
+      "status": "ok",
+      "output": "ok"
+    },
+    {
+      "id": "dead-else",
+      "source": "{% if true %}ok{% else %}{{ missing }}{% endif %}",
+      "context": {},
+      "status": "ok",
+      "output": "ok"
+    },
+    {
+      "id": "dead-ternary",
+      "source": "{{ missing if false else 'ok' }}",
+      "context": {},
+      "status": "ok",
+      "output": "ok"
+    },
+    {
+      "id": "dead-member",
+      "source": "{% if false %}{{ missing.attr }}{% else %}ok{% endif %}",
+      "context": {},
+      "status": "ok",
+      "output": "ok"
+    },
+    {
+      "id": "nested-dead",
+      "source": "{% if obj.a %}{{ missing }}{% else %}ok{% endif %}",
+      "context": {
+        "obj": {
+          "a": ""
+        }
+      },
+      "status": "ok",
+      "output": "ok"
+    },
+    {
+      "id": "live-ternary-cond",
+      "source": "{{ 'yes' if missing else 'no' }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "and-short",
+      "source": "{% if false and missing %}yes{% else %}no{% endif %}",
+      "context": {},
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "and-throw",
+      "source": "{% if true and missing %}yes{% else %}no{% endif %}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "or-throw",
+      "source": "{{ missing or 'yes' }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "or-skip",
+      "source": "{{ 'yes' or missing }}",
+      "context": {},
+      "status": "ok",
+      "output": "yes"
+    },
+    {
+      "id": "eq-missing",
+      "source": "{{ missing == 1 }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "in-undef",
+      "source": "{{ 'a' in missing }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "not-in-undef",
+      "source": "{{ 'z' not in missing }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "undef-in-list",
+      "source": "{{ missing in ['a'] }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "set-then-defined",
+      "source": "{% set x = missing %}{{ x is defined }}",
+      "context": {},
+      "status": "ok",
+      "output": "False"
+    },
+    {
+      "id": "set-print-keeps-name",
+      "source": "{% set x = missing %}{{ x }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "set-attr",
+      "source": "{% set x = missing.attr %}ok",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "set-obj-defined",
+      "source": "{% set x = obj.missing %}{{ x is defined }}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "ok",
+      "output": "False"
+    },
+    {
+      "id": "set-obj-print",
+      "source": "{% set x = obj.missing %}{{ x }}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'dict object' has no attribute 'missing'"
+    },
+    {
+      "id": "missing-call",
+      "source": "{{ missing() }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "obj-missing-call",
+      "source": "{{ obj.missing() }}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'dict object' has no attribute 'missing'"
+    },
+    {
+      "id": "for-missing",
+      "source": "{% for x in missing %}{{ x }}{% endfor %}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "for-obj-missing",
+      "source": "{% for x in obj.missing %}{{ x }}{% endfor %}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'dict object' has no attribute 'missing'"
+    },
+    {
+      "id": "str-index",
+      "source": "{{ name[0] }}",
+      "context": {
+        "name": "ab"
+      },
+      "status": "ok",
+      "output": "a"
+    },
+    {
+      "id": "neg-index",
+      "source": "{{ name[-1] }}",
+      "context": {
+        "name": "ab"
+      },
+      "status": "ok",
+      "output": "b"
+    },
+    {
+      "id": "index-oob",
+      "source": "{{ name[99] }}",
+      "context": {
+        "name": "ab"
+      },
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "str object has no element 99"
+    },
+    {
+      "id": "slice-oob",
+      "source": "{{ name[99:100] }}",
+      "context": {
+        "name": "ab"
+      },
+      "status": "ok",
+      "output": ""
+    },
+    {
+      "id": "list-oob",
+      "source": "{{ items[5] }}",
+      "context": {
+        "items": [1, 2]
+      },
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "list object has no element 5"
+    },
+    {
+      "id": "neg-list",
+      "source": "{{ items[-1] }}",
+      "context": {
+        "items": [1, 2]
+      },
+      "status": "ok",
+      "output": "2"
+    },
+    {
+      "id": "subscript-missing",
+      "source": "{{ obj['missing'] }}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'dict object' has no attribute 'missing'"
+    },
+    {
+      "id": "subscript-defined",
+      "source": "{% if obj['missing'] is defined %}yes{% else %}no{% endif %}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "empty-list-if",
+      "source": "{% if items %}yes{% else %}no{% endif %}",
+      "context": {
+        "items": []
+      },
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "empty-dict-if",
+      "source": "{% if obj %}yes{% else %}no{% endif %}",
+      "context": {
+        "obj": {}
+      },
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "empty-str-if",
+      "source": "{% if name %}yes{% else %}no{% endif %}",
+      "context": {
+        "name": ""
+      },
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "zero-if",
+      "source": "{% if n %}yes{% else %}no{% endif %}",
+      "context": {
+        "n": 0
+      },
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "nonempty-list-zero",
+      "source": "{% if items %}yes{% else %}no{% endif %}",
+      "context": {
+        "items": [0]
+      },
+      "status": "ok",
+      "output": "yes"
+    },
+    {
+      "id": "nonempty-dict-zero",
+      "source": "{% if obj %}yes{% else %}no{% endif %}",
+      "context": {
+        "obj": {
+          "a": 0
+        }
+      },
+      "status": "ok",
+      "output": "yes"
+    },
+    {
+      "id": "present-none-if",
+      "source": "{% if obj.a %}yes{% else %}no{% endif %}",
+      "context": {
+        "obj": {
+          "a": null
+        }
+      },
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "present-empty-if",
+      "source": "{% if obj.a %}yes{% else %}no{% endif %}",
+      "context": {
+        "obj": {
+          "a": ""
+        }
+      },
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "not-missing",
+      "source": "{{ not missing }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "not-false",
+      "source": "{{ not flag }}",
+      "context": {
+        "flag": false
+      },
+      "status": "ok",
+      "output": "True"
+    },
+    {
+      "id": "false-print",
+      "source": "{{ false }}",
+      "context": {},
+      "status": "ok",
+      "output": "False"
+    },
+    {
+      "id": "true-print",
+      "source": "{{ true }}",
+      "context": {},
+      "status": "ok",
+      "output": "True"
+    },
+    {
+      "id": "none-print",
+      "source": "{{ none }}",
+      "context": {},
+      "status": "ok",
+      "output": "None"
+    },
+    {
+      "id": "eq-print",
+      "source": "{{ 1 == 1 }}",
+      "context": {},
+      "status": "ok",
+      "output": "True"
+    },
+    {
+      "id": "empty-and",
+      "source": "X{{ items and 'yes' }}Y",
+      "context": {
+        "items": []
+      },
+      "status": "ok",
+      "output": "X[]Y"
+    },
+    {
+      "id": "dict-and",
+      "source": "X{{ obj and 'yes' }}Y",
+      "context": {
+        "obj": {}
+      },
+      "status": "ok",
+      "output": "X{}Y"
+    },
+    {
+      "id": "tojson-str",
+      "source": "{{ name | tojson }}",
+      "context": {
+        "name": "a<b>&c'\"é😀"
+      },
+      "status": "ok",
+      "output": "\"a\\u003cb\\u003e\\u0026c\\u0027\\\"\\u00e9\\ud83d\\ude00\""
+    },
+    {
+      "id": "tojson-obj",
+      "source": "{{ obj | tojson }}",
+      "context": {
+        "obj": {
+          "b": 1,
+          "a": "x<y"
+        }
+      },
+      "status": "ok",
+      "output": "{\"a\": \"x\\u003cy\", \"b\": 1}"
+    },
+    {
+      "id": "tojson-indent",
+      "source": "{{ obj | tojson(2) }}",
+      "context": {
+        "obj": {
+          "b": 1,
+          "a": [2, 3]
+        }
+      },
+      "status": "ok",
+      "output": "{\n  \"a\": [\n    2,\n    3\n  ],\n  \"b\": 1\n}"
+    },
+    {
+      "id": "tojson-indent-kw",
+      "source": "{{ obj | tojson(indent=2) }}",
+      "context": {
+        "obj": {
+          "b": 1,
+          "a": "é"
+        }
+      },
+      "status": "ok",
+      "output": "{\n  \"a\": \"\\u00e9\",\n  \"b\": 1\n}"
+    },
+    {
+      "id": "tojson-missing",
+      "source": "{{ missing | tojson }}",
+      "context": {},
+      "status": "err",
+      "name": "TypeError",
+      "message": "Object of type StrictUndefined is not JSON serializable"
+    },
+    {
+      "id": "tojson-obj-missing",
+      "source": "{{ obj.missing | tojson }}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "err",
+      "name": "TypeError",
+      "message": "Object of type StrictUndefined is not JSON serializable"
+    },
+    {
+      "id": "tojson-list",
+      "source": "{{ items | tojson }}",
+      "context": {
+        "items": ["b", "a<"]
+      },
+      "status": "ok",
+      "output": "[\"b\", \"a\\u003c\"]"
+    },
+    {
+      "id": "tojson-nest",
+      "source": "{{ obj | tojson }}",
+      "context": {
+        "obj": {
+          "z": {
+            "b": 1,
+            "a": 2
+          },
+          "m": "é"
+        }
+      },
+      "status": "ok",
+      "output": "{\"m\": \"\\u00e9\", \"z\": {\"a\": 2, \"b\": 1}}"
+    },
+    {
+      "id": "tojson-key-html",
+      "source": "{{ obj | tojson }}",
+      "context": {
+        "obj": {
+          "b<": 1,
+          "a&": "é"
+        }
+      },
+      "status": "ok",
+      "output": "{\"a\\u0026\": \"\\u00e9\", \"b\\u003c\": 1}"
+    },
+    {
+      "id": "tojson-emoji-key",
+      "source": "{{ obj | tojson }}",
+      "context": {
+        "obj": {
+          "😀": 1,
+          "a": 2
+        }
+      },
+      "status": "ok",
+      "output": "{\"a\": 2, \"\\ud83d\\ude00\": 1}"
+    },
+    {
+      "id": "tojson-none",
+      "source": "{{ none | tojson }}",
+      "context": {},
+      "status": "ok",
+      "output": "null"
+    },
+    {
+      "id": "tojson-false",
+      "source": "{{ false | tojson }}",
+      "context": {},
+      "status": "ok",
+      "output": "false"
+    },
+    {
+      "id": "tojson-empty-list",
+      "source": "{{ items | tojson }}",
+      "context": {
+        "items": []
+      },
+      "status": "ok",
+      "output": "[]"
+    },
+    {
+      "id": "tojson-empty-dict",
+      "source": "{{ obj | tojson }}",
+      "context": {
+        "obj": {}
+      },
+      "status": "ok",
+      "output": "{}"
+    },
+    {
+      "id": "tojson-slash",
+      "source": "{{ name | tojson }}",
+      "context": {
+        "name": "a/b\n\t"
+      },
+      "status": "ok",
+      "output": "\"a/b\\n\\t\""
+    },
+    {
+      "id": "tojson-bmp",
+      "source": "{{ name | tojson }}",
+      "context": {
+        "name": "é☃"
+      },
+      "status": "ok",
+      "output": "\"\\u00e9\\u2603\""
+    },
+    {
+      "id": "length-missing",
+      "source": "{{ missing | length }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'missing' is undefined"
+    },
+    {
+      "id": "length-str",
+      "source": "{{ name | length }}",
+      "context": {
+        "name": "abcd"
+      },
+      "status": "ok",
+      "output": "4"
+    },
+    {
+      "id": "sub",
+      "source": "{{ (name | length) - 2 }}",
+      "context": {
+        "name": "abcd"
+      },
+      "status": "ok",
+      "output": "2"
+    },
+    {
+      "id": "cmp",
+      "source": "{% if (name | length) < 10 %}yes{% else %}no{% endif %}",
+      "context": {
+        "name": "abcd"
+      },
+      "status": "ok",
+      "output": "yes"
+    },
+    {
+      "id": "in-list",
+      "source": "{{ 'a' in items }}",
+      "context": {
+        "items": ["a", "b"]
+      },
+      "status": "ok",
+      "output": "True"
+    },
+    {
+      "id": "in-dict",
+      "source": "{{ 'a' in obj }}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "ok",
+      "output": "True"
+    },
+    {
+      "id": "not-in-list",
+      "source": "{% if 'z' not in items %}yes{% else %}no{% endif %}",
+      "context": {
+        "items": ["a"]
+      },
+      "status": "ok",
+      "output": "yes"
+    },
+    {
+      "id": "eq-strings",
+      "source": "{% if name == 'ab' %}yes{% else %}no{% endif %}",
+      "context": {
+        "name": "ab"
+      },
+      "status": "ok",
+      "output": "yes"
+    },
+    {
+      "id": "slice",
+      "source": "{{ name[:3] }}/{{ name[-3:] }}/{{ name[1:5:2] }}/{{ name[::-1] }}",
+      "context": {
+        "name": "abcdef"
+      },
+      "status": "ok",
+      "output": "abc/def/bd/fedcba"
+    },
+    {
+      "id": "slice-step",
+      "source": "{{ name[::-2] }}",
+      "context": {
+        "name": "abcdef"
+      },
+      "status": "ok",
+      "output": "fdb"
+    },
+    {
+      "id": "slice-emoji",
+      "source": "{{ name[:1] }}",
+      "context": {
+        "name": "😀x"
+      },
+      "status": "ok",
+      "output": "😀"
+    },
+    {
+      "id": "list-slice",
+      "source": "{{ items[1:4] }}",
+      "context": {
+        "items": [0, 1, 2, 3, 4]
+      },
+      "status": "ok",
+      "output": "[1, 2, 3]"
+    },
+    {
+      "id": "list-slice-neg",
+      "source": "{{ items[-2:] }}",
+      "context": {
+        "items": [1, 2, 3, 4]
+      },
+      "status": "ok",
+      "output": "[3, 4]"
+    },
+    {
+      "id": "ws-block",
+      "source": "start\n{% if true %}\ninside\n{% endif %}\nend\n",
+      "context": {},
+      "status": "ok",
+      "output": "start\n\ninside\n\nend"
+    },
+    {
+      "id": "ws-minus",
+      "source": "start\n{%- if true -%}\ninside\n{%- endif -%}\nend\n",
+      "context": {},
+      "status": "ok",
+      "output": "startinsideend"
+    },
+    {
+      "id": "ws-lstrip",
+      "source": "start\n  {% if true %}\ninside\n  {% endif %}\nend\n",
+      "context": {},
+      "status": "ok",
+      "output": "start\n  \ninside\n  \nend"
+    },
+    {
+      "id": "comment",
+      "source": "a{# x #}b\n",
+      "context": {},
+      "status": "ok",
+      "output": "ab"
+    },
+    {
+      "id": "ws-spaces",
+      "source": "a \n{% if true %}b{% endif %}\n",
+      "context": {},
+      "status": "ok",
+      "output": "a \nb"
+    },
+    {
+      "id": "loop",
+      "source": "{% for x in items %}{{ loop.index }}:{{ x }}{% if not loop.last %},{% endif %}{% else %}empty{% endfor %}",
+      "context": {
+        "items": ["a", "b"]
+      },
+      "status": "ok",
+      "output": "1:a,2:b"
+    },
+    {
+      "id": "loop-empty",
+      "source": "{% for x in items %}{{ x }}{% else %}empty{% endfor %}",
+      "context": {
+        "items": []
+      },
+      "status": "ok",
+      "output": "empty"
+    },
+    {
+      "id": "loop-obj",
+      "source": "{% for k in obj %}{{ k }}{% endfor %}",
+      "context": {
+        "obj": {
+          "b": 1,
+          "a": 2
+        }
+      },
+      "status": "ok",
+      "output": "ba"
+    },
+    {
+      "id": "loop-last",
+      "source": "{% for x in items %}{{ loop.index0 }}{{ loop.last }}{% endfor %}",
+      "context": {
+        "items": ["a", "b"]
+      },
+      "status": "ok",
+      "output": "0False1True"
+    },
+    {
+      "id": "str-iter",
+      "source": "{% for c in name %}[{{ c }}]{% endfor %}",
+      "context": {
+        "name": "ab"
+      },
+      "status": "ok",
+      "output": "[a][b]"
+    },
+    {
+      "id": "defined-and-in-no",
+      "source": "{% if finish_reason is defined and finish_reason in ['length', 'tool_calls'] %}yes{% else %}no{% endif %}",
+      "context": {},
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "defined-and-in-yes",
+      "source": "{% if finish_reason is defined and finish_reason in ['length', 'tool_calls'] %}yes{% else %}no{% endif %}",
+      "context": {
+        "finish_reason": "length"
+      },
+      "status": "ok",
+      "output": "yes"
+    },
+    {
+      "id": "and-missing-right-skip",
+      "source": "{% if finish_reason == 'tool_calls' and not has_tool_calls %}yes{% else %}no{% endif %}",
+      "context": {
+        "finish_reason": "length"
+      },
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "and-missing-right-live",
+      "source": "{% if finish_reason == 'tool_calls' and not has_tool_calls %}yes{% else %}no{% endif %}",
+      "context": {
+        "finish_reason": "tool_calls"
+      },
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'has_tool_calls' is undefined"
+    },
+    {
+      "id": "dict-repr",
+      "source": "{{ obj }}",
+      "context": {
+        "obj": {
+          "b": 1,
+          "a": "x"
+        }
+      },
+      "status": "ok",
+      "output": "{'b': 1, 'a': 'x'}"
+    },
+    {
+      "id": "list-str-repr",
+      "source": "{{ items[1:3] }}",
+      "context": {
+        "items": ["a", "b<", "c"]
+      },
+      "status": "ok",
+      "output": "['b<', 'c']"
+    },
+    {
+      "id": "mixed-eq",
+      "source": "{% if name == 1 %}yes{% else %}no{% endif %}",
+      "context": {
+        "name": "1"
+      },
+      "status": "ok",
+      "output": "no"
+    },
+    {
+      "id": "range-loop",
+      "source": "{% for i in range(2) %}{{ i }}{% endfor %}",
+      "context": {},
+      "status": "ok",
+      "output": "01"
+    },
+    {
+      "id": "repr-mixed",
+      "source": "{{ items }}",
+      "context": {
+        "items": [
+          true,
+          false,
+          null,
+          {
+            "b": [
+              1,
+              {
+                "a": "x"
+              }
+            ],
+            "a": "y"
+          },
+          ["a", "b"],
+          [],
+          {},
+          "a'b",
+          "c\"d",
+          "e'\"f",
+          "",
+          {
+            "a'b": 1,
+            "c\"d": null
+          }
+        ]
+      },
+      "status": "ok",
+      "output": "[True, False, None, {'b': [1, {'a': 'x'}], 'a': 'y'}, ['a', 'b'], [], {}, \"a'b\", 'c\"d', 'e\\'\"f', '', {\"a'b\": 1, 'c\"d': None}]"
+    },
+    {
+      "id": "repr-escapes",
+      "source": "{{ items }}",
+      "context": {
+        "items": [
+          "\\",
+          "\n\t\r",
+          "\u0000\b\u000b\f\u001f",
+          "é😀",
+          "  ﻿",
+          {
+            "k\n'": "a\"b"
+          }
+        ]
+      },
+      "status": "ok",
+      "output": "['\\\\', '\\n\\t\\r', '\\x00\\x08\\x0b\\x0c\\x1f\\x7f', 'é😀', '\\xa0\\u2028\\ufeff', {\"k\\n'\": 'a\"b'}]"
+    },
+    {
+      "id": "repr-missing",
+      "source": "{{ [missing] }}|{{ {'a': missing} }}|{{ {'a': [obj.missing]} }}",
+      "context": {
+        "obj": {
+          "a": 1
+        }
+      },
+      "status": "ok",
+      "output": "[Undefined]|{'a': Undefined}|{'a': [Undefined]}"
+    },
+    {
+      "id": "repr-top-str",
+      "source": "{{ name }}",
+      "context": {
+        "name": "a'b\"c"
+      },
+      "status": "ok",
+      "output": "a'b\"c"
+    },
+    {
+      "id": "repr-tuple",
+      "source": "{{ (1, 'a', none) }}|{{ [(1, false)] }}",
+      "context": {},
+      "status": "ok",
+      "output": "(1, 'a', None)|[(1, False)]"
+    },
+    {
+      "id": "no-strftime-now",
+      "source": "{{ strftime_now }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'strftime_now' is undefined"
+    },
+    {
+      "id": "no-raise-exception",
+      "source": "{{ raise_exception }}",
+      "context": {},
+      "status": "err",
+      "name": "UndefinedError",
+      "message": "'raise_exception' is undefined"
+    },
+    {
+      "id": "repr-codepoints",
+      "source": "{{ items }}",
+      "context": {
+        "items": [
+          "\u0000",
+          "\u0001",
+          "\u0002",
+          "\u0003",
+          "\u0004",
+          "\u0005",
+          "\u0006",
+          "\u0007",
+          "\b",
+          "\t",
+          "\n",
+          "\u000b",
+          "\f",
+          "\r",
+          "\u000e",
+          "\u000f",
+          "\u0010",
+          "\u0011",
+          "\u0012",
+          "\u0013",
+          "\u0014",
+          "\u0015",
+          "\u0016",
+          "\u0017",
+          "\u0018",
+          "\u0019",
+          "\u001a",
+          "\u001b",
+          "\u001c",
+          "\u001d",
+          "\u001e",
+          "\u001f",
+          " ",
+          "!",
+          "\"",
+          "#",
+          "$",
+          "%",
+          "&",
+          "'",
+          "(",
+          ")",
+          "*",
+          "+",
+          ",",
+          "-",
+          ".",
+          "/",
+          "0",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          ":",
+          ";",
+          "<",
+          "=",
+          ">",
+          "?",
+          "@",
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F",
+          "G",
+          "H",
+          "I",
+          "J",
+          "K",
+          "L",
+          "M",
+          "N",
+          "O",
+          "P",
+          "Q",
+          "R",
+          "S",
+          "T",
+          "U",
+          "V",
+          "W",
+          "X",
+          "Y",
+          "Z",
+          "[",
+          "\\",
+          "]",
+          "^",
+          "_",
+          "`",
+          "a",
+          "b",
+          "c",
+          "d",
+          "e",
+          "f",
+          "g",
+          "h",
+          "i",
+          "j",
+          "k",
+          "l",
+          "m",
+          "n",
+          "o",
+          "p",
+          "q",
+          "r",
+          "s",
+          "t",
+          "u",
+          "v",
+          "w",
+          "x",
+          "y",
+          "z",
+          "{",
+          "|",
+          "}",
+          "~",
+          "",
+          " ",
+          "­",
+          "",
+          " ",
+          " ",
+          "﻿",
+          " ",
+          "​",
+          "￾",
+          "😀",
+          "é",
+          "Ā"
+        ]
+      },
+      "status": "ok",
+      "output": "['\\x00', '\\x01', '\\x02', '\\x03', '\\x04', '\\x05', '\\x06', '\\x07', '\\x08', '\\t', '\\n', '\\x0b', '\\x0c', '\\r', '\\x0e', '\\x0f', '\\x10', '\\x11', '\\x12', '\\x13', '\\x14', '\\x15', '\\x16', '\\x17', '\\x18', '\\x19', '\\x1a', '\\x1b', '\\x1c', '\\x1d', '\\x1e', '\\x1f', ' ', '!', '\"', '#', '$', '%', '&', \"'\", '(', ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?', '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '\\\\', ']', '^', '_', '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~', '\\x7f', '\\xa0', '\\xad', '\\x85', '\\u2028', '\\u2029', '\\ufeff', '\\u1680', '\\u200b', '\\ufffe', '😀', 'é', 'Ā']"
+    }
+  ]
+}
