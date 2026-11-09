@@ -6,6 +6,7 @@ import {
   PermissionDeniedError,
   UnsupportedParamsError,
 } from "./errors.ts";
+import { lookupModelInfo } from "./utils/cost.ts";
 
 export interface ChatResponse {
   choices: Array<{
@@ -336,6 +337,94 @@ function usesAnthropic(model: string): boolean {
   return name.startsWith("anthropic/") || name.startsWith("claude");
 }
 
+const ANTHROPIC_DEFAULT_MAX_TOKENS =
+  pythonInt(process.env.DEFAULT_ANTHROPIC_CHAT_MAX_TOKENS ?? "") ?? 4096;
+
+class APIConnectionError extends Error {
+  constructor(cause: unknown) {
+    super(
+      `litellm.APIConnectionError: ${
+        cause instanceof Error ? cause.message : String(cause)
+      }`,
+      { cause },
+    );
+    this.name = "APIConnectionError";
+  }
+}
+
+function pythonInt(raw: string): number | undefined {
+  const trimmed = raw.trim();
+  if (!/^[+-]?\d(?:_?\d)*$/.test(trimmed)) return undefined;
+  return Number(trimmed.replaceAll("_", ""));
+}
+
+function roundHalfEven(value: number): number {
+  const negative = value < 0;
+  const absolute = Math.abs(value);
+  const floor = Math.floor(absolute);
+  const fraction = absolute - floor;
+  let rounded = floor;
+  if (fraction > 0.5) rounded = floor + 1;
+  else if (fraction === 0.5) rounded = floor % 2 === 0 ? floor : floor + 1;
+  return negative ? -rounded : rounded;
+}
+
+function outputLimitValue(value: unknown): unknown {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number" && Number.isInteger(value)) return value;
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      const error = new Error(
+        Number.isNaN(value)
+          ? "cannot convert float NaN to integer"
+          : "cannot convert float infinity to integer",
+      );
+      error.name = Number.isNaN(value) ? "ValueError" : "OverflowError";
+      throw error;
+    }
+    return Math.max(1, roundHalfEven(value));
+  }
+  const kind = typeof value === "string" ? "str" : typeof value;
+  throw new TypeError(`type ${kind} doesn't define __round__ method`);
+}
+
+function requestedOutputLimit(params: Record<string, unknown>): unknown {
+  let chosen: unknown;
+  let seen = false;
+  for (const key of ["max_tokens", "max_completion_tokens"] as const) {
+    if (!(key in params) || params[key] == null) continue;
+    try {
+      chosen = outputLimitValue(params[key]);
+    } catch (cause) {
+      throw new APIConnectionError(cause);
+    }
+    seen = true;
+  }
+  return seen ? chosen : undefined;
+}
+
+function listedOutputLimit(model: string): unknown {
+  const info = lookupModelInfo(model);
+  if (!info) return undefined;
+  if ("max_output_tokens" in info) {
+    return info.max_output_tokens == null ? undefined : info.max_output_tokens;
+  }
+  if ("max_tokens" in info) {
+    return info.max_tokens == null ? undefined : info.max_tokens;
+  }
+  return undefined;
+}
+
+function anthropicMaxTokens(
+  model: string,
+  params: Record<string, unknown>,
+): unknown {
+  const requested = requestedOutputLimit(params);
+  if (requested !== undefined) return requested;
+  const listed = listedOutputLimit(model);
+  return listed === undefined ? ANTHROPIC_DEFAULT_MAX_TOKENS : listed;
+}
+
 export async function completeChat(options: {
   model: string;
   messages: Message[];
@@ -365,6 +454,9 @@ export async function completeChat(options: {
         },
       ];
     });
+    const maxTokens = anthropicMaxTokens(options.model, kwargs);
+    delete kwargs.max_tokens;
+    delete kwargs.max_completion_tokens;
     const body = await postJson(
       joinUrl(apiBase || "https://api.anthropic.com", "/v1/messages"),
       {
@@ -374,7 +466,7 @@ export async function completeChat(options: {
       },
       {
         model: stripProvider(options.model, "anthropic"),
-        max_tokens: 4096,
+        max_tokens: maxTokens,
         system: converted.system,
         messages: converted.messages,
         tools,

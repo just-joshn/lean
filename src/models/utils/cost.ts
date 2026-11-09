@@ -26,21 +26,73 @@ function loadBuiltin(): Record<string, ModelInfo> {
   return builtin;
 }
 
+function pythonNumericString(value: string): string | number {
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+  if (/[eE.]/.test(trimmed)) {
+    if (!pythonFloat(trimmed)) return value;
+    return Number(trimmed.replaceAll("_", ""));
+  }
+  if (!/^[+-]?\d(?:_?\d)*$/.test(trimmed)) return value;
+  return Number(trimmed.replaceAll("_", ""));
+}
+
+function pythonFloat(trimmed: string): boolean {
+  return /^(?:[+-]?(?:\d(?:_?\d)*(?:\.(?:\d(?:_?\d)*)?)?(?:[eE][+-]?\d(?:_?\d)*)?|\.(?:\d(?:_?\d)*)(?:[eE][+-]?\d(?:_?\d)*)?))$/.test(
+    trimmed,
+  );
+}
+
+function updateDictionary(existing: ModelInfo, incoming: ModelInfo): void {
+  for (const [key, value] of Object.entries(incoming)) {
+    if (value == null) continue;
+    if (typeof value === "string") {
+      existing[key] = pythonNumericString(value);
+      continue;
+    }
+    if (isRecord(value)) {
+      const current = existing[key];
+      existing[key] = isRecord(current)
+        ? { ...current, ...value }
+        : { ...value };
+      continue;
+    }
+    existing[key] = value;
+  }
+}
+
+function registrationKey(
+  key: string,
+  catalog: Record<string, ModelInfo>,
+): string {
+  if (catalog[key]) return key;
+  const slash = key.indexOf("/");
+  if (slash < 0) return key;
+  const rest = key.slice(slash + 1);
+  return catalog[rest] ? rest : key;
+}
+
 export function registerModel(models: Record<string, ModelInfo>): void {
-  Object.assign(registered, models);
+  const catalog = loadBuiltin();
+  for (const [key, value] of Object.entries(models)) {
+    const target = registrationKey(key, catalog);
+    const next: ModelInfo = {
+      ...(registered[target] ?? catalog[target] ?? {}),
+    };
+    updateDictionary(next, value);
+    registered[target] = next;
+  }
 }
 
 export function lookupModelInfo(model: string): ModelInfo | undefined {
   const catalog = loadBuiltin();
-  if (registered[model]) return registered[model];
-  if (catalog[model]) return catalog[model];
+  if (model in registered) return registered[model];
+  if (model in catalog) return catalog[model];
   const slash = model.indexOf("/");
-  if (slash >= 0) {
-    const rest = model.slice(slash + 1);
-    if (registered[rest]) return registered[rest];
-    if (catalog[rest]) return catalog[rest];
-  }
-  return undefined;
+  if (slash < 0) return undefined;
+  const stripped = model.slice(slash + 1);
+  if (stripped in registered) return registered[stripped];
+  return catalog[stripped];
 }
 
 interface UsageParts {
