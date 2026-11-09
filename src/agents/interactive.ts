@@ -8,7 +8,7 @@ import {
 import { KeyboardInterrupt } from "../exceptions.ts";
 import { getContentString } from "../models/utils/content-string.ts";
 import { AgentConfig, DefaultAgent } from "./default.ts";
-import { readPromptLine } from "./prompt.ts";
+import { readBuiltinLimit, readInteractive } from "./prompt.ts";
 
 export class InteractiveAgentConfig extends AgentConfig {
   mode: "human" | "confirm" | "yolo" = "confirm";
@@ -58,7 +58,9 @@ export class InteractiveAgent extends DefaultAgent {
   override readonly type_name =
     "minisweagent.agents.interactive.InteractiveAgent";
   cost_last_confirmed = 0;
-  readLine: (multiline?: boolean) => Promise<string> = readPromptLine;
+  readLine: (lines?: "single" | "multiline") => Promise<string> =
+    readInteractive;
+  readLimit: () => Promise<string> = readBuiltinLimit;
   stdinIsInteractive: () => boolean = () => {
     try {
       return Boolean(process.stdin.isTTY);
@@ -131,9 +133,9 @@ export class InteractiveAgent extends DefaultAgent {
         `Limits exceeded. Limits: ${this.config.step_limit} steps, $${this.config.cost_limit}.\nCurrent spend: ${this.n_calls} steps, $${this.cost.toFixed(2)}.\n`,
       );
       process.stdout.write("New step limit: ");
-      this.config.step_limit = Number.parseInt(await this.readLine(false), 10);
+      this.config.step_limit = Number.parseInt(await this.readLimit(), 10);
       process.stdout.write("New cost limit: ");
-      this.config.cost_limit = Number.parseFloat(await this.readLine(false));
+      this.config.cost_limit = Number.parseFloat(await this.readLimit());
       return await super.query();
     }
   }
@@ -234,7 +236,7 @@ export class InteractiveAgent extends DefaultAgent {
 
   private async prompt(prompt: string, multiline = false): Promise<string> {
     process.stdout.write(visible(prompt));
-    const userInput = await this.readLine(multiline);
+    const userInput = await this.readLine(multiline ? "multiline" : "single");
     if (userInput === "/m") return this.prompt(prompt, true);
     if (userInput === "/h") {
       process.stdout.write(

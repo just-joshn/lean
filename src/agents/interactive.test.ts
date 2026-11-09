@@ -84,7 +84,9 @@ function agent(
     ...data,
   });
   const pending = [...lines];
-  interactive.readLine = async () => pending.shift() ?? "";
+  const take = async () => pending.shift() ?? "";
+  interactive.readLine = take;
+  interactive.readLimit = take;
   interactive.stdinIsInteractive = () => data.interactive !== false;
   return { interactive, env };
 }

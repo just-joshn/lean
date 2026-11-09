@@ -27,6 +27,13 @@ export class KeyboardInterrupt extends Error {
   }
 }
 
+export class EOFError extends Error {
+  constructor(message = "") {
+    super(message);
+    this.name = "EOFError";
+  }
+}
+
 export class RuntimeError extends Error {
   constructor(message: string) {
     super(message);

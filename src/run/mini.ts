@@ -2,7 +2,8 @@ import { existsSync, readFileSync, mkdirSync, appendFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import { getAgent } from "../agents/index.ts";
-import { globalConfigDir, readPromptLine } from "../agents/prompt.ts";
+import { readInteractive, readSetup } from "../agents/prompt.ts";
+import { globalConfigDir } from "../utils/global-config-dir.ts";
 import { builtinConfigDir, getConfigFromSpec } from "../config/index.ts";
 import { getEnvironment } from "../environments/index.ts";
 import { KeyboardInterrupt } from "../exceptions.ts";
@@ -39,14 +40,14 @@ function redact(text: string): string {
 async function setup(): Promise<void> {
   const file = join(globalConfigDir(), ".env");
   process.stdout.write("Enter your default model (leave blank to skip): ");
-  const model = (await readPromptLine(false)).trim();
+  const model = (await readSetup("")).trim();
   if (model) {
     mkdirSync(dirname(file), { recursive: true });
     appendFileSync(file, `MSWEA_MODEL_NAME=${model}\n`);
     process.env.MSWEA_MODEL_NAME ??= model;
   }
   process.stdout.write("Enter an API key (leave blank to skip): ");
-  const key = (await readPromptLine(false)).trim();
+  const key = (await readSetup("")).trim();
   if (key) {
     mkdirSync(dirname(file), { recursive: true });
     const name = key.startsWith("sk-ant-")
@@ -135,10 +136,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     const run = config.run as Record<string, unknown> | undefined;
     let task = run?.task;
     if (typeof task !== "string" || task === "") {
-      if (!process.stdin.isTTY)
-        throw new Error("No task was provided. Pass -t or run in a terminal.");
       process.stdout.write("What do you want to do?\n");
-      task = await readPromptLine(true);
+      task = await readInteractive("multiline");
     }
     const modelConfig =
       (config.model as Record<string, unknown> | undefined) ?? {};
