@@ -120,7 +120,7 @@ export type TuiController = {
   submit(): Promise<void>;
   key(name: string, focusedId?: string | null): boolean;
   consumes(name: string, focusedId: string | null): boolean;
-  resize(cols: number): void;
+  resize(cols: number, rows?: number): void;
   allow(): void;
   deny(): void;
   connect(sink: ScreenSink): void;
@@ -139,6 +139,7 @@ export async function createTuiController(options: {
   theme?: ThemeName;
   noColor?: boolean;
   cols?: number;
+  rows?: number;
   history?: HistoryPort | null;
   redact?: (error: unknown) => string;
   resolveModel?: (name: string) => Promise<string | Model>;
@@ -178,6 +179,7 @@ export async function createTuiController(options: {
     theme: options.theme ?? ONE_DARK_PRO,
     paint: 0,
     cols: options.cols ?? process.stdout.columns ?? 80,
+    rows: Math.max(1, Math.floor(options.rows ?? process.stdout.rows ?? 24)),
     phase: { kind: "idle" },
     blocked: false,
     exitArmed: false,
@@ -909,12 +911,17 @@ export async function createTuiController(options: {
     submit,
     key,
     consumes,
-    resize(cols: number) {
+    resize(cols: number, rows?: number) {
       const next = Math.max(1, Math.floor(cols));
+      const nextRows =
+        rows === undefined
+          ? state.rows
+          : Math.max(1, Math.floor(Number.isFinite(rows) ? rows : 1));
       if (state.phase.kind !== "approval") {
         const count = state.inspector.open ? inspectorLines() : 0;
         patch({
           cols: next,
+          rows: nextRows,
           inspector: state.inspector.open
             ? {
                 ...state.inspector,
@@ -935,6 +942,7 @@ export async function createTuiController(options: {
       ).length;
       patch({
         cols: next,
+        rows: nextRows,
         phase: {
           kind: "approval",
           detail: state.phase.detail,

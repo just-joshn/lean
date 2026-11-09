@@ -72,6 +72,7 @@ export type TuiState = {
   readonly theme: ThemeName;
   readonly paint: number;
   readonly cols: number;
+  readonly rows: number;
   readonly phase: Phase;
   readonly blocked: boolean;
   readonly exitArmed: boolean;
