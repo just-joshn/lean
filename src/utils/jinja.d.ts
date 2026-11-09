@@ -1,5 +1,5 @@
 // The published 0.5.11 declarations use extensionless imports, which nodenext
-// resolves as any. These are the methods and runtime fields render.ts calls.
+// resolves as any.
 declare module "@huggingface/jinja" {
   interface JinjaValue {
     type: string;
