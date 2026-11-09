@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dictionaryOrAttribute } from "../response-access.ts";
+import { ProviderParityGateError } from "../route.ts";
+import { anthropicUsage } from "./usage.ts";
 
 type ModelInfo = Record<string, unknown>;
 
@@ -13,7 +15,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function number(value: unknown): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+  if (value == null) return 0;
+  const parsed =
+    typeof value === "boolean" ||
+    (typeof value === "string" && value.trim() !== "")
+      ? Number(value)
+      : value;
+  if (typeof parsed !== "number" || !Number.isInteger(parsed)) {
+    throw new ProviderParityGateError("billing", "invalid token count");
+  }
+  return parsed;
 }
 
 function loadBuiltin(): Record<string, ModelInfo> {
@@ -98,15 +109,25 @@ export function lookupModelInfo(model: string): ModelInfo | undefined {
 
 interface UsageParts {
   prompt: number;
-  completion: number;
+  inputText: number;
   cached: number;
   created: number;
+  createdFiveMinutes: number | undefined;
+  createdOneHour: number;
+  reasoning: number;
+  outputText: number;
 }
 
 function usageParts(response: unknown): UsageParts {
-  const usage = dictionaryOrAttribute(response, "usage");
-  if (!isRecord(usage)) {
-    return { prompt: 0, completion: 0, cached: 0, created: 0 };
+  const raw = dictionaryOrAttribute(response, "usage");
+  const usage = isRecord(raw) ? raw : {};
+  if (
+    usage.prompt_tokens == null &&
+    usage.input_tokens != null &&
+    ("cache_read_input_tokens" in usage ||
+      "cache_creation_input_tokens" in usage)
+  ) {
+    return usageParts({ usage: anthropicUsage(usage) });
   }
   const details = isRecord(usage.prompt_tokens_details)
     ? usage.prompt_tokens_details
@@ -115,28 +136,88 @@ function usageParts(response: unknown): UsageParts {
       : {};
   let cached = number(details.cached_tokens);
   let created =
-    number(details.cache_creation_tokens) || number(details.cache_write_tokens);
+    number(details.cache_write_tokens) || number(details.cache_creation_tokens);
   if (!cached && usage.cache_read_input_tokens != null)
     cached = number(usage.cache_read_input_tokens);
   if (!created && usage.cache_creation_input_tokens != null) {
     created = number(usage.cache_creation_input_tokens);
   }
-  if (usage.prompt_tokens == null && usage.input_tokens != null) {
-    const read =
-      number(usage.cache_read_input_tokens) || number(details.cached_tokens);
-    const write = number(usage.cache_creation_input_tokens);
-    return {
-      prompt: number(usage.input_tokens) + read + write,
-      completion: number(usage.output_tokens ?? usage.completion_tokens),
-      cached: read,
-      created: write,
-    };
+  const outputDetails = isRecord(usage.completion_tokens_details)
+    ? usage.completion_tokens_details
+    : isRecord(usage.output_tokens_details)
+      ? usage.output_tokens_details
+      : {};
+  for (const detail of [details, outputDetails]) {
+    if (
+      ["audio_tokens", "image_tokens", "video_tokens"].some(
+        (key) => number(detail[key]) > 0,
+      )
+    ) {
+      throw new ProviderParityGateError(
+        "billing",
+        "audio, image, and video token schedules",
+      );
+    }
   }
+  if (
+    usage.cost != null ||
+    usage.server_tool_use != null ||
+    usage.inference_geo != null ||
+    usage.speed != null
+  ) {
+    throw new ProviderParityGateError(
+      "billing",
+      "provider-stated cost, tool charges, geo, and speed schedules",
+    );
+  }
+  if (outputDetails.reasoning_tokens === null) {
+    throw new ProviderParityGateError(
+      "billing",
+      "unreported thinking token count",
+    );
+  }
+  const completion = number(usage.completion_tokens ?? usage.output_tokens);
+  const reasoning = number(outputDetails.reasoning_tokens);
+  let text = number(outputDetails.text_tokens);
+  text -= Math.min(reasoning, text, Math.max(text + reasoning - completion, 0));
+  const prompt = number(usage.prompt_tokens ?? usage.input_tokens);
+  const cachedDetails = isRecord(details.cached_tokens_details)
+    ? details.cached_tokens_details
+    : {};
+  if (
+    number(cachedDetails.audio_tokens) > 0 ||
+    number(cachedDetails.image_tokens) > 0
+  ) {
+    throw new ProviderParityGateError(
+      "billing",
+      "cached audio and image schedules",
+    );
+  }
+  let inputText = Math.max(
+    number(details.text_tokens) -
+      Math.min(number(cachedDetails.text_tokens), cached),
+    0,
+  );
+  if (
+    !inputText ||
+    ((cached > 0 || created > 0) && inputText + cached + created > prompt)
+  ) {
+    inputText = Math.max(prompt - cached - created, 0);
+  }
+  const creation = isRecord(details.cache_creation_token_details)
+    ? details.cache_creation_token_details
+    : undefined;
   return {
-    prompt: number(usage.prompt_tokens),
-    completion: number(usage.completion_tokens),
+    prompt,
+    inputText,
     cached,
     created,
+    createdFiveMinutes: creation
+      ? number(creation.ephemeral_5m_input_tokens)
+      : undefined,
+    createdOneHour: creation ? number(creation.ephemeral_1h_input_tokens) : 0,
+    reasoning,
+    outputText: text || Math.max(completion - reasoning, 0),
   };
 }
 
@@ -173,23 +254,30 @@ function unit(
 ): number | undefined {
   const value = price(info[key]);
   if (value !== undefined) return value;
+  if (info[key] == null) {
+    const suffix = NON_STANDARD_SUFFIXES.find((suffix) => key.includes(suffix));
+    if (suffix) return price(info[key.replace(suffix, "")]) ?? fallback;
+  }
   return fallback;
 }
 
 function thresholdOf(key: string): number {
-  const raw = key.split("_above_")[1]?.split("_tokens")[0] ?? "";
+  const raw = key.split("_above_").at(-1)?.split("_tokens")[0] ?? "";
   const kilo = raw.includes("k");
   return Number(raw.replace("k", "")) * (kilo ? 1000 : 1);
 }
 
-function thresholdKeys(info: ModelInfo): string[] {
+function thresholdKeys(info: ModelInfo, suffix: string): string[] {
   return Object.keys(info)
     .filter((key) => {
       if (!key.includes("_tokens")) return false;
       if (!RATE_PREFIXES.some((prefix) => key.startsWith(`${prefix}_above_`))) {
         return false;
       }
-      return !NON_STANDARD_SUFFIXES.some((suffix) => key.endsWith(suffix));
+      return (
+        !NON_STANDARD_SUFFIXES.some((ending) => key.endsWith(ending)) ||
+        (suffix !== "" && key.endsWith(suffix))
+      );
     })
     .sort((left, right) => thresholdOf(left) - thresholdOf(right));
 }
@@ -240,14 +328,34 @@ interface Rates {
   output: number;
   cacheRead: number;
   cacheCreate: number;
+  cacheCreateOneHour: number;
+  reasoning: number;
 }
 
-function rates(info: ModelInfo, promptTokens: number): Rates | undefined {
+function rates(
+  info: ModelInfo,
+  promptTokens: number,
+  serviceTier: unknown,
+): Rates | undefined {
+  const tierName =
+    typeof serviceTier === "string" ? serviceTier.toLowerCase() : "";
+  const tierSuffixes: Record<string, string> = {
+    flex: "flex",
+    balanced: "balanced",
+    priority: "priority",
+    fast: "priority",
+    ultrafast: "ultrafast",
+  };
+  const suffix = Object.hasOwn(tierSuffixes, tierName)
+    ? `_${tierSuffixes[tierName]}`
+    : "";
+  const rate = (key: string, fallback?: number) =>
+    unit(info, `${key}${suffix}`, fallback);
   const tier = selectTier(info, promptTokens);
   if (tier) {
     const input = tierRate(tier, "input_cost_per_token");
     const output =
-      "output_cost_per_token" in tier && tier.output_cost_per_token != null
+      "output_cost_per_token" in tier
         ? tierRate(tier, "output_cost_per_token")
         : (unit(info, "output_cost_per_token") ?? 0);
     return {
@@ -263,6 +371,18 @@ function rates(info: ModelInfo, promptTokens: number): Rates | undefined {
         "cache_read_input_token_cost",
         "input_cost_per_token",
       ),
+      cacheCreateOneHour:
+        tier.cache_creation_input_token_cost_above_1hr != null
+          ? tierRate(tier, "cache_creation_input_token_cost_above_1hr")
+          : tierRate(
+              tier,
+              "cache_creation_input_token_cost",
+              "input_cost_per_token",
+            ),
+      reasoning:
+        "output_cost_per_reasoning_token" in tier
+          ? tierRate(tier, "output_cost_per_reasoning_token")
+          : (unit(info, "output_cost_per_reasoning_token", output) ?? output),
     };
   }
   if (
@@ -272,31 +392,36 @@ function rates(info: ModelInfo, promptTokens: number): Rates | undefined {
   ) {
     return undefined;
   }
-  let input = unit(info, "input_cost_per_token") ?? 0;
-  let output = unit(info, "output_cost_per_token") ?? 0;
-  let cacheCreate = unit(info, "cache_creation_input_token_cost");
-  let cacheRead = unit(info, "cache_read_input_token_cost");
+  let input = rate("input_cost_per_token") ?? 0;
+  let output = rate("output_cost_per_token") ?? 0;
+  let cacheCreate = rate("cache_creation_input_token_cost");
+  let cacheCreateOneHour = unit(
+    info,
+    "cache_creation_input_token_cost_above_1hr",
+  );
+  let cacheRead = rate("cache_read_input_token_cost");
+  const reasoning = rate("output_cost_per_reasoning_token");
   const inclusive = info.litellm_provider === "xai";
-  for (const key of thresholdKeys(info)) {
+  for (const key of thresholdKeys(info, suffix)) {
     const threshold = thresholdOf(key);
     const crossed = inclusive
       ? promptTokens >= threshold
       : promptTokens > threshold;
     if (!crossed) continue;
-    const label = key.split("_above_")[1]?.split("_tokens")[0];
+    const label = key.split("_above_").at(-1)?.split("_tokens")[0];
     if (!label) continue;
-    input =
-      unit(info, `input_cost_per_token_above_${label}_tokens`, input) ?? input;
+    input = rate(`input_cost_per_token_above_${label}_tokens`, input) ?? input;
     output =
-      unit(info, `output_cost_per_token_above_${label}_tokens`, output) ??
-      output;
-    cacheCreate = unit(
-      info,
+      rate(`output_cost_per_token_above_${label}_tokens`, output) ?? output;
+    cacheCreate = rate(
       `cache_creation_input_token_cost_above_${label}_tokens`,
       cacheCreate,
     );
-    cacheRead = unit(
-      info,
+    cacheCreateOneHour = rate(
+      `cache_creation_input_token_cost_above_1hr_above_${label}_tokens`,
+      cacheCreateOneHour,
+    );
+    cacheRead = rate(
       `cache_read_input_token_cost_above_${label}_tokens`,
       cacheRead,
     );
@@ -306,20 +431,61 @@ function rates(info: ModelInfo, promptTokens: number): Rates | undefined {
     output,
     cacheCreate: cacheCreate ?? input,
     cacheRead: cacheRead ?? input,
+    cacheCreateOneHour: cacheCreateOneHour ?? cacheCreate ?? input,
+    reasoning: reasoning ?? output,
   };
 }
 
 export function completionCost(response: unknown, model: string): number {
-  const info = lookupModelInfo(model);
-  if (!isRecord(dictionaryOrAttribute(response, "usage"))) return 0;
+  const responseModel = dictionaryOrAttribute(response, "model");
+  const info =
+    (typeof responseModel === "string"
+      ? lookupModelInfo(responseModel)
+      : undefined) ?? lookupModelInfo(model);
+  if (!info) throw new Error(`Model ${model} is not in the cost map.`);
+  const usage = dictionaryOrAttribute(response, "usage");
+  if (usage == null) return 0;
+  if (!isRecord(usage))
+    throw new ProviderParityGateError("billing", "unknown usage shape");
+  const provider = info.litellm_provider;
+  if (
+    typeof provider === "string" &&
+    ![
+      "openai",
+      "anthropic",
+      "bedrock",
+      "bedrock_converse",
+      "xai",
+      "dashscope",
+    ].includes(provider)
+  ) {
+    throw new ProviderParityGateError(
+      provider,
+      "provider-specific billing schedule",
+    );
+  }
   const parts = usageParts(response);
-  const priced = info ? rates(info, parts.prompt) : undefined;
+  if (info.off_peak_pricing != null)
+    throw new ProviderParityGateError("billing", "off-peak price windows");
+  const servedTier = dictionaryOrAttribute(response, "service_tier");
+  const tier =
+    typeof servedTier === "string"
+      ? servedTier
+      : dictionaryOrAttribute(usage, "service_tier");
+  const priced = rates(info, parts.prompt, tier);
   if (!priced) throw new Error(`Model ${model} is not in the cost map.`);
-  const regular = Math.max(parts.prompt - parts.cached - parts.created, 0);
-  return (
-    regular * priced.input +
-    parts.cached * priced.cacheRead +
-    parts.created * priced.cacheCreate +
-    parts.completion * priced.output
-  );
+  const regular =
+    info.litellm_provider === "dashscope"
+      ? Math.max(parts.prompt - parts.cached - parts.created, 0)
+      : parts.inputText;
+  const creation =
+    parts.createdFiveMinutes === undefined
+      ? parts.created * priced.cacheCreate
+      : parts.createdFiveMinutes * priced.cacheCreate +
+        parts.createdOneHour * priced.cacheCreateOneHour;
+  const promptCost =
+    regular * priced.input + parts.cached * priced.cacheRead + creation;
+  const outputCost =
+    parts.outputText * priced.output + parts.reasoning * priced.reasoning;
+  return promptCost + outputCost;
 }

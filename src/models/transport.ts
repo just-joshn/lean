@@ -1,5 +1,6 @@
 import type { Message } from "../protocols.ts";
 import { ResponseResult } from "./response-result.ts";
+import { anthropicUsage } from "./utils/usage.ts";
 import { bedrockConverseBody } from "./bedrock.ts";
 import type { ReceivedResponse } from "./received-response.ts";
 import {
@@ -666,10 +667,6 @@ function fromAnthropic(body: Record<string, unknown>): ResponseResult {
     .filter((item) => item)
     .join("");
   const usage = isRecord(body.usage) ? body.usage : {};
-  const input = Number(usage.input_tokens ?? 0);
-  const read = Number(usage.cache_read_input_tokens ?? 0);
-  const created = Number(usage.cache_creation_input_tokens ?? 0);
-  const output = Number(usage.output_tokens ?? 0);
   const stop = body.stop_reason;
   const finish =
     stop === "tool_use"
@@ -694,13 +691,9 @@ function fromAnthropic(body: Record<string, unknown>): ResponseResult {
     message.reasoning_content = reasoning;
   }
   return responseOf({
+    model: body.model,
     choices: [{ finish_reason: finish, message }],
-    usage: {
-      prompt_tokens: input + read + created,
-      completion_tokens: output,
-      cache_read_input_tokens: read,
-      cache_creation_input_tokens: created,
-    },
+    usage: anthropicUsage(usage, thinking.length > 0),
   });
 }
 

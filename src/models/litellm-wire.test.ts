@@ -85,7 +85,11 @@ describe("litellm wire", () => {
           },
         ],
         stop_reason: "tool_use",
-        usage: { input_tokens: 10, output_tokens: 5 },
+        usage: {
+          input_tokens: 10,
+          output_tokens: 5,
+          output_tokens_details: { thinking_tokens: 1 },
+        },
       },
     }));
     const model = getModel("anthropic/claude-sonnet-4-5-20250929", {
