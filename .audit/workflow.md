@@ -1,50 +1,61 @@
-# Parity workflow and design decision
+# Native TypeScript parity workflow
 
 ## Goal
 
-Make Lean run the linked mini-swe-agent behavior at revision `04d809ceab9df28f9adaed044884180159172930`. Keep Lean's AGENTS.md unchanged and keep this work isolated from the original checkout.
+Lean remains an independent TypeScript coding agent. Its agent, model, environment, interactive behavior, and required helpers match mini-swe-agent revision `04d809ceab9df28f9adaed044884180159172930`, version 2.4.6. That revision still matched upstream main when checked after the revised request.
 
-## Rigor
+The former Python launcher design is rejected. Its research checkpoint is `98d7c1a`. No production implementation of that design was made. Python is permitted only as an external development reference, never as Lean's runtime, transport, action parser, or control flow.
 
-This is a breaking runtime replacement. The checks must exercise the actual command, dependency installation, local process effects, saved trajectories, and terminal interactions. Passing TypeScript checks alone is insufficient. Live paid-provider entitlement is not part of deterministic verification and must remain unclaimed.
+## Instructions and isolation
 
-## Architecture
+Use the updated `AGENTS.md` in this worktree. The user committed it in `769023b` and corrected the table label in `de22c8c`. Its current protected Git blob is `937517a3e229ebde8ad857834ddd6da7b64deae7`. Preserve those user commits and bytes. Earlier records of `1b7f0e8` are historical, not instructions to restore an older copy. The original checkout contains unrelated work and stays untouched. Do not append to README.md.
 
-Use a single small Bun entry point that replaces itself with the repository's locked `.venv/bin/mini` executable. The runtime data shape is the executable path, unchanged argument vector, and inherited environment. The launcher never changes the caller's working directory. Python owns all messages, model calls, retries, costs, local processes, terminal interactions, exceptions, and saved trajectories.
+The source's Python-specific implementation rules do not introduce Python into Lean. TypeScript code, Vitest, TypeScript config types, and a TypeScript Jinja implementation provide the corresponding mechanisms. Preserve source behavior where the abbreviated documentation disagrees.
 
-Use the pinned Git package and its complete declared runtime dependency graph in uv.lock. Pin CPython to 3.13.15. Do not copy a hand-authored freeze into another registry. Keep upstream test-only packages in a separate dependency group. Do not install optional Portkey solely as a product requirement.
+## Done predicate
 
-Keep the cookbook imports from `minisweagent`. A custom script runs with the locked interpreter. There is no Lean Python package, RPC, new `lean run` command, or extra interpreter bin.
+The actual Lean command and public TypeScript components pass executable checks for every row in `parity-contract.md`. The production dependency graph contains no Python interpreter, Python mini-swe-agent dependency, or launcher delegation. One Bash-only action interface and one chronological message history are visible in the TypeScript code. The interactive command defaults to confirmation.
 
-Disable Bun's implicit `.env` loading in the executable shebang and package start command. Do not strip environment variables after startup. Do not set upstream global-config, silent-startup, or configured variables in production.
+Verify native and text parsing, ordered tool identifiers, malformed-response accounting and recovery, limits, strict templates, trajectories, local process results and descendant cleanup, interactive rejection and continuation, configuration merging, and component substitution. Compare source behavior through reference fixtures and real local HTTP and PTY scenarios. Type checking alone is not evidence of behavioral parity. Untested provider paths remain unverified, not implicit passes.
 
-## Alternatives and synthesis
+## Rigor and scope
 
-| Alternative | Decision | Reason |
-| --- | --- | --- |
-| Native TypeScript components | Reject | This creates another implementation of dependency-defined behavior instead of inheriting it. |
-| TypeScript loop with Python RPC | Reject | It duplicates control flow and adds an unnecessary protocol. |
-| Candidate A's spawned Python child | Reject | A Bun parent needs a second terminal and signal policy. |
-| Candidate B's process replacement | Use as the base | Python becomes the process the shell waits for and the sole terminal owner. |
-| Runtime pin probes, branded paths and a planner object | Reject | They add a policy layer without improving the required runtime behavior. Check installation metadata and the lock during verification. |
-| Hand-copied dependency freezes | Reject | Both sketches omitted installed packages and included unrelated test extras. Let the package manager resolve and lock the declared graph. |
-| SDK compatibility loop | Reject | The user requested replacement behavior, not a second default runtime. |
+This replaces a tightly coupled SDK-owned runtime and its callers. Use high rigor because control flow, action execution, accounting, persistence, and interactive safety all change. The main production units are shared protocols and helpers, local environment, model adapters, default agent, interactive agent, and run/config composition. Required helpers include native and text actions, recursive merging, templates, multimodal expansion, provider request transformations, retry policy, and cost metadata. Cookbook composition and subclassing must remain possible in TypeScript.
 
-The independent cross-judge agreed with the parent on using B's process model only. Neither candidate's implementation sketch is copied wholesale. A contributes the single resolved lockfile and explicit separation between caller cwd and executable location. B contributes process replacement and suppression of Bun's implicit dotenv behavior.
+Do not expand into unrelated benchmark runners or every backend mentioned in an external link. Track required examples and dependency behavior in the contract. Reject any candidate that hides an omitted requirement behind a new abstraction or assumes an SDK preserves malformed output without testing it.
 
 ## Execution units
 
-1. Capture the old Lean checks and the pinned upstream checks. Verify actual installed source against the pinned source.
-2. Build real-command verification separately. Prove expectations against upstream and demonstrate the old Lean command fails the new contract.
-3. Replace the SDK-owned runtime and all its callers with the minimal launcher. Delete only code and tests made obsolete by that replacement. Verify installation, help and error behavior from another directory before advancing.
-4. Merge the independently written CLI and PTY checks. Run the checks against Lean. Check source metadata, required installed source bytes, and the dependency lock. Run the upstream contract tests against Lean's installed package.
-5. Review comments and code, run formatting, type checks and pre-commit, and inspect the final diff. Commit coherent work and open the PR without merging.
-6. Audit the decision log against this run and have a different model family review it. Report tested parity and remaining gaps without claiming universal proof.
+1. Reuse completed upstream research and baseline evidence. Read the revised instructions, reject the wrapper conclusion, and compare two native designs. Verify dependency APIs against current documentation and installed source. Fix the protocols before implementation fan-out.
+2. Build reference fixtures and failing public-contract checks before replacing each component. Introduce the smallest shared TypeScript shapes and helpers needed by all components. Verify those directly.
+3. Implement the environment and model components behind the fixed protocols. Execute real commands and local provider responses. Check partial output, submission, parsing, transformations, retry and cost failures.
+4. Implement the default and interactive loops. Verify accounting, histories, all flow exceptions, per-iteration saves, human commands, confirmation, and continuation through public component tests.
+5. Migrate the command and custom-script entry points, then delete SDK orchestration and obsolete callers. Exercise the real command and PTY against deterministic provider responses. Verify that no production path delegates to Python.
+6. Independently review the diff and contract coverage. Run formatting, type checks, tests, and pre-commit. Keep coherent linear commits, open a PR without merging, and report verified behavior and remaining gaps precisely.
 
-## Intentional breaks
+## Throughput checkpoint
 
-Remove the SDK-specific agent loop, tools, saved-session protocol, subscription adapters, auth flags, trace flag, and positional-task parser. Old sessions and credentials are left on disk and are not read, converted, or deleted. The command accepts upstream mini flags. AGENTS.md remains a project instruction file but is no longer automatically used as the model's system prompt.
+- Blocking first steps. The updated user instructions, source contract, native data shapes, template behavior, and provider transport boundaries settle before implementation.
+- Independent workstreams. Reference fixture generation and dependency experiments can run separately. One implementation owner coordinates the coupled rewrite and only splits files after shared interfaces are fixed. Verification has independent ownership.
+- Shared mutable state. The original checkout is off limits. Candidate designs have isolated output directories. Concurrent code writers use isolated worktrees. The implementation owner owns integration and package locks.
+- Smallest safe decomposition. Keep one TypeScript component for each core responsibility. Use alternative components for genuinely different model formats or environments. Delete replaced SDK APIs after their callers migrate. Do not retain two competing default runtimes.
 
-Upstream source takes precedence where documentation examples are simplified or stale. The control-flow guide omits the successful return-code check for submission and some error handling. The v2 exception diagram omits TimeExceeded. The cookbook's MSWEA_DEFAULT_RUN variable is not read by this pinned source. Preserve the executable behavior instead of inventing fixes.
+## Decision trail
 
-Do not append to README.md. A separate current-command and migration document must describe setup and intentional incompatibilities. The old README will require a separate update, and that limitation must be explicit in the handoff.
+`.audit/mini-swe-parity.tsv` is append-only. New rows explicitly supersede the rejected wrapper decision. Candidate designs and supporting experiments live in the task store. Final verification checks the real artifact and the trail against the task, not delegate self-reports.
+
+## Implementation checkpoint
+
+The native implementation is committed locally at `240590e3172181db001b3a78668aae4511820242`. Root reran formatting, type checking and all 59 implementation tests successfully. These are component checks, not proof that the parity contract is satisfied.
+
+Root then compared Lean's actual renderer with the development oracle. Only 88 of 121 cases matched. A separate development renderer passed all cases, but that implementation was not integrated. Keep the failing product result and repair the real component before accepting template parity.
+
+Live PTY checks also found that coalesced Escape and Enter do not submit multiline input, and first-run `--help` starts setup. Separate Escape and Enter work in the positive control. The pinned reference shows help without setup under the same isolated conditions. These regressions must be fixed before delivery.
+
+The four independent source reviews have returned. The production review freeze has ended. Corrections now have separate renderer, model, prompt and environment worktrees. A separate integration worktree holds the red public-contract tests, so those tests cannot block green component commits or be silently weakened to get a hook through.
+
+Root ran the corrected 56-case gate against the unchanged native production snapshot. Forty-nine passed and seven failed. Source inspection attributes five failures to remaining test defects and two to the already assigned strict-renderer defect. The false expectations concern a missing template field, a globally registered supposedly unpriced model, serialized class-key nesting and macOS temporary path aliases. Correct the artifacts, not the source behavior. Additional source type errors need honest helper typing and the agreed flexible component boundaries.
+
+Root also reproduced Ctrl-D reaching Environment.execute without approval in a real confirmation PTY with a safe fake environment. The model wire probe confirms leaked drop_params, an empty final Claude tool observation and lost cache metadata. Prompt and model owners must fix those at their actual boundaries. A proposed cache-helper relaxation is rejected because the pinned source asserts one content block. A cache-price claim from a different LiteLLM version is conditional, not an accepted correction.
+
+The next blocking unit settles config subclass hydration, startup ordering, minimal class loading and public protocol types. It does not redesign the central loop. Integrate only reviewed green repairs, then run corrected unit, HTTP/process and CLI/PTY gates. No behavioral exception has been approved. Full state and rerunnable evidence are in `native-implementation-review-status.md` and `native-source-review-triage.md` in the task store.

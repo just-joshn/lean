@@ -1,4 +1,6 @@
-# Mini-swe-agent behavioral contract
+# Native TypeScript behavioral contract
+
+Lean is an independent TypeScript implementation. The Python reference is a development oracle, not a production dependency or execution backend. The earlier wrapper decision is rejected.
 
 ## Revisions
 
@@ -17,9 +19,10 @@ Lean starts at `f61ba882fa19c442dd011b69c63d2777ca709e96`. The target is mini-sw
 | Flow exceptions | Append messages carried by `InterruptAgentFlow`. An `exit` message terminates. Other exceptions add diagnostic exit metadata, save, and rethrow. | `exceptions.py`, `agents/default.py` |
 | Saving | Save in every loop iteration's finally block. Include model statistics, component configs and type identifiers, native messages, exit metadata, version, and `mini-swe-agent-1.1` trajectory format. Recursively merge additional data. | `agents/default.py`, `utils/serialize.py` |
 | Templates | Use strict Jinja rendering. Recursively merge agent, environment, model, live statistics, extra variables, and overrides in that order. | `agents/default.py`, `utils/serialize.py` |
-| Model request | Use LiteLLM completion with the single native `bash` function tool. Strip `extra` before sending messages. Apply model kwargs followed by per-query overrides. | `models/litellm_model.py`, `models/utils/actions_toolcall.py` |
+| Model request | Reproduce LiteLLM completion behavior using TypeScript provider transports with the single native `bash` function tool. Strip `extra` before sending messages. Apply model kwargs followed by per-query overrides. | `models/litellm_model.py`, `models/utils/actions_toolcall.py` |
 | Retries | Retry non-aborting exceptions with the upstream Tenacity policy and environment-controlled attempt count. Do not retry unsupported parameters, missing model, permission, context, authentication, or keyboard interruption errors. | `models/litellm_model.py`, `models/utils/retry.py` |
 | Cost | Register an optional model registry. Require positive calculated cost unless configured to ignore errors. Update global statistics even for responses that fail action parsing. | `models/litellm_model.py`, `models/__init__.py` |
+| Text actions | Provide an alternative model that parses exactly one regex action. Keep its regex and observation formatting in the model, not the agent. Preserve the migrated `mswea_bash_command` default. | `models/utils/actions_text.py`, `models/litellm_textbased_model.py`, `docs/advanced/v2_migration.md` |
 | Actions | Require at least one native tool call. Reject unknown tools, invalid JSON, and missing command keys. Preserve ordered command values and tool call identifiers. Expose finish reason to error templates. | `models/utils/actions_toolcall.py` |
 | Observations | Format one result per action. Pad unexecuted actions with return code -1 and the upstream exception text. Use role `tool` when an identifier exists and role `user` otherwise. Preserve raw output and metadata. | `models/utils/actions_toolcall.py` |
 | Provider helpers | Preserve Anthropic thinking ordering, cache-control placement, multimodal expansion, and upstream content display behavior. | `models/utils/anthropic_utils.py`, `cache_control.py`, `openai_multimodal.py`, `content_string.py` |
@@ -49,7 +52,7 @@ Lean starts at `f61ba882fa19c442dd011b69c63d2777ca709e96`. The target is mini-sw
 
 ## Scope constraints
 
-The original checkout and its uncommitted TUI work remain untouched. Lean's AGENTS.md remains byte-for-byte unchanged. Do not append to README.md. The implementation must remove or explicitly replace obsolete SDK-only execution paths rather than leave a second default agent loop.
+The original checkout and its uncommitted TUI work remain untouched. Preserve the user's updated AGENTS.md and their commits `769023b` and `de22c8c`; its current protected blob is `937517a3e229ebde8ad857834ddd6da7b64deae7`. Earlier `1b7f0e8` records predate the user's committed table-label correction. No production component may delegate to Python. Do not append to README.md. The implementation must remove or explicitly replace obsolete SDK-only execution paths rather than leave a second default agent loop.
 
 ## Design rubric
 
