@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { completeChat } from "./transport.ts";
 import { completeResponses } from "./responses.ts";
 import { receiveResponse, type ReceivedResponse } from "./received-response.ts";
@@ -17,6 +17,8 @@ vi.mock("./received-response.ts", async (importOriginal) => ({
     throw new Error("No network in attempt controls");
   }),
 }));
+
+afterEach(() => vi.unstubAllEnvs());
 
 function received(
   status: number,
@@ -400,7 +402,7 @@ describe("complete-call routing", () => {
         modelKwargs: { api_base: "https://fixture.invalid", num_retries: 0 },
         execution,
       }),
-    ).rejects.toThrow("Bedrock response conversion");
+    ).rejects.toThrow("Converse output message shape");
     expect(execution.receive).toHaveBeenCalledTimes(1);
     const [url, init] = execution.receive.mock.calls[0]!;
     expect(url).toBe(
@@ -435,6 +437,7 @@ describe("complete-call routing", () => {
   ] as const)(
     "%s selects a separate model component",
     (shortcut, ModelClass) => {
+      vi.stubEnv("PORTKEY_API_KEY", "source-fake-key");
       expect(getModelClass("openai/gpt-4o", shortcut)).toBe(ModelClass);
       expect(
         getModelClass(
@@ -447,9 +450,10 @@ describe("complete-call routing", () => {
     },
   );
 
-  test.each([OpenRouterModel, PortkeyModel, RequestyModel])(
-    "dedicated component %s cannot fall through to the LiteLLM transport",
+  test.each([PortkeyModel])(
+    "unproved dedicated component %s cannot fall through to the LiteLLM transport",
     async (ModelClass) => {
+      vi.stubEnv("PORTKEY_API_KEY", "source-fake-key");
       const model = new ModelClass({
         model_name: "openai/gpt-4o",
         litellm_model_registry: null,

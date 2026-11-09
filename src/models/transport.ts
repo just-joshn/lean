@@ -1,7 +1,7 @@
 import type { Message } from "../protocols.ts";
 import { ResponseResult } from "./response-result.ts";
 import { anthropicUsage } from "./utils/usage.ts";
-import { bedrockConverseBody } from "./bedrock.ts";
+import { bedrockConverseBody, bedrockConverseResponse } from "./bedrock.ts";
 import type { ReceivedResponse } from "./received-response.ts";
 import {
   attemptResponse,
@@ -795,19 +795,18 @@ export async function completeChat(options: {
             "bedrock",
             "Converse extra_body mapping",
           );
-        await postResponse(
-          joinUrl(
-            split.apiBase,
-            `/model/${encodeURIComponent(stripProvider(options.model, "bedrock"))}/converse`,
+        return bedrockConverseResponse(
+          await postJson(
+            joinUrl(
+              split.apiBase,
+              `/model/${encodeURIComponent(stripProvider(options.model, "bedrock"))}/converse`,
+            ),
+            { "content-type": "application/json", ...split.extraHeaders },
+            bedrockConverseBody(options.messages, options.tools, split.params),
+            wrapperPolicy,
+            options.execution,
           ),
-          { "content-type": "application/json", ...split.extraHeaders },
-          bedrockConverseBody(options.messages, options.tools, split.params),
-          wrapperPolicy,
-          options.execution,
-        );
-        throw new ProviderParityGateError(
-          "bedrock",
-          "Bedrock response conversion and usage remain unproven",
+          stripProvider(options.model, "bedrock"),
         );
       },
       unproven: (provider) => async () => {

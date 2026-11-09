@@ -303,7 +303,7 @@ describe("litellm wire", () => {
       const query = bedrock.query([{ role: "user", content: "task" }]);
       await expect(query).rejects.toBeInstanceOf(ProviderParityGateError);
       await expect(query).rejects.toThrow(
-        /Bedrock response conversion and usage remain unproven/,
+        /Converse response fields outside the captured text and tool cases/,
       );
     } finally {
       if (previousStop === undefined) {
