@@ -61,6 +61,39 @@ function search(multiline: boolean) {
   return editor;
 }
 
+test.for([0, undefined])(
+  "uses source size defaults for a reported %s",
+  (dimension) => {
+    const chunks: string[] = [];
+    const frame = PromptFrame.open("setup", {
+      columns: dimension,
+      rows: dimension,
+      isTTY: true,
+      write(chunk) {
+        chunks.push(chunk);
+        return true;
+      },
+    });
+    const report = classifyInput({
+      key: "<cursor-position-response>",
+      data: "\x1b[1;1R",
+    });
+    if (report.kind !== "cursor") throw new Error("expected a cursor report");
+    frame.report(report.report);
+    frame.paint(new PromptEditor("a".repeat(81), false), OPEN);
+    expect(chunks.join("")).toBe(
+      FIRST +
+        "\x1b[0m" +
+        "a".repeat(79) +
+        "\r\x1b[79Ca" +
+        "\x1b[0m\r\n\x1b[0ma\x1b[0m" +
+        "\r\n".repeat(22) +
+        "\x1b[0m \b\x1b[22A\x1b[C" +
+        END,
+    );
+  },
+);
+
 test("wraps twelve characters at the full ten columns", () => {
   const { paint } = setup(10, 8);
   expect(paint(new PromptEditor("a".repeat(12), false))).toBe(

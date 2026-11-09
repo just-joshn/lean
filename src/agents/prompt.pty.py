@@ -59,7 +59,14 @@ def pull(timeout: float) -> None:
         output.extend(chunk)
 
 
-wait_for(b"READY", float(spec.get("timeout") or 5))
+readiness = spec["readiness"]
+if readiness["kind"] == "cpr":
+    wait_for(b"\x1b[6n", float(spec.get("timeout") or 5))
+    os.write(master, b"\x1b[1;1R")
+elif readiness["kind"] == "marker":
+    wait_for(readiness["text"].encode("utf-8"), float(spec.get("timeout") or 5))
+else:
+    raise SystemExit(f"unknown readiness {readiness['kind']}")
 for step in spec.get("steps") or []:
     kind = step[0]
     if kind == "sleep":

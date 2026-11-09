@@ -6,13 +6,7 @@ import {
   type Grid,
   type LayoutInput,
 } from "./frame-render.ts";
-import type {
-  ColorDepth,
-  HeightFact,
-  TerminalColumns,
-  TerminalRows,
-  TerminalSize,
-} from "./frame-types.ts";
+import type { ColorDepth, HeightFact, TerminalSize } from "./frame-types.ts";
 import type { KeyPress } from "./parser.ts";
 
 declare const cprRowBrand: unique symbol;
@@ -66,30 +60,11 @@ function isCprColumn(value: number): value is CprColumn {
   return Number.isInteger(value) && value >= 0;
 }
 
-function isTerminalColumns(value: number): value is TerminalColumns {
-  return Number.isInteger(value) && value >= 1;
-}
-
-function isTerminalRows(value: number): value is TerminalRows {
-  return Number.isInteger(value) && value >= 1;
-}
-
-function positive(value: number | undefined): number | undefined {
-  if (value === undefined || !Number.isInteger(value) || value < 1)
-    return undefined;
-  return value;
-}
-
 function terminalSize(
   reportedColumns: number | undefined,
   reportedRows: number | undefined,
 ): TerminalSize {
-  const columns = positive(reportedColumns) ?? 80;
-  const rows = positive(reportedRows) ?? 24;
-  if (!isTerminalColumns(columns) || !isTerminalRows(rows)) {
-    throw new Error("terminal size default was not positive");
-  }
-  return { columns, rows };
+  return { columns: reportedColumns || 80, rows: reportedRows || 24 };
 }
 
 export function classifyInput(key: KeyPress): InputEvent {

@@ -1,12 +1,6 @@
 import type { PromptPresentation } from "./editor.ts";
 import type { PaintPhase } from "./frame.ts";
-import type {
-  ColorDepth,
-  HeightFact,
-  TerminalColumns,
-  TerminalRows,
-  TerminalSize,
-} from "./frame-types.ts";
+import type { ColorDepth, HeightFact, TerminalSize } from "./frame-types.ts";
 import { codePointWidth } from "./width.ts";
 
 type CellStyle =
@@ -35,8 +29,8 @@ type Cell =
 type GridCursor = { readonly row: number; readonly column: number };
 
 export type Grid = {
-  readonly columns: TerminalColumns;
-  readonly rows: TerminalRows;
+  readonly columns: number;
+  readonly rows: number;
   readonly documentScroll: number;
   readonly showCursor: boolean;
   readonly lines: readonly (readonly Cell[])[];

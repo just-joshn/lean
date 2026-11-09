@@ -1,12 +1,6 @@
-declare const columnsBrand: unique symbol;
-declare const rowsBrand: unique symbol;
-
-export type TerminalColumns = number & { readonly [columnsBrand]: "columns" };
-export type TerminalRows = number & { readonly [rowsBrand]: "rows" };
-
 export type TerminalSize = {
-  readonly columns: TerminalColumns;
-  readonly rows: TerminalRows;
+  readonly columns: number;
+  readonly rows: number;
 };
 
 export type HeightFact =

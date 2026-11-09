@@ -10,6 +10,7 @@ import {
   takeAsyncDiagnostics,
 } from "./context.ts";
 import { readInteractive, readSetup } from "./feed.ts";
+import { PromptFrame } from "./frame.ts";
 
 const savedPath = fileURLToPath(
   new URL("./read-lifecycle-cases.jsonl", import.meta.url),
@@ -384,6 +385,56 @@ test.for(rows)(
   },
 );
 
+test("the edited reader asks for CPR rather than a readiness marker", async () => {
+  vi.useFakeTimers();
+  stubReader(true);
+  const { input, output } = install();
+  const settled = readSetup("kept");
+  await started();
+  expect(output.chunks).toContain("\x1b[6n");
+  expect(output.chunks.join("")).not.toContain("READY");
+  input.emitData(Buffer.from("\x1b[1;1R"));
+  input.emitData(Buffer.from("\r"));
+  await expect(settled).resolves.toBe("kept");
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+test("a failure of the background wait replaces earlier cleanup errors", async () => {
+  stubReader(false);
+  const { input, output } = install();
+  const wait = new Error("background-wait");
+  const cancel = PromptFrame.prototype.cancelCprBackgroundAndWait;
+  vi.spyOn(
+    PromptFrame.prototype,
+    "cancelCprBackgroundAndWait",
+  ).mockImplementation(async function (this: PromptFrame) {
+    await cancel.call(this);
+    input.timeline.push("background-wait");
+    throw wait;
+  });
+  const settled = readSetup("kept");
+  await started();
+  output.armed = true;
+  output.doneFault = true;
+  input.armed = true;
+  input.detachFault = true;
+  input.rawFault = true;
+  input.emitData(Buffer.from("\r"));
+  await expect(settled).rejects.toBe(wait);
+  expect(implicitContext(wait)).toEqual([
+    wait,
+    input.sentinel("raw"),
+    input.sentinel("detach"),
+    output.sentinel("done"),
+  ]);
+  expect(input.timeline).toEqual([
+    "detach-exit",
+    "raw-exit",
+    "background-wait",
+  ]);
+  expect(takeAsyncDiagnostics()).toEqual([]);
+});
+
 test("an open-paint failure skips the done redraw and both resets", async () => {
   stubReader(false);
   const { input, output } = install();
@@ -556,3 +607,56 @@ test("a warning write failure stays off the prompt result", async () => {
     process.off("unhandledRejection", onUnhandled);
   }
 });
+
+test.todo(
+  "a second overlapping warning needs a reachable public-reader source control",
+);
+
+test.for(["wait", "erase"] as const)(
+  "a warning prelude $0 failure leaves close waiting on the published gate",
+  async (step) => {
+    vi.resetModules();
+    const { PromptFrame: IsolatedFrame } = await import("./frame.ts");
+    const { readSetup: isolatedRead } = await import("./feed.ts");
+    const { takeAsyncDiagnostics: diagnostics } = await import("./context.ts");
+    vi.useFakeTimers();
+    stubReader(true);
+    const { input, output } = install();
+    const before = process.listeners("SIGINT");
+    const prelude = new Error(`warning-${step}`);
+    const wait = vi.spyOn(IsolatedFrame.prototype, "waitForCprResponses");
+    const erase = vi.spyOn(IsolatedFrame.prototype, "erase");
+    if (step === "wait") wait.mockRejectedValueOnce(prelude);
+    else
+      erase.mockImplementationOnce(() => {
+        throw prelude;
+      });
+    let completed = false;
+    const settled = isolatedRead("kept");
+    void settled.then(
+      () => {
+        completed = true;
+      },
+      () => {
+        completed = true;
+      },
+    );
+    try {
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(
+        diagnostics().map((item) => [item.kind, item.failure.error]),
+      ).toEqual([["cpr-warning", prelude]]);
+      expect(output.chunks).not.toContain(WARNING);
+      input.emitData(Buffer.from("\r"));
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(completed).toBe(false);
+      expect(input.events).toEqual([]);
+      expect(input.isRaw).toBe(true);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      for (const listener of process.listeners("SIGINT")) {
+        if (!before.includes(listener)) process.off("SIGINT", listener);
+      }
+    }
+  },
+);

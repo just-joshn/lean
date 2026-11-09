@@ -116,11 +116,16 @@ function runPty(
     cwd: root,
     cols: options.cols ?? 80,
     timeout: options.timeout ?? 4,
+    readiness:
+      plan[0]?.op === "limit"
+        ? { kind: "marker", text: "READY" }
+        : { kind: "cpr" },
     env: {
       PATH: process.env.PATH ?? "",
       HOME: home,
       MSWEA_GLOBAL_CONFIG_DIR: config,
       PROMPT_PLAN: JSON.stringify(plan),
+      PROMPT_TOOLKIT_NO_CPR: "",
     },
     steps,
   };
