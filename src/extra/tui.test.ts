@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Model } from "@openai/agents";
 import { createTestRenderer } from "@rezi-ui/core";
+import { ONE_DARK_PRO, themeDefinition } from "./tui-theme.ts";
 import { afterEach, expect, test, vi } from "vitest";
 import { openSession, type OpenedSession } from "../session.ts";
 import { main } from "./tui-main.ts";
@@ -38,12 +39,15 @@ async function directory() {
 
 function screen(controller: TuiController, cols = 80, rows = 24): string {
   controller.resize(cols);
-  return createTestRenderer()
-    .render(controller.render(), {
-      focusedId: "prompt",
-      viewport: { cols, rows },
-    })
-    .toText();
+  return frame(controller, cols, rows).toText();
+}
+
+function frame(controller: TuiController, cols = 80, rows = 24) {
+  return createTestRenderer().render(controller.render(), {
+    focusedId: "prompt",
+    viewport: { cols, rows },
+    theme: themeDefinition(controller.state.theme, false),
+  });
 }
 
 function modelFixture(label: string): Model {
@@ -67,8 +71,9 @@ async function controllerFor(options: {
   redact?: (error: unknown) => string;
   resolveModel?: (name: string) => Promise<string | Model>;
   sessionLabel?: string;
+  noColor?: boolean;
 }) {
-  return createTuiController({
+  const controller = await createTuiController({
     driver:
       options.driver ??
       (async (input) => {
@@ -83,7 +88,10 @@ async function controllerFor(options: {
     history: options.history,
     redact: options.redact,
     resolveModel: options.resolveModel,
+    noColor: options.noColor,
   });
+  cleanup.push(() => controller.shutdown());
+  return controller;
 }
 
 test("renders the header and prompt at a normal width", async () => {
@@ -281,6 +289,7 @@ test("restores a cancelled turn and saves the next one", async () => {
       ]);
     },
   });
+  cleanup.push(() => controller.shutdown());
   controller.editDraft("bad turn");
   const cancelled = controller.submit();
   await expect.poll(() => controller.state.phase.kind).toBe("running");
@@ -510,6 +519,7 @@ test("clear hides the screen and leaves saved items untouched", async () => {
       throw new Error("clear does not call the model");
     },
   });
+  cleanup.push(() => controller.shutdown());
   expect(screen(controller)).toContain("keep apricot");
   controller.editDraft("/clear");
   await controller.submit();
@@ -656,6 +666,8 @@ test("pairs saved calls and results by call id", () => {
   expect(actions[0]?.output).toBe("BETA");
   expect(actions[1]?.output).toBe("ALPHA");
   expect(actions[2]?.output).toBe("apricot");
+  expect(actions[2]?.sourcePath).toBe("note.txt");
+  expect(actions[0]?.sourcePath).toBeNull();
   expect(actions[3]?.output).toContain("+new");
   expect(actions[3]?.output).toContain("nope");
   expect(actions[0]?.raw).toContain("BETA");
@@ -785,10 +797,7 @@ test("colors only unified diff lines", async () => {
   controller.resize(100);
   expect(controller.key("ctrl+o")).toBe(true);
   expect(controller.key("left")).toBe(true);
-  const diff = createTestRenderer().render(controller.render(), {
-    focusedId: "prompt",
-    viewport: { cols: 100, rows: 32 },
-  });
+  const diff = frame(controller, 100, 32);
   const added = diff.ops.find(
     (op) => op.kind === "drawText" && op.text.includes("+new"),
   );
@@ -798,12 +807,10 @@ test("colors only unified diff lines", async () => {
   if (added?.kind !== "drawText" || removed?.kind !== "drawText") {
     throw new Error("diff lines were not drawn");
   }
-  expect(added.style?.fg).not.toBe(removed.style?.fg);
+  expect(added.style?.fg).toBe(0x98c379);
+  expect(removed.style?.fg).toBe(0xe06c75);
   expect(controller.key("right")).toBe(true);
-  const plain = createTestRenderer().render(controller.render(), {
-    focusedId: "prompt",
-    viewport: { cols: 100, rows: 32 },
-  });
+  const plain = frame(controller, 100, 32);
   const plus = plain.ops.find(
     (op) => op.kind === "drawText" && op.text.includes("+not-a-diff"),
   );
@@ -853,6 +860,7 @@ test("ctrl+c during approval denies the call and still allows the next save", as
       ]);
     },
   });
+  cleanup.push(() => controller.shutdown());
   controller.editDraft("bad turn");
   const cancelled = controller.submit();
   await expect.poll(() => controller.state.phase.kind).toBe("approval");
@@ -873,6 +881,132 @@ test("ctrl+c during approval denies the call and still allows the next save", as
   expect(saved).toContain("saved-ok");
   expect(saved).not.toContain("bad turn");
 });
+
+test("paints One Dark Pro across chrome, code, and theme changes", async () => {
+  const controller = await controllerFor({
+    history: {
+      getItems: async () => [
+        {
+          type: "function_call",
+          callId: "call_read",
+          name: "read",
+          arguments: '{"path":"main.ts"}',
+        },
+        {
+          type: "function_call_result",
+          callId: "call_read",
+          name: "read",
+          status: "completed",
+          output: { type: "text", text: "const count = 1;" },
+        },
+      ],
+      restore: async () => {},
+      save: async () => {},
+      close: async () => {},
+    },
+  });
+  expect(controller.state.theme).toBe(ONE_DARK_PRO);
+  const painted = frame(controller, 100, 32);
+  expect(cell(painted, "Lean")).toMatchObject({ fg: 0xabb2bf, bg: 0x282c34 });
+  expect(cell(painted, "*")?.fg).toBe(0x61afef);
+  controller.editDraft("/h");
+  const menu = frame(controller, 100, 32);
+  expect(cell(menu, "> /help")?.bg).toBe(0x2c313a);
+  expect(cell(menu, "> /help")?.fg).toBe(0xd7dae0);
+  controller.editDraft("");
+  expect(controller.key("ctrl+o")).toBe(true);
+  const output = frame(controller, 100, 32);
+  expect(cell(output, "const")?.fg).toBe(0xc678dd);
+  expect(cell(output, "Output")).toMatchObject({ fg: 0xdcdcdc, bg: 0x282c34 });
+  expect(JSON.stringify(controller.state.transcript)).not.toContain("#C678DD");
+  controller.editDraft("/theme nord");
+  await controller.submit();
+  expect(controller.state.theme).toBe("nord");
+  const nord = createTestRenderer().render(controller.render(), {
+    focusedId: "prompt",
+    viewport: { cols: 100, rows: 32 },
+    theme: themeDefinition("nord", false),
+  });
+  expect(cell(nord, "const")?.fg).not.toBe(0xc678dd);
+  expect(cell(nord, "Lean")?.bg).not.toBe(0x282c34);
+});
+
+test("keeps NO_COLOR monochrome when the theme changes", async () => {
+  const controller = await controllerFor({
+    noColor: true,
+    history: {
+      getItems: async () => [
+        { role: "assistant", content: "const count = 1;" },
+      ],
+      restore: async () => {},
+      save: async () => {},
+      close: async () => {},
+    },
+  });
+  const quiet = createTestRenderer().render(controller.render(), {
+    focusedId: "prompt",
+    viewport: { cols: 80, rows: 24 },
+    theme: themeDefinition(controller.state.theme, true),
+  });
+  expect(cell(quiet, "const")?.fg).toBe(0xabb2bf);
+  expect(cell(quiet, "Lean")?.fg).toBe(0xabb2bf);
+  controller.editDraft("/theme nord");
+  await controller.submit();
+  const switched = createTestRenderer().render(controller.render(), {
+    focusedId: "prompt",
+    viewport: { cols: 80, rows: 24 },
+    theme: themeDefinition(controller.state.theme, true),
+  });
+  expect(controller.state.theme).toBe("nord");
+  expect(cell(switched, "const")?.fg).toBe(cell(switched, "Lean")?.fg);
+  expect(cell(switched, "const")?.fg).not.toBe(0xc678dd);
+});
+
+test("colors approval, cancellation, and the synthetic demo sample", async () => {
+  const demo = await controllerFor({ demo: true, driver: demoDriver() });
+  const sample = frame(demo, 80, 40);
+  expect(sample.toText()).toContain("Synthetic sample. Nothing was executed.");
+  expect(sample.toText()).toContain("synthetic-fixture");
+  expect(cell(sample, "const")).toMatchObject({ fg: 0xc678dd, bold: false });
+  expect(cell(sample, "ready")).toMatchObject({ fg: 0xe5c07b });
+
+  let approved = true;
+  const controller = await controllerFor({
+    driver: async (input) => {
+      approved = await input.approve('{"tool":"shell"}');
+      if (!approved) {
+        const error = new Error("cancelled");
+        error.name = "AbortError";
+        throw error;
+      }
+    },
+  });
+  controller.editDraft("please tool");
+  const pending = controller.submit();
+  await expect.poll(() => controller.state.phase.kind).toBe("approval");
+  const proposal = frame(controller, 80, 24);
+  expect(cell(proposal, "Allow")).toMatchObject({ fg: 0x8cc265, bg: 0x30333d });
+  expect(cell(proposal, "Deny")).toMatchObject({ fg: 0xc24038, bg: 0x30333d });
+  expect(cell(proposal, "{")?.fg).toBe(0xabb2bf);
+  expect(cell(proposal, '"tool"')?.fg).toBe(0xe06c75);
+  controller.key("ctrl+c");
+  await pending;
+  const cancelled = frame(controller, 100, 32);
+  expect(
+    cell(cancelled, "Cancelled. Completed tool side effects are not undone.")
+      ?.fg,
+  ).toBe(0xd19a66);
+});
+
+function cell(
+  rendered: ReturnType<ReturnType<typeof createTestRenderer>["render"]>,
+  label: string,
+) {
+  const op = rendered.ops.find(
+    (item) => item.kind === "drawText" && item.text.includes(label),
+  );
+  return op?.kind === "drawText" ? op.style : undefined;
+}
 
 function sessionPort(opened: OpenedSession): HistoryPort {
   return {

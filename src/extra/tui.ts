@@ -1,17 +1,27 @@
 import type { Model } from "@openai/agents";
-import { themePresets, type ThemePresetName, type VNode } from "@rezi-ui/core";
+import type { VNode } from "@rezi-ui/core";
+import { createPainter } from "./tui-highlight.ts";
 import { demoActions, plain, replayItems } from "./tui-replay.ts";
 import {
+  ONE_DARK_PRO,
+  isThemeName,
+  noColorEnabled,
+  themeNames,
+  type NoticeTone,
+  type ThemeName,
+} from "./tui-theme.ts";
+import {
   commands,
-  proposalLines,
+  inspectorRows,
+  proposalRows,
   recordedActions,
   renderTui,
   slashMatches,
   transcriptRows,
-  wrapLines,
   type CommandName,
   type InspectorState,
   type InspectorTab,
+  type PaintFace,
   type Phase,
   type TuiState,
   type TranscriptEntry,
@@ -41,7 +51,7 @@ export type HistoryPort = {
 
 type ScreenSink = {
   update(state: TuiState): void;
-  setTheme(theme: ThemePresetName): void;
+  setTheme(theme: ThemeName): void;
 };
 
 const closedInspector: InspectorState = {
@@ -81,18 +91,26 @@ function cloneItems(items: readonly unknown[]): readonly unknown[] {
   return structuredClone(items);
 }
 
-function isTheme(value: string): value is ThemePresetName {
-  return Object.prototype.hasOwnProperty.call(themePresets, value);
-}
-
 function opening(demo: boolean): TranscriptEntry {
   return {
     kind: "notice",
+    tone: "info",
     text: demo
       ? "Demo mode. No credentials, no shell, and no saved history."
       : "Lean asks before a shell command or a patch. /help lists commands.",
   };
 }
+
+const demoSample: TranscriptEntry = {
+  kind: "assistant",
+  text: [
+    "Synthetic sample. Nothing was executed.",
+    "",
+    "```ts",
+    "const ready = true;",
+    "```",
+  ].join("\n"),
+};
 
 export type TuiController = {
   readonly state: TuiState;
@@ -118,12 +136,20 @@ export async function createTuiController(options: {
   sessionLabel: string;
   demo: boolean;
   trace?: boolean;
-  theme?: ThemePresetName;
+  theme?: ThemeName;
+  noColor?: boolean;
   cols?: number;
   history?: HistoryPort | null;
   redact?: (error: unknown) => string;
   resolveModel?: (name: string) => Promise<string | Model>;
 }): Promise<TuiController> {
+  const noColor = options.noColor ?? noColorEnabled(process.env);
+  let invalidatePaint = () => {};
+  const painter = await createPainter({
+    noColor,
+    onReady: () => invalidatePaint(),
+  });
+  const face: PaintFace = { painter, noColor };
   const history = options.history ?? null;
   const redact =
     options.redact ??
@@ -132,8 +158,14 @@ export async function createTuiController(options: {
       const key = process.env.OPENAI_API_KEY;
       return key ? message.split(key).join("[redacted]") : message;
     });
-  const replayed =
-    history && !options.demo ? replayItems(await history.getItems()) : [];
+  let replayed: ReturnType<typeof replayItems> = [];
+  try {
+    replayed =
+      history && !options.demo ? replayItems(await history.getItems()) : [];
+  } catch (error) {
+    painter.dispose();
+    throw error;
+  }
   let backendModel = options.model;
   let draftCursor = 0;
   let state: TuiState = {
@@ -143,7 +175,8 @@ export async function createTuiController(options: {
     providerLabel: options.providerLabel,
     sessionLabel: options.sessionLabel,
     trace: options.trace === true,
-    theme: options.theme ?? "dark",
+    theme: options.theme ?? ONE_DARK_PRO,
+    paint: 0,
     cols: options.cols ?? process.stdout.columns ?? 80,
     phase: { kind: "idle" },
     blocked: false,
@@ -153,6 +186,7 @@ export async function createTuiController(options: {
     transcript: options.demo
       ? [
           opening(true),
+          demoSample,
           ...demoActions().map((action) => ({
             kind: "action" as const,
             action,
@@ -191,6 +225,11 @@ export async function createTuiController(options: {
     closeInspector,
   };
 
+  invalidatePaint = () => {
+    if (stopped) return;
+    commit({ ...state, paint: state.paint + 1 });
+  };
+
   function commit(next: TuiState) {
     if (stopped) return;
     state = next;
@@ -201,13 +240,15 @@ export async function createTuiController(options: {
     commit({ ...state, ...partial });
   }
 
-  function notice(text: string) {
+  function notice(text: string, tone: NoticeTone = "info") {
     if (stopped) return;
-    patch({ transcript: [...state.transcript, { kind: "notice", text }] });
+    patch({
+      transcript: [...state.transcript, { kind: "notice", text, tone }],
+    });
   }
 
   function fail(error: unknown) {
-    notice(redact(error));
+    notice(redact(error), "error");
   }
 
   function editDraft(text: string, cursor = text.length) {
@@ -243,10 +284,12 @@ export async function createTuiController(options: {
       (item) => item.callId === state.inspector.callId,
     );
     if (!action) return 1;
-    const body = state.inspector.tab === "raw" ? action.raw : action.output;
-    return wrapLines(
-      body.length > 0 ? body : "(empty)",
-      Math.max(10, state.cols - 1),
+    return inspectorRows(
+      action,
+      state.inspector.tab,
+      state.cols,
+      state.theme,
+      face,
     ).length;
   }
 
@@ -306,6 +349,7 @@ export async function createTuiController(options: {
     if (current?.kind === "tool") {
       transcript[proposalAt] = {
         kind: "tool",
+        tone: allowed ? "success" : "warning",
         text: allowed
           ? "Allowed. The turn is still running."
           : "Denied. The proposed call was not approved.",
@@ -327,7 +371,11 @@ export async function createTuiController(options: {
         inspector: { ...state.inspector, open: false, offset: 0 },
         transcript: [
           ...state.transcript,
-          { kind: "tool", text: "Proposed call. Nothing has run." },
+          {
+            kind: "tool",
+            tone: "info",
+            text: "Proposed call. Nothing has run.",
+          },
         ],
       });
     });
@@ -375,14 +423,20 @@ export async function createTuiController(options: {
         exitArmed: true,
         recall: null,
         stash: null,
-        transcript: [...state.transcript, { kind: "notice", text: EXIT_HINT }],
+        transcript: [
+          ...state.transcript,
+          { kind: "notice", tone: "info", text: EXIT_HINT },
+        ],
       });
       return;
     }
     if (!state.exitArmed) {
       patch({
         exitArmed: true,
-        transcript: [...state.transcript, { kind: "notice", text: EXIT_HINT }],
+        transcript: [
+          ...state.transcript,
+          { kind: "notice", tone: "info", text: EXIT_HINT },
+        ],
       });
       return;
     }
@@ -430,7 +484,12 @@ export async function createTuiController(options: {
 
   function onPage(direction: -1 | 1) {
     if (state.phase.kind === "approval") {
-      const count = proposalLines(state.phase.detail, state.cols).length;
+      const count = proposalRows(
+        state.phase.detail,
+        state.cols,
+        state.theme,
+        face,
+      ).length;
       patch({
         phase: {
           kind: "approval",
@@ -456,7 +515,9 @@ export async function createTuiController(options: {
       });
       return;
     }
-    const last = transcriptRows(state.transcript, state.cols).length - 1;
+    const last =
+      transcriptRows(state.transcript, state.cols, state.theme, face).length -
+      1;
     if (last < 0) return;
     const current =
       state.anchor === null ? last : Math.max(0, Math.min(last, state.anchor));
@@ -583,15 +644,19 @@ export async function createTuiController(options: {
       return;
     }
     if (name === "theme") {
-      const names = Object.keys(themePresets) as ThemePresetName[];
+      const names = themeNames();
       const requested = arg.trim();
       const next = requested
-        ? isTheme(requested)
+        ? isThemeName(requested)
           ? requested
           : null
-        : (names[(names.indexOf(state.theme) + 1) % names.length] ?? "dark");
+        : (names[(names.indexOf(state.theme) + 1) % names.length] ??
+          ONE_DARK_PRO);
       if (!next) {
-        notice(`Unknown theme "${requested}". Themes: ${names.join(", ")}.`);
+        notice(
+          `Unknown theme "${requested}". Themes: ${names.join(", ")}.`,
+          "warning",
+        );
         return;
       }
       patch({ theme: next });
@@ -617,7 +682,7 @@ export async function createTuiController(options: {
         patch({ modelLabel });
         notice(`Model is ${modelLabel}.`);
       } catch (error) {
-        notice(redact(error));
+        notice(redact(error), "error");
       }
       return;
     }
@@ -642,6 +707,7 @@ export async function createTuiController(options: {
         transcript: [
           {
             kind: "notice",
+            tone: "info",
             text: "Cleared the screen. Saved history was not deleted.",
           },
         ],
@@ -678,7 +744,7 @@ export async function createTuiController(options: {
       if (history && !options.demo)
         before = cloneItems(await history.getItems());
     } catch (error) {
-      notice(redact(error));
+      notice(redact(error), "error");
       return;
     }
     if (stopped) return;
@@ -742,7 +808,11 @@ export async function createTuiController(options: {
         draft: { text, key: state.draft.key + 1 },
         transcript: [
           ...state.transcript.slice(0, start),
-          { kind: "notice", text: message || CANCELLED },
+          {
+            kind: "notice",
+            tone: controller.signal.aborted && !blocked ? "warning" : "error",
+            text: message || CANCELLED,
+          },
         ],
       });
       draftCursor = text.length;
@@ -752,7 +822,7 @@ export async function createTuiController(options: {
     try {
       await replaceSavedTurn(start, before);
     } catch (error) {
-      notice(redact(error));
+      notice(redact(error), "error");
     }
   }
 
@@ -762,6 +832,9 @@ export async function createTuiController(options: {
         state.blocked && !busy && state.phase.kind === "idle"
           ? "Turns are refused because restoring the session failed."
           : WAIT,
+        state.blocked && !busy && state.phase.kind === "idle"
+          ? "error"
+          : "info",
       );
       return;
     }
@@ -818,6 +891,7 @@ export async function createTuiController(options: {
       } catch (error) {
         process.stderr.write(`${redact(error)}\n`);
       }
+      painter.dispose();
       sink = null;
       finish();
     })();
@@ -830,7 +904,7 @@ export async function createTuiController(options: {
       return state;
     },
     done,
-    render: () => renderTui(state, handlers),
+    render: () => renderTui(state, handlers, face),
     editDraft,
     submit,
     key,
@@ -853,7 +927,12 @@ export async function createTuiController(options: {
         });
         return;
       }
-      const count = proposalLines(state.phase.detail, next).length;
+      const count = proposalRows(
+        state.phase.detail,
+        next,
+        state.theme,
+        face,
+      ).length;
       patch({
         cols: next,
         phase: {

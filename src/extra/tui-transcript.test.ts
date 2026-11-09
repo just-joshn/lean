@@ -1,7 +1,14 @@
 import { createTestRenderer } from "@rezi-ui/core";
-import { expect, test } from "vitest";
+import { afterEach, expect, test } from "vitest";
 import { wrapLines } from "./tui-view.ts";
 import { createTuiController, type HistoryPort } from "./tui.ts";
+import { themeDefinition } from "./tui-theme.ts";
+
+const cleanup: (() => Promise<void>)[] = [];
+
+afterEach(async () => {
+  for (const close of cleanup.splice(0).reverse()) await close();
+});
 
 function history(items: unknown[] = []): HistoryPort {
   return {
@@ -48,6 +55,7 @@ async function conversation() {
       input.onText(`Answer ${input.text}`);
     },
   });
+  cleanup.push(() => controller.shutdown());
   return { controller, items };
 }
 
@@ -108,6 +116,7 @@ test("makes every line of a long response reachable by paging", async () => {
     ]),
     driver: async () => {},
   });
+  cleanup.push(() => controller.shutdown());
   const renderer = createTestRenderer();
   controller.resize(40);
   const seen = new Set<string>();
@@ -119,6 +128,7 @@ test("makes every line of a long response reachable by paging", async () => {
     const frame = renderer.render(controller.render(), {
       focusedId: "prompt",
       viewport: { cols: 40, rows: 24 },
+      theme: themeDefinition(controller.state.theme, false),
     });
     for (const match of frame.toText().matchAll(/LONG-LINE-\d{2}/g)) {
       seen.add(match[0]);

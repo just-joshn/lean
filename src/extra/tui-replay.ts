@@ -5,6 +5,7 @@ export type RecordedAction = {
   readonly status: string;
   readonly output: string;
   readonly raw: string;
+  readonly sourcePath: string | null;
 };
 
 export type ReplayEntry =
@@ -62,6 +63,7 @@ export function demoActions(): readonly RecordedAction[] {
         null,
         2,
       ),
+      sourcePath: null,
     },
     {
       callId: "demo-diff",
@@ -84,6 +86,7 @@ export function demoActions(): readonly RecordedAction[] {
         null,
         2,
       ),
+      sourcePath: null,
     },
   ];
 }
@@ -231,7 +234,23 @@ function describe(
     status: plain(statusOf(result)),
     output: plain(outputOf(call, result)),
     raw: rawOf(result ?? call ?? { callId }),
+    sourcePath: readPath(call),
   };
+}
+
+function readPath(call: Record<string, unknown> | undefined): string | null {
+  if (call?.name !== "read" || typeof call.arguments !== "string") return null;
+  try {
+    const parsed: unknown = JSON.parse(call.arguments);
+    if (!isRecord(parsed) || typeof parsed.path !== "string") return null;
+    return parsed.path;
+  } catch {
+    return null;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function replayItems(items: readonly unknown[]): ReplayEntry[] {

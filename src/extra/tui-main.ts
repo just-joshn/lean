@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { themePresets } from "@rezi-ui/core";
 import { createTuiController, demoDriver, type TuiController } from "./tui.ts";
+import { noColorEnabled, themeDefinition } from "./tui-theme.ts";
 
 const USAGE = `Usage: bun run tui [options]
 
@@ -95,11 +95,14 @@ function redactStartup(error: unknown): string {
   return key ? message.split(key).join("[redacted]") : message;
 }
 
-async function runScreen(controller: TuiController): Promise<void> {
+async function runScreen(
+  controller: TuiController,
+  noColor: boolean,
+): Promise<void> {
   const { createNodeApp } = await import("@rezi-ui/node");
   const app = createNodeApp({
     initialState: controller.state,
-    theme: themePresets[controller.state.theme],
+    theme: themeDefinition(controller.state.theme, noColor),
     config: { screen: { mode: "inline", inlineRows: 1024 } },
   });
   app.view(() => controller.render());
@@ -151,7 +154,7 @@ async function runScreen(controller: TuiController): Promise<void> {
     await app.start();
     controller.connect({
       update: (next) => app.update(next),
-      setTheme: (theme) => app.setTheme(themePresets[theme]),
+      setTheme: (theme) => app.setTheme(themeDefinition(theme, noColor)),
     });
     await controller.done;
   } catch (error) {
@@ -186,8 +189,10 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     return 1;
   }
   const cwd = process.cwd();
+  const noColor = noColorEnabled(process.env);
   if (args.demo) {
     const controller = await createTuiController({
+      noColor,
       driver: demoDriver(),
       cwd,
       model: args.model ?? "demo",
@@ -202,7 +207,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       },
     });
     try {
-      await runScreen(controller);
+      await runScreen(controller, noColor);
       return 0;
     } catch (error) {
       process.stderr.write(`${redactStartup(error)}\n`);
@@ -231,6 +236,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     });
     const session = opened;
     const controller = await createTuiController({
+      noColor,
       cwd,
       model,
       modelLabel,
@@ -266,7 +272,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
         });
       },
     });
-    await runScreen(controller);
+    await runScreen(controller, noColor);
     return 0;
   } catch (error) {
     process.stderr.write(`${subscriptions.redact(error)}\n`);
