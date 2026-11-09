@@ -1,4 +1,9 @@
-import type { Action, ExecutionOutput, Message } from "../../protocols.ts";
+import type {
+  Action,
+  ExecutionOutput,
+  Message,
+  Observation,
+} from "../../protocols.ts";
 import { FormatError } from "../../exceptions.ts";
 import { renderStrict } from "../../utils/render.ts";
 import { expandMultimodalContent } from "./multimodal.ts";
@@ -90,7 +95,7 @@ export function parseToolcallActions(
 
 export function formatToolcallObservationMessages(options: {
   actions: Action[];
-  outputs: ExecutionOutput[];
+  outputs: Observation[];
   observation_template: string;
   template_vars?: Record<string, unknown>;
   multimodal_regex?: string;

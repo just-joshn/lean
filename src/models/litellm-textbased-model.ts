@@ -1,4 +1,4 @@
-import type { Action, ExecutionOutput, Message } from "../protocols.ts";
+import type { Action, Message, Observation } from "../protocols.ts";
 import {
   formatTextObservationMessages,
   parseRegexActions,
@@ -51,7 +51,7 @@ export class LitellmTextbasedModel extends LitellmModel {
 
   override format_observation_messages(
     _message: Message,
-    outputs: ExecutionOutput[],
+    outputs: Observation[],
     template_vars: Record<string, unknown> = {},
   ): Message[] {
     return formatTextObservationMessages(outputs, {

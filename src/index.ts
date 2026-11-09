@@ -27,6 +27,7 @@ export type {
   ExecutionOutput,
   Message,
   Model,
+  Observation,
 } from "./protocols.ts";
 export { __version__ } from "./version.ts";
 export { main } from "./run/mini.ts";

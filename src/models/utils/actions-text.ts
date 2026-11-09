@@ -1,4 +1,4 @@
-import type { Action, ExecutionOutput, Message } from "../../protocols.ts";
+import type { Action, Message, Observation } from "../../protocols.ts";
 import { FormatError } from "../../exceptions.ts";
 import { renderStrict } from "../../utils/render.ts";
 import { expandMultimodalContent } from "./multimodal.ts";
@@ -33,7 +33,7 @@ export function parseRegexActions(
 }
 
 export function formatTextObservationMessages(
-  outputs: ExecutionOutput[],
+  outputs: Observation[],
   options: {
     observation_template: string;
     template_vars?: Record<string, unknown>;

@@ -11,15 +11,23 @@ export interface Action {
   [key: string]: unknown;
 }
 
-export interface ExecutionOutput {
+export interface ExecutionOutput extends Observation {
   output: string;
   returncode: number;
   exception_info: string;
   extra?: Record<string, unknown>;
 }
 
+export interface Observation {
+  [key: string]: unknown;
+  output?: unknown;
+  returncode?: unknown;
+  exception_info?: unknown;
+  extra?: Record<string, unknown>;
+}
+
 export interface Model {
-  config: { model_dump: () => Record<string, unknown> };
+  config: unknown;
   query(
     messages: Message[],
     kwargs?: Record<string, unknown>,
@@ -37,7 +45,7 @@ export interface Model {
 }
 
 export interface Environment {
-  config: { model_dump: () => Record<string, unknown> };
+  config: unknown;
   execute(
     action: Action,
     cwd?: string,
@@ -50,7 +58,7 @@ export interface Environment {
 }
 
 export interface Agent {
-  config: { model_dump: () => Record<string, unknown> };
+  config: unknown;
   run(
     task?: string,
     extra?: Record<string, unknown>,

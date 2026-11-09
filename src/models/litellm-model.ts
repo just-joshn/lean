@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { Action, ExecutionOutput, Message } from "../protocols.ts";
+import type { Action, Message, Observation } from "../protocols.ts";
 import { FormatError, KeyboardInterrupt, RuntimeError } from "../exceptions.ts";
 import { expandMultimodalContent } from "./utils/multimodal.ts";
 import {
@@ -221,7 +221,7 @@ export class LitellmModel {
 
   format_observation_messages(
     message: Message,
-    outputs: ExecutionOutput[],
+    outputs: Observation[],
     template_vars: Record<string, unknown> = {},
   ): Message[] {
     const actions = Array.isArray(message.extra?.actions)
