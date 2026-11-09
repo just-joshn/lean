@@ -215,7 +215,7 @@ export function inspectorRows(
         ? { kind: "diff", text: body }
         : action.sourcePath
           ? { kind: "file", text: body, path: action.sourcePath }
-          : { kind: "plain", text: body, tone: "muted" };
+          : { kind: "plain", text: body, tone: "text" };
   return face.painter.rows({ theme, source, width });
 }
 
@@ -226,7 +226,7 @@ export function renderTui(
 ): VNode {
   const chrome = chromeFor(state.theme, face.noColor);
   const text = ink(chrome.text, chrome.canvas);
-  const muted = ink(chrome.muted, chrome.canvas);
+  const secondary = ink(chrome.secondary, chrome.canvas);
   const matches = slashMatches(state.draft.text);
   const slashIndex =
     matches.length === 0 ? 0 : Math.min(state.slashIndex, matches.length - 1);
@@ -251,7 +251,7 @@ export function renderTui(
       ui.text("* ", { fg: chrome.accent, bold: true, dim: false }),
       ui.text("Lean ", { fg: chrome.text, bold: true, dim: false }),
       ui.text(`${state.cwd} · ${state.modelLabel}`, {
-        style: muted,
+        style: secondary,
         textOverflow: "ellipsis",
         maxWidth: Math.max(1, width - 8),
       }),
@@ -460,12 +460,12 @@ export function renderTui(
       clip(
         "y allow · n, enter, or esc deny · page up and page down scroll",
         width,
-        muted,
+        secondary,
       ),
     );
   } else if (state.inspector.open) {
     children.push(
-      clip("tab output/raw · left right select · esc close", width, muted),
+      clip("tab output/raw · left right select · esc close", width, secondary),
     );
   } else {
     children.push(
@@ -474,7 +474,7 @@ export function renderTui(
           ? "enter send · esc cancel · ctrl-c interrupt · ctrl-o results · /help"
           : "enter send · esc cancel · ctrl-c interrupt · /help",
         width,
-        muted,
+        secondary,
       ),
     );
   }
@@ -552,7 +552,7 @@ function jsonSource(detail: string): PaintSource {
   try {
     return { kind: "json", text: JSON.stringify(JSON.parse(detail), null, 2) };
   } catch {
-    return { kind: "plain", text: detail, tone: "muted" };
+    return { kind: "plain", text: detail, tone: "text" };
   }
 }
 

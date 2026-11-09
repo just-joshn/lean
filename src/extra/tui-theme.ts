@@ -19,6 +19,7 @@ export type NoticeTone = "muted" | "info" | "success" | "warning" | "error";
 export type Chrome = {
   readonly canvas: Rgb24;
   readonly text: Rgb24;
+  readonly secondary: Rgb24;
   readonly muted: Rgb24;
   readonly accent: Rgb24;
   readonly border: Rgb24;
@@ -135,6 +136,7 @@ export function chromeFor(name: ThemeName, noColor: boolean): Chrome {
   return {
     canvas: colors.bg.base,
     text: colors.fg.primary,
+    secondary: colors.fg.secondary,
     muted: colors.fg.muted,
     accent: colors.accent.secondary,
     border: colors.border.subtle,

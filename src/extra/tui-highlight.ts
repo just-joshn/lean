@@ -37,7 +37,7 @@ export type PaintSource =
   | {
       readonly kind: "plain";
       readonly text: string;
-      readonly tone: NoticeTone;
+      readonly tone: NoticeTone | "text";
     };
 
 export type VisualRow = {
@@ -303,7 +303,7 @@ function styleFor(
   noColor: boolean,
 ): TextStyle {
   const fg =
-    source.kind === "plain" && !noColor
+    source.kind === "plain" && !noColor && source.tone !== "text"
       ? toneColor(chrome, source.tone)
       : chrome.text;
   return face(fg, chrome.canvas);
