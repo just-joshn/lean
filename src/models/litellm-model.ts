@@ -31,7 +31,14 @@ import {
   UnsupportedParamsError,
 } from "./errors.ts";
 import { GLOBAL_MODEL_STATS } from "./stats.ts";
-import { completeChat, type ChatResponse } from "./transport.ts";
+import { completeChat } from "./transport.ts";
+import {
+  chatChoice,
+  chatMessage,
+  chatDump,
+  dictionaryOrAttribute,
+  messageFromDump,
+} from "./response-access.ts";
 
 export class LitellmModelConfig extends ConfigModel {
   static override fields: Record<string, Field> = {
@@ -103,14 +110,17 @@ export class LitellmModel {
     return [BASH_TOOL];
   }
 
-  protected parseActions(response: ChatResponse): Action[] {
-    const message = response.choices[0]?.message;
-    const toolCalls = Array.isArray(message?.tool_calls)
-      ? message.tool_calls
-      : [];
+  protected parseActions(response: unknown): Action[] {
+    const calls = dictionaryOrAttribute(chatMessage(response), "tool_calls");
+    const toolCalls = Array.isArray(calls) ? calls : [];
     return parseToolcallActions(toolCalls, {
       format_error_template: this.config.format_error_template,
-      template_kwargs: { finish_reason: response.choices[0]?.finish_reason },
+      template_kwargs: {
+        finish_reason: dictionaryOrAttribute(
+          chatChoice(response),
+          "finish_reason",
+        ),
+      },
     });
   }
 
@@ -126,10 +136,10 @@ export class LitellmModel {
     );
   }
 
-  private async request(
+  protected async request(
     messages: Message[],
     kwargs: Record<string, unknown>,
-  ): Promise<ChatResponse> {
+  ): Promise<unknown> {
     const controller = new AbortController();
     const onSigint = () => controller.abort();
     process.once("SIGINT", onSigint);
@@ -153,7 +163,7 @@ export class LitellmModel {
     }
   }
 
-  private costOf(response: ChatResponse): number {
+  protected costOf(response: unknown): number {
     try {
       const cost = completionCost(response, this.config.model_name);
       if (cost <= 0) throw new Error(`Cost must be > 0.0, got ${cost}`);
@@ -194,7 +204,7 @@ export class LitellmModel {
         const extra = error.messages[0]?.extra ?? {};
         extra.cost = cost;
         try {
-          extra.response = response.model_dump();
+          extra.response = chatDump(response, { mode: "json" });
         } catch {
           extra.response = String(response);
         }
@@ -202,15 +212,13 @@ export class LitellmModel {
       }
       throw error;
     }
-    let dumped: Record<string, unknown> = {};
+    let dumped: unknown;
     try {
-      dumped = response.model_dump();
+      dumped = chatDump(response);
     } catch {
       dumped = { response: String(response) };
     }
-    const choice = response.choices[0]?.message ?? {};
-    const message: Message = { ...choice };
-    delete message.model_dump;
+    const message = messageFromDump(chatDump(chatMessage(response)));
     message.extra = {
       actions,
       response: dumped,

@@ -1,4 +1,5 @@
 import { LitellmModel } from "./litellm-model.ts";
+import { LitellmResponseModel } from "./litellm-response-model.ts";
 import { LitellmTextbasedModel } from "./litellm-textbased-model.ts";
 import type { Model } from "../protocols.ts";
 import { copyConfig, loadClass } from "../utils/load.ts";
@@ -7,6 +8,7 @@ import { ValueError } from "../config/errors.ts";
 const MODELS: Record<string, new (data: Record<string, unknown>) => Model> = {
   litellm: LitellmModel,
   litellm_textbased: LitellmTextbasedModel,
+  litellm_response: LitellmResponseModel,
 };
 
 export function getModelName(

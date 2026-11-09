@@ -1,4 +1,6 @@
 import type { Message } from "../protocols.ts";
+import { ResponseResult } from "./response-result.ts";
+import { lookupModelInfo } from "./utils/cost.ts";
 import {
   AuthenticationError,
   ContextWindowExceededError,
@@ -6,26 +8,108 @@ import {
   PermissionDeniedError,
   UnsupportedParamsError,
 } from "./errors.ts";
-import { lookupModelInfo } from "./utils/cost.ts";
 
-export interface ChatResponse {
-  choices: Array<{
-    finish_reason: string | null;
-    message: Message & { tool_calls?: unknown };
-  }>;
-  usage?: Record<string, unknown>;
-  model_dump: () => Record<string, unknown>;
-  [key: string]: unknown;
-}
+const CLIENT_KEYS = new Set([
+  "api_key",
+  "api_base",
+  "base_url",
+  "api_version",
+  "custom_llm_provider",
+  "drop_params",
+  "additional_drop_params",
+  "allowed_openai_params",
+  "timeout",
+  "num_retries",
+  "max_retries",
+  "extra_headers",
+]);
+
+const OPENAI_PARAMS = new Set([
+  "functions",
+  "function_call",
+  "temperature",
+  "top_p",
+  "n",
+  "stream",
+  "stream_options",
+  "stop",
+  "max_tokens",
+  "max_completion_tokens",
+  "modalities",
+  "prediction",
+  "audio",
+  "presence_penalty",
+  "frequency_penalty",
+  "logit_bias",
+  "user",
+  "response_format",
+  "seed",
+  "tools",
+  "tool_choice",
+  "logprobs",
+  "top_logprobs",
+  "parallel_tool_calls",
+  "reasoning_effort",
+  "verbosity",
+  "thinking",
+  "web_search_options",
+  "safety_identifier",
+  "store",
+  "prompt_cache_key",
+]);
+
+const ANTHROPIC_PARAMS = new Set([
+  "stream",
+  "stop",
+  "temperature",
+  "top_p",
+  "max_tokens",
+  "max_completion_tokens",
+  "tools",
+  "tool_choice",
+  "extra_headers",
+  "parallel_tool_calls",
+  "response_format",
+  "user",
+  "web_search_options",
+  "speed",
+  "context_management",
+  "cache_control",
+  "thinking",
+  "reasoning_effort",
+  "service_tier",
+]);
+
+const UNIMPLEMENTED = new Set([
+  "bedrock",
+  "vertex_ai",
+  "azure",
+  "azure_ai",
+  "gemini",
+  "cohere",
+  "groq",
+  "mistral",
+  "openrouter",
+  "huggingface",
+  "sagemaker",
+  "ollama",
+  "watsonx",
+  "databricks",
+  "voyage",
+  "ai21",
+  "fireworks_ai",
+  "deepseek",
+  "perplexity",
+  "cloudflare",
+  "text-completion-openai",
+]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function responseOf(body: Record<string, unknown>): ChatResponse {
-  return Object.assign({}, body, {
-    model_dump: () => structuredClone(body),
-  }) as ChatResponse;
+function responseOf(body: Record<string, unknown>): ResponseResult {
+  return new ResponseResult(body);
 }
 
 function statusError(status: number, detail: string): Error {
@@ -57,36 +141,188 @@ function joinUrl(base: string, path: string): string {
   return `${base.replace(/\/$/u, "")}/${path.replace(/^\//u, "")}`;
 }
 
+function providerOf(model: string, explicit: unknown): string {
+  if (typeof explicit === "string" && explicit) return explicit;
+  const slash = model.indexOf("/");
+  if (slash > 0) {
+    const prefix = model.slice(0, slash);
+    if (
+      prefix === "anthropic" ||
+      prefix === "openai" ||
+      UNIMPLEMENTED.has(prefix)
+    ) {
+      return prefix;
+    }
+  }
+  const info = lookupModelInfo(model);
+  if (typeof info?.litellm_provider === "string" && info.litellm_provider) {
+    return info.litellm_provider;
+  }
+  if (model.toLowerCase().startsWith("claude")) return "anthropic";
+  return "openai";
+}
+
+function headerMap(value: unknown): Record<string, string> {
+  if (!isRecord(value)) return {};
+  const headers: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === "string") headers[key] = entry;
+  }
+  return headers;
+}
+
+function finiteNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
+}
+
+interface SplitKwargs {
+  apiKey?: string;
+  apiBase?: string;
+  provider: string;
+  dropParams: boolean;
+  timeoutSeconds?: number;
+  retries: number;
+  extraHeaders: Record<string, string>;
+  extraBody?: Record<string, unknown>;
+  params: Record<string, unknown>;
+}
+
+function splitKwargs(
+  model: string,
+  modelKwargs: Record<string, unknown>,
+): SplitKwargs {
+  const params: Record<string, unknown> = {};
+  const drop = new Set(
+    Array.isArray(modelKwargs.additional_drop_params)
+      ? modelKwargs.additional_drop_params.filter(
+          (item): item is string => typeof item === "string",
+        )
+      : [],
+  );
+  const allowed = new Set(
+    Array.isArray(modelKwargs.allowed_openai_params)
+      ? modelKwargs.allowed_openai_params.filter(
+          (item): item is string => typeof item === "string",
+        )
+      : [],
+  );
+  for (const [key, value] of Object.entries(modelKwargs)) {
+    if (drop.has(key) || key === "extra_body") continue;
+    if (!CLIENT_KEYS.has(key)) params[key] = value;
+  }
+  const provider = providerOf(model, modelKwargs.custom_llm_provider);
+  const dropParams = modelKwargs.drop_params === true;
+  if (provider === "anthropic") {
+    const unsupported = Object.keys(params).filter(
+      (key) =>
+        OPENAI_PARAMS.has(key) &&
+        !ANTHROPIC_PARAMS.has(key) &&
+        !allowed.has(key),
+    );
+    if (unsupported.length > 0 && !dropParams) {
+      throw new UnsupportedParamsError(
+        `anthropic does not support parameters: ${JSON.stringify(unsupported)}, for model=${stripProvider(model, "anthropic")}. To drop these, set \`litellm.drop_params=True\` or for proxy:\n\n\`litellm_settings:\n drop_params: true\`\n. \n If you want to use these params dynamically send allowed_openai_params=${JSON.stringify(unsupported)} in your request.`,
+      );
+    }
+    if (dropParams) {
+      for (const key of unsupported) delete params[key];
+    }
+  }
+  const retries = Math.max(
+    0,
+    Math.trunc(
+      finiteNumber(modelKwargs.num_retries ?? modelKwargs.max_retries) ?? 0,
+    ),
+  );
+  return {
+    apiKey:
+      typeof modelKwargs.api_key === "string" ? modelKwargs.api_key : undefined,
+    apiBase:
+      typeof modelKwargs.api_base === "string"
+        ? modelKwargs.api_base
+        : typeof modelKwargs.base_url === "string"
+          ? modelKwargs.base_url
+          : undefined,
+    provider,
+    dropParams,
+    timeoutSeconds: finiteNumber(modelKwargs.timeout),
+    retries,
+    extraHeaders: headerMap(modelKwargs.extra_headers),
+    extraBody: isRecord(modelKwargs.extra_body)
+      ? modelKwargs.extra_body
+      : undefined,
+    params,
+  };
+}
+
+function requireProvider(provider: string, allowed: string[]): void {
+  if (UNIMPLEMENTED.has(provider) || !allowed.includes(provider)) {
+    throw new Error(
+      `Transport does not implement provider ${provider}. Supported here: ${allowed.join(", ")}.`,
+    );
+  }
+}
+
 async function postJson(
   url: string,
   headers: Record<string, string>,
   body: unknown,
-  signal?: AbortSignal,
+  signal: AbortSignal | undefined,
+  retries: number,
 ): Promise<Record<string, unknown>> {
-  const response = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-    signal,
-  });
-  const text = await response.text();
-  let parsed: unknown = {};
-  if (text) {
+  let attempt = 0;
+  for (;;) {
+    let response: Response;
     try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = { error: text };
+      response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal,
+      });
+    } catch (error) {
+      if (signal?.aborted || attempt >= retries) throw error;
+      attempt += 1;
+      continue;
     }
+    const text = await response.text();
+    let parsed: unknown = {};
+    if (text) {
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = { error: text };
+      }
+    }
+    if (!response.ok) {
+      const detail = isRecord(parsed)
+        ? JSON.stringify(parsed.error ?? parsed)
+        : text;
+      const error = statusError(response.status, detail || response.statusText);
+      const retryable = response.status >= 500 || response.status === 429;
+      if (!retryable || attempt >= retries) throw error;
+      attempt += 1;
+      continue;
+    }
+    if (!isRecord(parsed)) {
+      throw new Error("Model response was not a JSON object.");
+    }
+    return parsed;
   }
-  if (!response.ok) {
-    const detail = isRecord(parsed)
-      ? JSON.stringify(parsed.error ?? parsed)
-      : text;
-    throw statusError(response.status, detail || response.statusText);
-  }
-  if (!isRecord(parsed))
-    throw new Error("Model response was not a JSON object.");
-  return parsed;
+}
+
+function signalFor(
+  signal: AbortSignal | undefined,
+  timeoutSeconds: number | undefined,
+): AbortSignal | undefined {
+  const timeout =
+    timeoutSeconds === undefined
+      ? undefined
+      : AbortSignal.timeout(timeoutSeconds * 1000);
+  if (signal && timeout) return AbortSignal.any([signal, timeout]);
+  return signal ?? timeout;
 }
 
 function imageBlock(block: Record<string, unknown>): Record<string, unknown> {
@@ -257,84 +493,19 @@ function anthropicMessages(messages: Message[]): {
   };
 }
 
-function fromAnthropic(body: Record<string, unknown>): ChatResponse {
-  const blocks = Array.isArray(body.content) ? body.content : [];
-  const toolCalls = blocks.flatMap((block, index) => {
-    if (!isRecord(block) || block.type !== "tool_use") return [];
-    return [
-      {
-        index,
-        id: block.id,
-        type: "function",
-        function: {
-          name: block.name,
-          arguments: JSON.stringify(block.input ?? {}),
-        },
-      },
-    ];
+function anthropicTools(tools: unknown[]): unknown[] {
+  return tools.flatMap((tool) => {
+    if (!isRecord(tool) || !isRecord(tool.function)) return [];
+    const mapped: Record<string, unknown> = {
+      name: tool.function.name,
+      input_schema: tool.function.parameters,
+      type: "custom",
+    };
+    if (tool.function.description !== undefined) {
+      mapped.description = tool.function.description;
+    }
+    return [mapped];
   });
-  const thinking = blocks.filter(
-    (block) =>
-      isRecord(block) &&
-      (block.type === "thinking" || block.type === "redacted_thinking"),
-  );
-  const text = blocks
-    .filter((block) => isRecord(block) && block.type === "text")
-    .map((block) => (isRecord(block) ? String(block.text ?? "") : ""))
-    .join("");
-  const reasoning = thinking
-    .map((block) =>
-      isRecord(block) && block.type === "thinking"
-        ? String(block.thinking ?? "")
-        : "",
-    )
-    .filter((item) => item)
-    .join("");
-  const usage = isRecord(body.usage) ? body.usage : {};
-  const input = Number(usage.input_tokens ?? 0);
-  const read = Number(usage.cache_read_input_tokens ?? 0);
-  const created = Number(usage.cache_creation_input_tokens ?? 0);
-  const output = Number(usage.output_tokens ?? 0);
-  const stop = body.stop_reason;
-  const finish =
-    stop === "tool_use"
-      ? "tool_calls"
-      : stop === "max_tokens"
-        ? "length"
-        : stop === "end_turn"
-          ? "stop"
-          : String(stop ?? "stop");
-  return responseOf({
-    choices: [
-      {
-        finish_reason: finish,
-        message: {
-          role: "assistant",
-          content: text || null,
-          tool_calls: toolCalls.length > 0 ? toolCalls : null,
-          function_call: null,
-          provider_specific_fields: {
-            citations: null,
-            thinking_blocks: thinking.length > 0 ? thinking : null,
-          },
-          ...(thinking.length > 0
-            ? { thinking_blocks: thinking, reasoning_content: reasoning }
-            : {}),
-        },
-      },
-    ],
-    usage: {
-      prompt_tokens: input + read + created,
-      completion_tokens: output,
-      cache_read_input_tokens: read,
-      cache_creation_input_tokens: created,
-    },
-  });
-}
-
-function usesAnthropic(model: string): boolean {
-  const name = model.toLowerCase();
-  return name.startsWith("anthropic/") || name.startsWith("claude");
 }
 
 const ANTHROPIC_DEFAULT_MAX_TOKENS =
@@ -425,72 +596,211 @@ function anthropicMaxTokens(
   return listed === undefined ? ANTHROPIC_DEFAULT_MAX_TOKENS : listed;
 }
 
+function anthropicBody(
+  model: string,
+  messages: Message[],
+  tools: unknown[] | undefined,
+  split: SplitKwargs,
+): Record<string, unknown> {
+  const converted = anthropicMessages(messages);
+  const params = { ...split.params };
+  const body: Record<string, unknown> = {
+    model: stripProvider(model, "anthropic"),
+    messages: converted.messages,
+    max_tokens: anthropicMaxTokens(model, params),
+  };
+  if (converted.system) body.system = converted.system;
+  if (tools && tools.length > 0) body.tools = anthropicTools(tools);
+  delete params.max_tokens;
+  delete params.max_completion_tokens;
+  delete params.tools;
+  if (params.stop !== undefined) {
+    body.stop_sequences = params.stop;
+    delete params.stop;
+  }
+  if (typeof params.user === "string" && !params.user.includes("@")) {
+    body.metadata = { user_id: params.user };
+    delete params.user;
+  }
+  if (split.extraBody) body.extra_body = split.extraBody;
+  return { ...body, ...params };
+}
+
+function openaiBody(
+  model: string,
+  messages: Message[],
+  tools: unknown[] | undefined,
+  split: SplitKwargs,
+): Record<string, unknown> {
+  const params = { ...split.params };
+  delete params.tools;
+  const body: Record<string, unknown> = {
+    model: stripProvider(model, "openai"),
+    messages,
+    ...(tools ? { tools } : {}),
+    ...params,
+    ...(split.extraBody ?? {}),
+  };
+  delete body.extra_body;
+  return body;
+}
+
+function fromAnthropic(body: Record<string, unknown>): ResponseResult {
+  const blocks = Array.isArray(body.content) ? body.content : [];
+  const toolCalls = blocks.flatMap((block, index) => {
+    if (!isRecord(block) || block.type !== "tool_use") return [];
+    return [
+      {
+        index,
+        id: block.id,
+        type: "function",
+        function: {
+          name: block.name,
+          arguments: JSON.stringify(block.input ?? {}),
+        },
+      },
+    ];
+  });
+  const thinking = blocks.filter(
+    (block) =>
+      isRecord(block) &&
+      (block.type === "thinking" || block.type === "redacted_thinking"),
+  );
+  const text = blocks
+    .filter((block) => isRecord(block) && block.type === "text")
+    .map((block) => (isRecord(block) ? String(block.text ?? "") : ""))
+    .join("");
+  const reasoning = thinking
+    .map((block) =>
+      isRecord(block) && block.type === "thinking"
+        ? String(block.thinking ?? "")
+        : "",
+    )
+    .filter((item) => item)
+    .join("");
+  const usage = isRecord(body.usage) ? body.usage : {};
+  const input = Number(usage.input_tokens ?? 0);
+  const read = Number(usage.cache_read_input_tokens ?? 0);
+  const created = Number(usage.cache_creation_input_tokens ?? 0);
+  const output = Number(usage.output_tokens ?? 0);
+  const stop = body.stop_reason;
+  const finish =
+    stop === "tool_use"
+      ? "tool_calls"
+      : stop === "max_tokens"
+        ? "length"
+        : stop === "end_turn"
+          ? "stop"
+          : String(stop ?? "stop");
+  const message: Record<string, unknown> = {
+    role: "assistant",
+    content: text || null,
+    tool_calls: toolCalls.length > 0 ? toolCalls : null,
+    function_call: null,
+    provider_specific_fields: {
+      citations: null,
+      thinking_blocks: thinking.length > 0 ? thinking : null,
+    },
+  };
+  if (thinking.length > 0) {
+    message.thinking_blocks = thinking;
+    message.reasoning_content = reasoning;
+  }
+  return responseOf({
+    choices: [{ finish_reason: finish, message }],
+    usage: {
+      prompt_tokens: input + read + created,
+      completion_tokens: output,
+      cache_read_input_tokens: read,
+      cache_creation_input_tokens: created,
+    },
+  });
+}
+
+function normalizeResponses(
+  body: Record<string, unknown>,
+): Record<string, unknown> {
+  if (!Array.isArray(body.output)) return body;
+  return {
+    ...body,
+    output: body.output.map((item) => {
+      if (!isRecord(item)) return item;
+      const copy = { ...item };
+      delete copy.extra;
+      return copy;
+    }),
+  };
+}
+
 export async function completeChat(options: {
   model: string;
   messages: Message[];
   tools?: unknown[];
   modelKwargs?: Record<string, unknown>;
   signal?: AbortSignal;
-}): Promise<ChatResponse> {
-  const kwargs = { ...(options.modelKwargs ?? {}) };
-  const apiKey =
-    typeof kwargs.api_key === "string" ? kwargs.api_key : undefined;
-  const apiBase =
-    typeof kwargs.api_base === "string" ? kwargs.api_base : undefined;
-  delete kwargs.api_key;
-  delete kwargs.api_base;
-  delete kwargs.custom_llm_provider;
-  delete kwargs.drop_params;
-  if (usesAnthropic(options.model)) {
-    const key = apiKey || process.env.ANTHROPIC_API_KEY || "";
-    const converted = anthropicMessages(options.messages);
-    const tools = (options.tools ?? []).flatMap((tool) => {
-      if (!isRecord(tool) || !isRecord(tool.function)) return [];
-      return [
-        {
-          name: tool.function.name,
-          description: tool.function.description,
-          input_schema: tool.function.parameters,
-        },
-      ];
-    });
-    const maxTokens = anthropicMaxTokens(options.model, kwargs);
-    delete kwargs.max_tokens;
-    delete kwargs.max_completion_tokens;
+}): Promise<ResponseResult> {
+  const split = splitKwargs(options.model, options.modelKwargs ?? {});
+  requireProvider(split.provider, ["anthropic", "openai"]);
+  const signal = signalFor(options.signal, split.timeoutSeconds);
+  if (split.provider === "anthropic") {
+    const key = split.apiKey || process.env.ANTHROPIC_API_KEY || "";
     const body = await postJson(
-      joinUrl(apiBase || "https://api.anthropic.com", "/v1/messages"),
+      joinUrl(split.apiBase || "https://api.anthropic.com", "/v1/messages"),
       {
         "content-type": "application/json",
         "x-api-key": key,
         "anthropic-version": "2023-06-01",
+        ...split.extraHeaders,
       },
-      {
-        model: stripProvider(options.model, "anthropic"),
-        max_tokens: maxTokens,
-        system: converted.system,
-        messages: converted.messages,
-        tools,
-        ...kwargs,
-      },
-      options.signal,
+      anthropicBody(options.model, options.messages, options.tools, split),
+      signal,
+      split.retries,
     );
     return fromAnthropic(body);
   }
-  const key = apiKey || process.env.OPENAI_API_KEY || "";
-  const base = apiBase || "https://api.openai.com/v1";
+  const key = split.apiKey || process.env.OPENAI_API_KEY || "";
   const body = await postJson(
-    joinUrl(base, "/chat/completions"),
+    joinUrl(split.apiBase || "https://api.openai.com/v1", "/chat/completions"),
     {
       "content-type": "application/json",
       ...(key ? { authorization: `Bearer ${key}` } : {}),
+      ...split.extraHeaders,
+    },
+    openaiBody(options.model, options.messages, options.tools, split),
+    signal,
+    split.retries,
+  );
+  return responseOf(body);
+}
+
+export async function completeResponses(options: {
+  model: string;
+  input: Message[];
+  tools?: unknown[];
+  modelKwargs?: Record<string, unknown>;
+  signal?: AbortSignal;
+}): Promise<ResponseResult> {
+  const split = splitKwargs(options.model, options.modelKwargs ?? {});
+  requireProvider(split.provider, ["openai"]);
+  const params = { ...split.params };
+  delete params.tools;
+  const key = split.apiKey || process.env.OPENAI_API_KEY || "";
+  const body = await postJson(
+    joinUrl(split.apiBase || "https://api.openai.com/v1", "/responses"),
+    {
+      "content-type": "application/json",
+      ...(key ? { authorization: `Bearer ${key}` } : {}),
+      ...split.extraHeaders,
     },
     {
       model: stripProvider(options.model, "openai"),
-      messages: options.messages,
+      input: options.input,
       ...(options.tools ? { tools: options.tools } : {}),
-      ...kwargs,
+      ...params,
+      ...(split.extraBody ?? {}),
     },
-    options.signal,
+    signalFor(options.signal, split.timeoutSeconds),
+    split.retries,
   );
-  return responseOf(body);
+  return responseOf(normalizeResponses(body));
 }

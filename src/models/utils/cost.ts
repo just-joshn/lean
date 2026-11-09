@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { dictionaryOrAttribute } from "../response-access.ts";
 
 type ModelInfo = Record<string, unknown>;
 
@@ -103,13 +104,15 @@ interface UsageParts {
 }
 
 function usageParts(response: unknown): UsageParts {
-  if (!isRecord(response) || !isRecord(response.usage)) {
+  const usage = dictionaryOrAttribute(response, "usage");
+  if (!isRecord(usage)) {
     return { prompt: 0, completion: 0, cached: 0, created: 0 };
   }
-  const usage = response.usage;
   const details = isRecord(usage.prompt_tokens_details)
     ? usage.prompt_tokens_details
-    : {};
+    : isRecord(usage.input_tokens_details)
+      ? usage.input_tokens_details
+      : {};
   let cached = number(details.cached_tokens);
   let created =
     number(details.cache_creation_tokens) || number(details.cache_write_tokens);
@@ -119,7 +122,8 @@ function usageParts(response: unknown): UsageParts {
     created = number(usage.cache_creation_input_tokens);
   }
   if (usage.prompt_tokens == null && usage.input_tokens != null) {
-    const read = number(usage.cache_read_input_tokens);
+    const read =
+      number(usage.cache_read_input_tokens) || number(details.cached_tokens);
     const write = number(usage.cache_creation_input_tokens);
     return {
       prompt: number(usage.input_tokens) + read + write,
@@ -136,31 +140,186 @@ function usageParts(response: unknown): UsageParts {
   };
 }
 
+const RATE_PREFIXES = [
+  "input_cost_per_token",
+  "output_cost_per_token",
+  "cache_read_input_token_cost",
+  "cache_creation_input_token_cost",
+];
+const NON_STANDARD_SUFFIXES = [
+  "_flex",
+  "_priority",
+  "_balanced",
+  "_ultrafast",
+  "_batches",
+];
+
+function price(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (
+    typeof value === "string" &&
+    value.trim() &&
+    Number.isFinite(Number(value))
+  ) {
+    return Number(value);
+  }
+  return undefined;
+}
+
+function unit(
+  info: ModelInfo,
+  key: string,
+  fallback?: number,
+): number | undefined {
+  const value = price(info[key]);
+  if (value !== undefined) return value;
+  return fallback;
+}
+
+function thresholdOf(key: string): number {
+  const raw = key.split("_above_")[1]?.split("_tokens")[0] ?? "";
+  const kilo = raw.includes("k");
+  return Number(raw.replace("k", "")) * (kilo ? 1000 : 1);
+}
+
+function thresholdKeys(info: ModelInfo): string[] {
+  return Object.keys(info)
+    .filter((key) => {
+      if (!key.includes("_tokens")) return false;
+      if (!RATE_PREFIXES.some((prefix) => key.startsWith(`${prefix}_above_`))) {
+        return false;
+      }
+      return !NON_STANDARD_SUFFIXES.some((suffix) => key.endsWith(suffix));
+    })
+    .sort((left, right) => thresholdOf(left) - thresholdOf(right));
+}
+
+function tierRate(tier: ModelInfo, key: string, fallbackKey?: string): number {
+  const primary = price(tier[key]);
+  if (primary !== undefined && tier[key] != null) return primary;
+  if (fallbackKey) {
+    const fallback = price(tier[fallbackKey]);
+    if (fallback !== undefined && tier[fallbackKey] != null) return fallback;
+  }
+  return 0;
+}
+
+function tierBounds(tier: ModelInfo): [number, number] | undefined {
+  const range = tier.range;
+  if (!Array.isArray(range) || range.length !== 2) return undefined;
+  return [Number(range[0]), Number(range[1])];
+}
+
+function selectTier(
+  info: ModelInfo,
+  promptTokens: number,
+): ModelInfo | undefined {
+  const table = info.tiered_pricing;
+  if (!Array.isArray(table) || promptTokens <= 0) return undefined;
+  const valid = table.filter((tier): tier is ModelInfo => {
+    if (!isRecord(tier) || !tierBounds(tier)) return false;
+    return tier.input_cost_per_token != null;
+  });
+  valid.sort((left, right) => {
+    const leftStart = tierBounds(left)?.[0] ?? 0;
+    const rightStart = tierBounds(right)?.[0] ?? 0;
+    return leftStart - rightStart;
+  });
+  if (valid.length === 0) return undefined;
+  return (
+    valid.find((tier) => {
+      const bounds = tierBounds(tier);
+      if (!bounds) return false;
+      return bounds[0] < promptTokens && promptTokens <= bounds[1];
+    }) ?? valid[valid.length - 1]
+  );
+}
+
+interface Rates {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheCreate: number;
+}
+
+function rates(info: ModelInfo, promptTokens: number): Rates | undefined {
+  const tier = selectTier(info, promptTokens);
+  if (tier) {
+    const input = tierRate(tier, "input_cost_per_token");
+    const output =
+      "output_cost_per_token" in tier && tier.output_cost_per_token != null
+        ? tierRate(tier, "output_cost_per_token")
+        : (unit(info, "output_cost_per_token") ?? 0);
+    return {
+      input,
+      output,
+      cacheCreate: tierRate(
+        tier,
+        "cache_creation_input_token_cost",
+        "input_cost_per_token",
+      ),
+      cacheRead: tierRate(
+        tier,
+        "cache_read_input_token_cost",
+        "input_cost_per_token",
+      ),
+    };
+  }
+  if (
+    info.input_cost_per_token == null &&
+    info.output_cost_per_token == null &&
+    info.tiered_pricing == null
+  ) {
+    return undefined;
+  }
+  let input = unit(info, "input_cost_per_token") ?? 0;
+  let output = unit(info, "output_cost_per_token") ?? 0;
+  let cacheCreate = unit(info, "cache_creation_input_token_cost");
+  let cacheRead = unit(info, "cache_read_input_token_cost");
+  const inclusive = info.litellm_provider === "xai";
+  for (const key of thresholdKeys(info)) {
+    const threshold = thresholdOf(key);
+    const crossed = inclusive
+      ? promptTokens >= threshold
+      : promptTokens > threshold;
+    if (!crossed) continue;
+    const label = key.split("_above_")[1]?.split("_tokens")[0];
+    if (!label) continue;
+    input =
+      unit(info, `input_cost_per_token_above_${label}_tokens`, input) ?? input;
+    output =
+      unit(info, `output_cost_per_token_above_${label}_tokens`, output) ??
+      output;
+    cacheCreate = unit(
+      info,
+      `cache_creation_input_token_cost_above_${label}_tokens`,
+      cacheCreate,
+    );
+    cacheRead = unit(
+      info,
+      `cache_read_input_token_cost_above_${label}_tokens`,
+      cacheRead,
+    );
+  }
+  return {
+    input,
+    output,
+    cacheCreate: cacheCreate ?? input,
+    cacheRead: cacheRead ?? input,
+  };
+}
+
 export function completionCost(response: unknown, model: string): number {
   const info = lookupModelInfo(model);
-  if (
-    !info ||
-    (info.input_cost_per_token == null && info.output_cost_per_token == null)
-  ) {
-    throw new Error(`Model ${model} is not in the cost map.`);
-  }
+  if (!isRecord(dictionaryOrAttribute(response, "usage"))) return 0;
   const parts = usageParts(response);
-  if (!isRecord(response) || !isRecord(response.usage)) return 0;
-  const input = number(info.input_cost_per_token);
-  const output = number(info.output_cost_per_token);
-  const cacheRead =
-    info.cache_read_input_token_cost == null
-      ? input
-      : number(info.cache_read_input_token_cost);
-  const cacheCreate =
-    info.cache_creation_input_token_cost == null
-      ? input
-      : number(info.cache_creation_input_token_cost);
+  const priced = info ? rates(info, parts.prompt) : undefined;
+  if (!priced) throw new Error(`Model ${model} is not in the cost map.`);
   const regular = Math.max(parts.prompt - parts.cached - parts.created, 0);
   return (
-    regular * input +
-    parts.cached * cacheRead +
-    parts.created * cacheCreate +
-    parts.completion * output
+    regular * priced.input +
+    parts.cached * priced.cacheRead +
+    parts.created * priced.cacheCreate +
+    parts.completion * priced.output
   );
 }

@@ -4,7 +4,11 @@ import {
   parseRegexActions,
 } from "./utils/actions-text.ts";
 import { LitellmModel, LitellmModelConfig } from "./litellm-model.ts";
-import type { ChatResponse } from "./transport.ts";
+import {
+  chatChoice,
+  chatMessage,
+  dictionaryOrAttribute,
+} from "./response-access.ts";
 
 import { stringField, type Field } from "../config/fields.ts";
 
@@ -34,12 +38,17 @@ export class LitellmTextbasedModel extends LitellmModel {
     return undefined;
   }
 
-  protected override parseActions(response: ChatResponse): Action[] {
-    const content = response.choices[0]?.message.content;
+  protected override parseActions(response: unknown): Action[] {
+    const content = dictionaryOrAttribute(chatMessage(response), "content");
     return parseRegexActions(typeof content === "string" ? content : "", {
       action_regex: this.textConfig().action_regex,
       format_error_template: this.config.format_error_template,
-      template_kwargs: { finish_reason: response.choices[0]?.finish_reason },
+      template_kwargs: {
+        finish_reason: dictionaryOrAttribute(
+          chatChoice(response),
+          "finish_reason",
+        ),
+      },
     });
   }
 
