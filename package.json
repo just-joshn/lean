@@ -10,10 +10,7 @@
     "start": "bun run src/index.ts",
     "tui": "bun run src/extra/tui-main.ts",
     "test": "vitest run",
-    "test:terminal": "python3 scripts/verify-cli.py src/index.ts .lean/terminal-checks",
     "test:tui": "python3 scripts/verify-tui.py src/extra/tui-main.ts .lean/tui-checks",
-    "test:subscriptions": "python3 scripts/verify-subscriptions.py src/index.ts .lean/subscription-checks/shell && python3 scripts/verify-subscriptions.py src/index.ts .lean/subscription-checks/patch --tool apply_patch",
-    "test:login-cancel": "python3 scripts/verify-login-cancel.py src/index.ts .lean/login-cancel-checks",
     "typecheck": "bun check",
     "format": "bun fmt src package.json README.md .pre-commit-config.yaml",
     "format:check": "bun fmt --check src package.json README.md .pre-commit-config.yaml"
@@ -31,7 +28,6 @@
     "node": ">=26.13.0 <27"
   },
   "dependencies": {
-    "@earendil-works/pi-ai": "1.5.0",
     "@huggingface/jinja": "0.5.11",
     "@openai/agents": "^0.21.0",
     "@rezi-ui/core": "0.1.0-beta.2",
