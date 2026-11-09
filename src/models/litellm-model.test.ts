@@ -1,8 +1,8 @@
-import { createServer, type Server } from "node:http";
+import { receiveResponse } from "./received-response.ts";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { FormatError } from "../exceptions.ts";
 import { AuthenticationError } from "./errors.ts";
 import { LitellmModel } from "./litellm-model.ts";
@@ -10,49 +10,44 @@ import { LitellmTextbasedModel } from "./litellm-textbased-model.ts";
 import { getModel } from "./index.ts";
 import { GLOBAL_MODEL_STATS } from "./stats.ts";
 
-let server: Server | undefined;
+vi.mock("./received-response.ts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./received-response.ts")>()),
+  receiveResponse: vi.fn(),
+}));
 let requests: Array<{ url?: string; body: Record<string, unknown> }> = [];
 
 beforeEach(() => {
   GLOBAL_MODEL_STATS.reset();
   requests = [];
+  vi.mocked(receiveResponse).mockReset();
 });
 
-afterEach(async () => {
-  await new Promise<void>((resolve) => server?.close(() => resolve()));
-  server = undefined;
-});
-
-async function listen(
+async function mockResponse(
   handler: (
     body: Record<string, unknown>,
     url: string | undefined,
   ) => { status?: number; body: unknown },
 ) {
-  server = createServer((request, response) => {
-    const chunks: Buffer[] = [];
-    request.on("data", (chunk: Buffer) => chunks.push(chunk));
-    request.on("end", () => {
-      const parsed = JSON.parse(
-        Buffer.concat(chunks).toString("utf8") || "{}",
-      ) as Record<string, unknown>;
-      requests.push({ url: request.url, body: parsed });
-      const result = handler(parsed, request.url);
-      response.writeHead(result.status ?? 200, {
-        "content-type": "application/json",
-      });
-      response.end(JSON.stringify(result.body));
-    });
+  vi.mocked(receiveResponse).mockImplementation(async (url, init) => {
+    const path = new URL(url).pathname;
+    const parsed = JSON.parse(String(init.body));
+    requests.push({ url: path, body: parsed });
+    const result = handler(parsed, path);
+    const bytes = new TextEncoder().encode(JSON.stringify(result.body));
+    const status = result.status ?? 200;
+    return {
+      bytes,
+      text: new TextDecoder().decode(bytes),
+      status,
+      statusText: "fixture",
+      ok: status >= 200 && status < 300,
+    };
   });
-  await new Promise<void>((resolve) => server?.listen(0, "127.0.0.1", resolve));
-  const address = server.address();
-  if (!address || typeof address === "string") throw new Error("no port");
-  return address.port;
 }
 
 describe("LitellmModel", () => {
   test("sends one bash tool and keeps the provider response on the assistant message", async () => {
-    const port = await listen(() => ({
+    await mockResponse(() => ({
       body: {
         choices: [
           {
@@ -86,7 +81,7 @@ describe("LitellmModel", () => {
     }));
     const model = new LitellmModel({
       model_name: "openai/gpt-4o",
-      model_kwargs: { api_base: `http://127.0.0.1:${port}/v1`, temperature: 0 },
+      model_kwargs: { api_base: "http://model.test/v1", temperature: 0 },
     });
     const message = await model.query([
       { role: "user", content: "go", extra: { secret: true } },
@@ -115,7 +110,7 @@ describe("LitellmModel", () => {
 
   test("bills a malformed tool call and does not retry an authentication error", async () => {
     let calls = 0;
-    const port = await listen(() => {
+    await mockResponse(() => {
       calls += 1;
       if (calls === 1) {
         return {
@@ -141,7 +136,7 @@ describe("LitellmModel", () => {
     const model = new LitellmModel({
       model_name: "gpt-4o",
       model_kwargs: {
-        api_base: `http://127.0.0.1:${port}/v1`,
+        api_base: "http://model.test/v1",
         api_key: "test-key",
       },
     });
@@ -165,7 +160,7 @@ describe("LitellmModel", () => {
 
   test("retries a server error with the tenacity delays and then parses text", async () => {
     let calls = 0;
-    const port = await listen(() => {
+    await mockResponse(() => {
       calls += 1;
       if (calls < 3) return { status: 500, body: { error: "busy" } };
       return {
@@ -186,7 +181,7 @@ describe("LitellmModel", () => {
     const delays: number[] = [];
     const model = new LitellmTextbasedModel({
       model_name: "gpt-4o",
-      model_kwargs: { api_base: `http://127.0.0.1:${port}/v1` },
+      model_kwargs: { api_base: "http://model.test/v1" },
     });
     model.sleep = async (milliseconds) => {
       delays.push(milliseconds);
@@ -205,7 +200,7 @@ describe("LitellmModel", () => {
   });
 
   test("places cache control on the last message for claude and prices the returned cache tokens", async () => {
-    const port = await listen((body) => ({
+    await mockResponse((body) => ({
       body: {
         content: [
           { type: "thinking", thinking: "hmm" },
@@ -227,7 +222,7 @@ describe("LitellmModel", () => {
       },
     }));
     const model = getModel("anthropic/claude-sonnet-4-5-20250929", {
-      model_kwargs: { api_base: `http://127.0.0.1:${port}` },
+      model_kwargs: { api_base: "http://model.test" },
       cost_tracking: "default",
     });
     const message = await model.query([
@@ -271,7 +266,7 @@ describe("LitellmModel", () => {
         "local/free": { input_cost_per_token: 0, output_cost_per_token: 0 },
       }),
     );
-    const port = await listen(() => ({
+    await mockResponse(() => ({
       body: {
         choices: [
           {
@@ -295,7 +290,7 @@ describe("LitellmModel", () => {
       model_name: "local/free",
       litellm_model_registry: registry,
       cost_tracking: "ignore_errors",
-      model_kwargs: { api_base: `http://127.0.0.1:${port}/v1` },
+      model_kwargs: { api_base: "http://model.test/v1" },
     });
     const message = await model.query([]);
     expect(message.extra?.cost).toBe(0);

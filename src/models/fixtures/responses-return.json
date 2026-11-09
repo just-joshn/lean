@@ -1,0 +1,730 @@
+{
+  "oracle": "LiteLLM 1.108.3. native-model-seam-graft-root/source.json and native-model-seam-graft/fixtures/source-return-shape.json.",
+  "cases": [
+    {
+      "name": "dict alternative preserves invalid function record",
+      "body": {
+        "id": "owned-response",
+        "created_at": 1,
+        "object": "response",
+        "model": "gpt-4o",
+        "output": [
+          {
+            "type": "function_call",
+            "call_id": "valid",
+            "name": "bash",
+            "arguments": "{}"
+          },
+          {
+            "type": "function_call",
+            "call_id": "invalid",
+            "name": "bash",
+            "arguments": 17
+          }
+        ],
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 2,
+          "total_tokens": 12
+        }
+      },
+      "dump": {
+        "id": "owned-response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": "gpt-4o",
+        "object": "response",
+        "output": [
+          {
+            "arguments": "{}",
+            "call_id": "valid",
+            "name": "bash",
+            "type": "function_call",
+            "id": null,
+            "async_": null,
+            "caller": null,
+            "namespace": null,
+            "status": null
+          },
+          {
+            "type": "function_call",
+            "call_id": "invalid",
+            "name": "bash",
+            "arguments": 17
+          }
+        ],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": {
+          "input_tokens": 10,
+          "input_tokens_details": null,
+          "output_tokens": 2,
+          "output_tokens_details": null,
+          "total_tokens": 12,
+          "cost": null
+        },
+        "user": null,
+        "store": null
+      }
+    },
+    {
+      "name": "omitted usage typed dump",
+      "body": {
+        "id": "owned-response",
+        "created_at": 1,
+        "object": "response",
+        "model": "gpt-4o",
+        "output": []
+      },
+      "dump": {
+        "id": "owned-response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": "gpt-4o",
+        "object": "response",
+        "output": [],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": null,
+        "user": null,
+        "store": null
+      }
+    },
+    {
+      "name": "message nested model defaults",
+      "body": {
+        "id": "owned-response",
+        "created_at": 1,
+        "object": "response",
+        "model": "gpt-4o",
+        "output": [
+          {
+            "type": "message",
+            "id": "owned-message",
+            "role": "assistant",
+            "status": "completed",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "owned",
+                "annotations": []
+              }
+            ]
+          }
+        ]
+      },
+      "dump": {
+        "id": "owned-response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": "gpt-4o",
+        "object": "response",
+        "output": [
+          {
+            "id": "owned-message",
+            "content": [
+              {
+                "annotations": [],
+                "text": "owned",
+                "type": "output_text",
+                "logprobs": null
+              }
+            ],
+            "role": "assistant",
+            "status": "completed",
+            "type": "message",
+            "phase": null
+          }
+        ],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": null,
+        "user": null,
+        "store": null
+      }
+    },
+    {
+      "name": "missing response id constructs all output records",
+      "body": {
+        "created_at": 1,
+        "object": "response",
+        "model": "gpt-4o",
+        "output": [
+          {
+            "type": "function_call",
+            "call_id": "valid",
+            "name": "bash",
+            "arguments": "{}"
+          }
+        ]
+      },
+      "dump": {
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": "gpt-4o",
+        "object": "response",
+        "output": [
+          {
+            "type": "function_call",
+            "call_id": "valid",
+            "name": "bash",
+            "arguments": "{}"
+          }
+        ],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": null,
+        "user": null,
+        "store": null
+      }
+    },
+    {
+      "name": "function and reasoning",
+      "body": {
+        "id": "owned-response",
+        "created_at": 1,
+        "object": "response",
+        "model": "gpt-4o",
+        "output": [
+          {
+            "type": "reasoning",
+            "id": "owned-reasoning",
+            "summary": [],
+            "status": null,
+            "content": null,
+            "encrypted_content": null,
+            "extra": {
+              "owned": true
+            }
+          },
+          {
+            "type": "function_call",
+            "call_id": "owned-call",
+            "name": "bash",
+            "arguments": "{}",
+            "extra": {
+              "owned": true
+            },
+            "metadata": {
+              "kept": true
+            }
+          }
+        ],
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 2,
+          "total_tokens": 12
+        }
+      },
+      "dump": {
+        "id": "owned-response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": "gpt-4o",
+        "object": "response",
+        "output": [
+          {
+            "id": "owned-reasoning",
+            "summary": [],
+            "type": "reasoning",
+            "extra": {
+              "owned": true
+            }
+          },
+          {
+            "arguments": "{}",
+            "call_id": "owned-call",
+            "name": "bash",
+            "type": "function_call",
+            "id": null,
+            "async_": null,
+            "caller": null,
+            "namespace": null,
+            "status": null,
+            "extra": {
+              "owned": true
+            },
+            "metadata": {
+              "kept": true
+            }
+          }
+        ],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": {
+          "input_tokens": 10,
+          "input_tokens_details": null,
+          "output_tokens": 2,
+          "output_tokens_details": null,
+          "total_tokens": 12,
+          "cost": null
+        },
+        "user": null,
+        "store": null
+      }
+    },
+    {
+      "name": "missing usage total",
+      "body": {
+        "id": "owned-response",
+        "created_at": 1,
+        "object": "response",
+        "model": "gpt-4o",
+        "output": [
+          {
+            "type": "reasoning",
+            "id": "owned-reasoning",
+            "summary": [],
+            "status": null,
+            "content": null,
+            "encrypted_content": null,
+            "extra": {
+              "owned": true
+            }
+          },
+          {
+            "type": "function_call",
+            "call_id": "owned-call",
+            "name": "bash",
+            "arguments": "{}",
+            "extra": {
+              "owned": true
+            },
+            "metadata": {
+              "kept": true
+            }
+          }
+        ],
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 2
+        }
+      },
+      "dump": {
+        "id": "owned-response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": "gpt-4o",
+        "object": "response",
+        "output": [
+          {
+            "type": "reasoning",
+            "id": "owned-reasoning",
+            "summary": [],
+            "extra": {
+              "owned": true
+            }
+          },
+          {
+            "type": "function_call",
+            "call_id": "owned-call",
+            "name": "bash",
+            "arguments": "{}",
+            "extra": {
+              "owned": true
+            },
+            "metadata": {
+              "kept": true
+            }
+          }
+        ],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 2
+        },
+        "user": null,
+        "store": null
+      }
+    },
+    {
+      "name": "non-array output",
+      "body": {
+        "id": "owned-response",
+        "created_at": 1,
+        "object": "response",
+        "model": "gpt-4o",
+        "output": "bad-output",
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 2,
+          "total_tokens": 12
+        }
+      },
+      "dump": {
+        "id": "owned-response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": "gpt-4o",
+        "object": "response",
+        "output": "bad-output",
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 2,
+          "total_tokens": 12
+        },
+        "user": null,
+        "store": null
+      }
+    },
+    {
+      "name": "null created_at",
+      "body": {
+        "id": "owned-response",
+        "created_at": null,
+        "object": "response",
+        "model": "gpt-4o",
+        "output": []
+      },
+      "dump": {
+        "id": "owned-response",
+        "created_at": 1794217118,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": "gpt-4o",
+        "object": "response",
+        "output": [],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": null,
+        "user": null,
+        "store": null
+      }
+    },
+    {
+      "name": "float created_at",
+      "body": {
+        "id": "owned-response",
+        "created_at": 1.9,
+        "object": "response",
+        "model": "gpt-4o",
+        "output": []
+      },
+      "dump": {
+        "id": "owned-response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": "gpt-4o",
+        "object": "response",
+        "output": [],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": null,
+        "user": null,
+        "store": null
+      }
+    },
+    {
+      "name": "tool search validated",
+      "body": {
+        "id": "owned-response",
+        "created_at": 1,
+        "object": "response",
+        "model": "gpt-4o",
+        "output": [
+          {
+            "type": "tool_search_call",
+            "id": "owned-search",
+            "arguments": {},
+            "execution": "server",
+            "status": "completed",
+            "created_by": null,
+            "extra": {
+              "owned": true
+            },
+            "note": null
+          },
+          {
+            "type": "tool_search_output",
+            "id": "owned-search-out",
+            "execution": "client",
+            "status": "completed",
+            "tools": [],
+            "created_by": null,
+            "extra": {
+              "owned": true
+            }
+          }
+        ],
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 2,
+          "total_tokens": 12
+        }
+      },
+      "dump": {
+        "id": "owned-response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": "gpt-4o",
+        "object": "response",
+        "output": [
+          {
+            "id": "owned-search",
+            "arguments": {},
+            "call_id": null,
+            "execution": "server",
+            "status": "completed",
+            "type": "tool_search_call",
+            "extra": {
+              "owned": true
+            },
+            "note": null
+          },
+          {
+            "id": "owned-search-out",
+            "call_id": null,
+            "execution": "client",
+            "status": "completed",
+            "tools": [],
+            "type": "tool_search_output",
+            "extra": {
+              "owned": true
+            }
+          }
+        ],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": {
+          "input_tokens": 10,
+          "input_tokens_details": null,
+          "output_tokens": 2,
+          "output_tokens_details": null,
+          "total_tokens": 12,
+          "cost": null
+        },
+        "user": null,
+        "store": null
+      }
+    },
+    {
+      "name": "tool search constructed",
+      "body": {
+        "id": "owned-response",
+        "created_at": 1,
+        "object": "response",
+        "model": "gpt-4o",
+        "output": [
+          {
+            "type": "tool_search_call",
+            "id": "owned-search",
+            "arguments": {},
+            "execution": "server",
+            "status": null,
+            "created_by": null,
+            "extra": {
+              "owned": true
+            },
+            "note": null
+          },
+          {
+            "type": "tool_search_output",
+            "id": "owned-search-out",
+            "execution": "client",
+            "status": "completed",
+            "tools": [],
+            "created_by": null,
+            "extra": {
+              "owned": true
+            }
+          },
+          {
+            "type": "reasoning",
+            "id": "owned-reasoning",
+            "summary": [],
+            "status": null,
+            "content": null,
+            "encrypted_content": null,
+            "extra": {
+              "owned": true
+            }
+          }
+        ],
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 2
+        }
+      },
+      "dump": {
+        "id": "owned-response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": "gpt-4o",
+        "object": "response",
+        "output": [
+          {
+            "type": "tool_search_call",
+            "id": "owned-search",
+            "arguments": {},
+            "execution": "server",
+            "status": null,
+            "extra": {
+              "owned": true
+            },
+            "note": null
+          },
+          {
+            "type": "tool_search_output",
+            "id": "owned-search-out",
+            "execution": "client",
+            "status": "completed",
+            "tools": [],
+            "extra": {
+              "owned": true
+            }
+          },
+          {
+            "type": "reasoning",
+            "id": "owned-reasoning",
+            "summary": [],
+            "extra": {
+              "owned": true
+            }
+          }
+        ],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": {
+          "input_tokens": 10,
+          "output_tokens": 2
+        },
+        "user": null,
+        "store": null
+      }
+    }
+  ]
+}

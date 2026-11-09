@@ -4,8 +4,9 @@ export class ResponseResult {
 
   constructor(body: Record<string, unknown>) {
     this.#body = body;
-    Object.assign(this, body);
-    Reflect.deleteProperty(this, "model_dump");
+    for (const [key, value] of Object.entries(body)) {
+      if (key !== "model_dump") Reflect.set(this, key, value);
+    }
     if (Array.isArray(body.choices)) {
       this.choices = body.choices.map((choice: unknown) => {
         if (typeof choice !== "object" || choice === null) return choice;

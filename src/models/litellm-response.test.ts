@@ -1,44 +1,38 @@
-import { createServer, type Server } from "node:http";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { receiveResponse } from "./received-response.ts";
 import { FormatError } from "../exceptions.ts";
 import { getModel } from "./index.ts";
 import { LitellmResponseModel } from "./litellm-response-model.ts";
 import { GLOBAL_MODEL_STATS } from "./stats.ts";
 import type { Message } from "../protocols.ts";
 
-let server: Server | undefined;
+vi.mock("./received-response.ts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./received-response.ts")>()),
+  receiveResponse: vi.fn(),
+}));
 let requests: Array<{ url?: string; body: Record<string, unknown> }> = [];
 
 beforeEach(() => {
   GLOBAL_MODEL_STATS.reset();
   requests = [];
+  vi.mocked(receiveResponse).mockReset();
 });
 
-afterEach(async () => {
-  const current = server;
-  server = undefined;
-  if (!current) return;
-  current.closeAllConnections();
-  await new Promise<void>((resolve) => current.close(() => resolve()));
-});
-
-async function listen(body: Record<string, unknown>) {
-  server = createServer((request, response) => {
-    const chunks: Buffer[] = [];
-    request.on("data", (chunk: Buffer) => chunks.push(chunk));
-    request.on("end", () => {
-      requests.push({
-        url: request.url,
-        body: JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"),
-      });
-      response.writeHead(200, { "content-type": "application/json" });
-      response.end(JSON.stringify(body));
+async function mockResponse(body: Record<string, unknown>) {
+  vi.mocked(receiveResponse).mockImplementation(async (url, init) => {
+    requests.push({
+      url: new URL(url).pathname,
+      body: JSON.parse(String(init.body)),
     });
+    const bytes = new TextEncoder().encode(JSON.stringify(body));
+    return {
+      bytes,
+      text: new TextDecoder().decode(bytes),
+      status: 200,
+      statusText: "OK",
+      ok: true,
+    };
   });
-  await new Promise<void>((resolve) => server?.listen(0, "127.0.0.1", resolve));
-  const address = server.address();
-  if (!address || typeof address === "string") throw new Error("no port");
-  return address.port;
 }
 
 const functionCall = {
@@ -52,7 +46,7 @@ const functionCall = {
 
 describe("LitellmResponseModel", () => {
   test("sends the flat bash tool and replays output without extra", async () => {
-    const port = await listen({
+    await mockResponse({
       id: "resp_1",
       object: "response",
       created_at: 1,
@@ -63,7 +57,7 @@ describe("LitellmResponseModel", () => {
     const model = getModel("openai/gpt-4o", {
       model_class: "litellm_response",
       model_kwargs: {
-        api_base: `http://127.0.0.1:${port}/v1`,
+        api_base: "http://model.test/v1",
         api_key: "fixture",
         drop_params: true,
       },
@@ -100,7 +94,13 @@ describe("LitellmResponseModel", () => {
         call_id: "call_1",
         name: "bash",
         arguments: '{"command":"echo hi"}',
+        extra: { hidden: true },
         metadata: { raw: true },
+        id: null,
+        async_: null,
+        caller: null,
+        namespace: null,
+        status: null,
       },
     ]);
 
@@ -115,13 +115,20 @@ describe("LitellmResponseModel", () => {
         name: "bash",
         arguments: '{"command":"echo hi"}',
         metadata: { raw: true },
+        id: null,
+        async_: null,
+        caller: null,
+        namespace: null,
+        status: null,
       },
       { role: "user", content: "next" },
     ]);
   });
 
   test("maps incomplete max_output_tokens to length and keeps malformed arguments", async () => {
-    const port = await listen({
+    await mockResponse({
+      id: "resp_bad",
+      created_at: 1,
       object: "response",
       status: "incomplete",
       incomplete_details: { reason: "max_output_tokens" },
@@ -137,7 +144,7 @@ describe("LitellmResponseModel", () => {
     });
     const model = new LitellmResponseModel({
       model_name: "gpt-4o",
-      model_kwargs: { api_base: `http://127.0.0.1:${port}/v1` },
+      model_kwargs: { api_base: "http://model.test/v1" },
       format_error_template: "{{ finish_reason }}: {{ error }}",
       cost_tracking: "ignore_errors",
     });

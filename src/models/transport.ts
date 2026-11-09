@@ -1,5 +1,10 @@
 import type { Message } from "../protocols.ts";
 import { ResponseResult } from "./response-result.ts";
+import {
+  receiveResponse,
+  ResponseReadError,
+  type ReceivedResponse,
+} from "./received-response.ts";
 import { lookupModelInfo } from "./utils/cost.ts";
 import {
   AuthenticationError,
@@ -132,12 +137,12 @@ function statusError(status: number, detail: string): Error {
   return new Error(detail);
 }
 
-function stripProvider(model: string, provider: string): string {
+export function stripProvider(model: string, provider: string): string {
   const prefix = `${provider}/`;
   return model.startsWith(prefix) ? model.slice(prefix.length) : model;
 }
 
-function joinUrl(base: string, path: string): string {
+export function joinUrl(base: string, path: string): string {
   return `${base.replace(/\/$/u, "")}/${path.replace(/^\//u, "")}`;
 }
 
@@ -189,7 +194,7 @@ interface SplitKwargs {
   params: Record<string, unknown>;
 }
 
-function splitKwargs(
+export function splitKwargs(
   model: string,
   modelKwargs: Record<string, unknown>,
 ): SplitKwargs {
@@ -257,11 +262,49 @@ function splitKwargs(
   };
 }
 
-function requireProvider(provider: string, allowed: string[]): void {
+export function requireProvider(provider: string, allowed: string[]): void {
   if (UNIMPLEMENTED.has(provider) || !allowed.includes(provider)) {
     throw new Error(
       `Transport does not implement provider ${provider}. Supported here: ${allowed.join(", ")}.`,
     );
+  }
+}
+
+export async function postResponse(
+  url: string,
+  headers: Record<string, string>,
+  body: unknown,
+  signal: AbortSignal | undefined,
+  retries: number,
+): Promise<ReceivedResponse> {
+  let attempt = 0;
+  for (;;) {
+    let response: ReceivedResponse;
+    try {
+      response = await receiveResponse(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal,
+      });
+    } catch (error) {
+      if (error instanceof ResponseReadError) throw error.cause;
+      if (signal?.aborted || attempt >= retries) throw error;
+      attempt += 1;
+      continue;
+    }
+    if (response.ok) return response;
+    const error = statusError(
+      response.status,
+      response.text || response.statusText,
+    );
+    Object.assign(error, {
+      rawText: response.text,
+      statusCode: response.status,
+    });
+    const retryable = response.status >= 500 || response.status === 429;
+    if (!retryable || attempt >= retries) throw error;
+    attempt += 1;
   }
 }
 
@@ -272,48 +315,22 @@ async function postJson(
   signal: AbortSignal | undefined,
   retries: number,
 ): Promise<Record<string, unknown>> {
-  let attempt = 0;
-  for (;;) {
-    let response: Response;
+  const received = await postResponse(url, headers, body, signal, retries);
+  let parsed: unknown = {};
+  if (received.text) {
     try {
-      response = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-        signal,
-      });
-    } catch (error) {
-      if (signal?.aborted || attempt >= retries) throw error;
-      attempt += 1;
-      continue;
+      parsed = JSON.parse(received.text);
+    } catch {
+      parsed = { error: received.text };
     }
-    const text = await response.text();
-    let parsed: unknown = {};
-    if (text) {
-      try {
-        parsed = JSON.parse(text);
-      } catch {
-        parsed = { error: text };
-      }
-    }
-    if (!response.ok) {
-      const detail = isRecord(parsed)
-        ? JSON.stringify(parsed.error ?? parsed)
-        : text;
-      const error = statusError(response.status, detail || response.statusText);
-      const retryable = response.status >= 500 || response.status === 429;
-      if (!retryable || attempt >= retries) throw error;
-      attempt += 1;
-      continue;
-    }
-    if (!isRecord(parsed)) {
-      throw new Error("Model response was not a JSON object.");
-    }
-    return parsed;
   }
+  if (!isRecord(parsed)) {
+    throw new Error("Model response was not a JSON object.");
+  }
+  return parsed;
 }
 
-function signalFor(
+export function signalFor(
   signal: AbortSignal | undefined,
   timeoutSeconds: number | undefined,
 ): AbortSignal | undefined {
@@ -717,21 +734,6 @@ function fromAnthropic(body: Record<string, unknown>): ResponseResult {
   });
 }
 
-function normalizeResponses(
-  body: Record<string, unknown>,
-): Record<string, unknown> {
-  if (!Array.isArray(body.output)) return body;
-  return {
-    ...body,
-    output: body.output.map((item) => {
-      if (!isRecord(item)) return item;
-      const copy = { ...item };
-      delete copy.extra;
-      return copy;
-    }),
-  };
-}
-
 export async function completeChat(options: {
   model: string;
   messages: Message[];
@@ -771,36 +773,4 @@ export async function completeChat(options: {
     split.retries,
   );
   return responseOf(body);
-}
-
-export async function completeResponses(options: {
-  model: string;
-  input: Message[];
-  tools?: unknown[];
-  modelKwargs?: Record<string, unknown>;
-  signal?: AbortSignal;
-}): Promise<ResponseResult> {
-  const split = splitKwargs(options.model, options.modelKwargs ?? {});
-  requireProvider(split.provider, ["openai"]);
-  const params = { ...split.params };
-  delete params.tools;
-  const key = split.apiKey || process.env.OPENAI_API_KEY || "";
-  const body = await postJson(
-    joinUrl(split.apiBase || "https://api.openai.com/v1", "/responses"),
-    {
-      "content-type": "application/json",
-      ...(key ? { authorization: `Bearer ${key}` } : {}),
-      ...split.extraHeaders,
-    },
-    {
-      model: stripProvider(options.model, "openai"),
-      input: options.input,
-      ...(options.tools ? { tools: options.tools } : {}),
-      ...params,
-      ...(split.extraBody ?? {}),
-    },
-    signalFor(options.signal, split.timeoutSeconds),
-    split.retries,
-  );
-  return responseOf(normalizeResponses(body));
 }

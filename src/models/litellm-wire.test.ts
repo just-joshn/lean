@@ -1,5 +1,5 @@
-import { createServer, type Server } from "node:http";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { receiveResponse } from "./received-response.ts";
 import { FormatError } from "../exceptions.ts";
 import { UnsupportedParamsError } from "./errors.ts";
 import { getModel, getModelClass } from "./index.ts";
@@ -7,7 +7,10 @@ import { LitellmModel, LitellmModelConfig } from "./litellm-model.ts";
 import { GLOBAL_MODEL_STATS } from "./stats.ts";
 import { DEFAULT_MULTIMODAL_REGEX } from "./utils/multimodal.ts";
 
-let server: Server | undefined;
+vi.mock("./received-response.ts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./received-response.ts")>()),
+  receiveResponse: vi.fn(),
+}));
 let requests: Array<{
   url?: string;
   headers: Record<string, string | string[] | undefined>;
@@ -17,45 +20,34 @@ let requests: Array<{
 beforeEach(() => {
   GLOBAL_MODEL_STATS.reset();
   requests = [];
+  vi.mocked(receiveResponse).mockReset();
 });
 
-afterEach(async () => {
-  const current = server;
-  server = undefined;
-  if (!current) return;
-  current.closeAllConnections();
-  await new Promise<void>((resolve) => current.close(() => resolve()));
-});
-
-async function listen(
+async function mockResponse(
   handler: (
     body: Record<string, unknown>,
     url: string | undefined,
   ) => { status?: number; body: unknown },
 ) {
-  server = createServer((request, response) => {
-    const chunks: Buffer[] = [];
-    request.on("data", (chunk: Buffer) => chunks.push(chunk));
-    request.on("end", () => {
-      const parsed = JSON.parse(
-        Buffer.concat(chunks).toString("utf8") || "{}",
-      ) as Record<string, unknown>;
-      const headers: Record<string, string | string[] | undefined> = {};
-      for (const [key, value] of Object.entries(request.headers)) {
-        headers[key] = value;
-      }
-      requests.push({ url: request.url, headers, body: parsed });
-      const result = handler(parsed, request.url);
-      response.writeHead(result.status ?? 200, {
-        "content-type": "application/json",
-      });
-      response.end(JSON.stringify(result.body));
+  vi.mocked(receiveResponse).mockImplementation(async (url, init) => {
+    const path = new URL(url).pathname;
+    const parsed = JSON.parse(String(init.body));
+    const headers: Record<string, string> = {};
+    new Headers(init.headers).forEach((value, key) => {
+      headers[key] = value;
     });
+    requests.push({ url: path, headers, body: parsed });
+    const result = handler(parsed, path);
+    const bytes = new TextEncoder().encode(JSON.stringify(result.body));
+    const status = result.status ?? 200;
+    return {
+      bytes,
+      text: new TextDecoder().decode(bytes),
+      status,
+      statusText: "fixture",
+      ok: status >= 200 && status < 300,
+    };
   });
-  await new Promise<void>((resolve) => server?.listen(0, "127.0.0.1", resolve));
-  const address = server.address();
-  if (!address || typeof address === "string") throw new Error("no port");
-  return address.port;
 }
 
 const bashTool = {
@@ -76,7 +68,7 @@ const bashTool = {
 
 describe("litellm wire", () => {
   test("claude history matches the pinned completion request", async () => {
-    const port = await listen(() => ({
+    await mockResponse(() => ({
       body: {
         id: "msg_fixture",
         type: "message",
@@ -99,7 +91,7 @@ describe("litellm wire", () => {
       model_kwargs: {
         drop_params: true,
         api_key: "fixture",
-        api_base: `http://127.0.0.1:${port}`,
+        api_base: "http://model.test",
         frequency_penalty: 0.5,
         extra_headers: { "X-Test": "yes" },
         extra_body: { metadata: { user_id: "u1" } },
@@ -233,11 +225,11 @@ describe("litellm wire", () => {
   });
 
   test("refuses an unsupported anthropic parameter when drop_params is false", async () => {
-    const port = await listen(() => ({ body: {} }));
+    await mockResponse(() => ({ body: {} }));
     const model = new LitellmModel({
       model_name: "anthropic/claude-sonnet-4-5-20250929",
       model_kwargs: {
-        api_base: `http://127.0.0.1:${port}`,
+        api_base: "http://model.test",
         api_key: "fixture",
         drop_params: false,
         frequency_penalty: 0.5,
@@ -250,7 +242,7 @@ describe("litellm wire", () => {
   });
 
   test("merges openai extra_body and does not speak bedrock", async () => {
-    const port = await listen(() => ({
+    await mockResponse(() => ({
       body: {
         choices: [
           {
@@ -278,7 +270,7 @@ describe("litellm wire", () => {
       model_name: "my-model",
       cost_tracking: "ignore_errors",
       model_kwargs: {
-        api_base: `http://127.0.0.1:${port}/v1`,
+        api_base: "http://model.test/v1",
         api_key: "fixture",
         custom_llm_provider: "openai",
         drop_params: true,
@@ -295,7 +287,7 @@ describe("litellm wire", () => {
     const bedrock = new LitellmModel({
       model_name: "bedrock/anthropic.claude-3-haiku-20240307-v1:0",
       model_kwargs: {
-        api_base: `http://127.0.0.1:${port}`,
+        api_base: "http://model.test",
         api_key: "fixture",
         drop_params: true,
       },
@@ -317,7 +309,7 @@ describe("litellm wire", () => {
   });
 
   test("sends a multimodal tool observation as an anthropic image block", async () => {
-    const port = await listen(() => ({
+    await mockResponse(() => ({
       body: {
         content: [
           {
@@ -333,7 +325,7 @@ describe("litellm wire", () => {
     }));
     const model = getModel("anthropic/claude-sonnet-4-5-20250929", {
       model_kwargs: {
-        api_base: `http://127.0.0.1:${port}`,
+        api_base: "http://model.test",
         api_key: "fixture",
         drop_params: true,
       },
@@ -383,7 +375,7 @@ describe("litellm wire", () => {
 
   test("retries inside one completion when num_retries is set", async () => {
     let calls = 0;
-    const port = await listen(() => {
+    await mockResponse(() => {
       calls += 1;
       if (calls === 1) return { status: 500, body: { error: "busy" } };
       return {
@@ -415,7 +407,7 @@ describe("litellm wire", () => {
     const model = new LitellmModel({
       model_name: "gpt-4o",
       model_kwargs: {
-        api_base: `http://127.0.0.1:${port}/v1`,
+        api_base: "http://model.test/v1",
         num_retries: 1,
       },
     });

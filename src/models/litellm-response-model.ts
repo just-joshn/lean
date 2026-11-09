@@ -2,7 +2,7 @@ import type { Action, Message, Observation } from "../protocols.ts";
 import type { ConfigFactory } from "../config/fields.ts";
 import { FormatError, KeyboardInterrupt } from "../exceptions.ts";
 import { GLOBAL_MODEL_STATS } from "./stats.ts";
-import { completeResponses } from "./transport.ts";
+import { completeResponses } from "./responses.ts";
 import {
   responsesDump,
   responseOutput,
