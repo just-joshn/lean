@@ -343,7 +343,7 @@ function monochrome(theme: ThemeDefinition): ThemeDefinition {
     theme.name,
     {
       ...theme.colors,
-      fg: { ...theme.colors.fg, secondary: mono, muted: mono, inverse: mono },
+      fg: { ...theme.colors.fg, secondary: mono, muted: mono, inverse: base },
       accent: { primary: mono, secondary: mono, tertiary: mono },
       success: mono,
       warning: mono,

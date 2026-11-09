@@ -120,13 +120,24 @@ export function recordedActions(
   );
 }
 
-export function actionTone(status: string): NoticeTone {
+const outcomeRank = { success: 0, muted: 1, warning: 2, error: 3 } as const;
+
+function outcomeTone(status: string): keyof typeof outcomeRank {
   if (status === "completed" || status === "exit 0") return "success";
   if (status === "failed" || status === "error") return "error";
   if (status === "timeout") return "warning";
   const exit = /^exit (\d+)$/.exec(status);
   if (!exit?.[1]) return "muted";
   return exit[1] === "0" ? "success" : "error";
+}
+
+export function actionTone(status: string): NoticeTone {
+  let best: keyof typeof outcomeRank = "success";
+  for (const part of status.split(", ")) {
+    const tone = outcomeTone(part);
+    if (outcomeRank[tone] > outcomeRank[best]) best = tone;
+  }
+  return best;
 }
 
 export type TranscriptRow = {

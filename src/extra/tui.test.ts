@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { Model } from "@openai/agents";
 import { createTestRenderer } from "@rezi-ui/core";
 import { ONE_DARK_PRO, themeDefinition } from "./tui-theme.ts";
+import { actionTone } from "./tui-view.ts";
 import { afterEach, expect, test, vi } from "vitest";
 import { openSession, type OpenedSession } from "../session.ts";
 import { main } from "./tui-main.ts";
@@ -996,6 +997,25 @@ test("colors approval, cancellation, and the synthetic demo sample", async () =>
     cell(cancelled, "Cancelled. Completed tool side effects are not undone.")
       ?.fg,
   ).toBe(0xd19a66);
+});
+
+test("colors all outcomes of a recorded multi-command shell call", () => {
+  expect(actionTone("exit 0, exit 2")).toBe("error");
+  expect(actionTone("exit 2, timeout")).toBe("error");
+  expect(actionTone("exit 0, timeout")).toBe("warning");
+  expect(actionTone("timeout, unrecognized outcome")).toBe("warning");
+  expect(actionTone("exit 0, unrecognized outcome")).toBe("muted");
+  expect(actionTone("exit 0, exit")).toBe("muted");
+  expect(actionTone("exit 0, exit 0")).toBe("success");
+  expect(actionTone("unrecognized outcome")).toBe("muted");
+  expect(actionTone("exit")).toBe("muted");
+  expect(actionTone("no result")).toBe("muted");
+  expect(actionTone("completed")).toBe("success");
+  expect(actionTone("exit 0")).toBe("success");
+  expect(actionTone("failed")).toBe("error");
+  expect(actionTone("error")).toBe("error");
+  expect(actionTone("timeout")).toBe("warning");
+  expect(actionTone("exit 2")).toBe("error");
 });
 
 function cell(

@@ -78,6 +78,22 @@ test("flattens foreground hues when color is disabled", () => {
   expect(nord.error).toBe(nord.text);
 });
 
+test("keeps the selected inspector tab readable with NO_COLOR", () => {
+  const frame = createTestRenderer().render(
+    ui.button({
+      id: "tab-output",
+      label: "Output",
+      dsVariant: "solid",
+      dsTone: "primary",
+    }),
+    {
+      theme: themeDefinition(ONE_DARK_PRO, true),
+      viewport: { cols: 40, rows: 4 },
+    },
+  );
+  expect(drawn(frame, "Output")).toEqual({ fg: 0x282c34, bg: 0xabb2bf });
+});
+
 test("draws upstream input, tab, and button colors together", () => {
   const theme = themeDefinition(ONE_DARK_PRO, false);
   const scope = (
