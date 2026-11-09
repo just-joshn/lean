@@ -67,7 +67,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 # Lean Non-negotiable Design Principles
 
-| Principle | What strict adherence means for pstack |
+| Principle | What strict adherence means for Lean |
 |---|---|
 | **Radical minimalism** | The smallest comprehensible implementation is preferred over a sophisticated framework, even when the framework offers more functionality. |
 | **Model-centered intelligence** | The model reasons about engineering work; the scaffold does not encode an elaborate decision-making system. |
