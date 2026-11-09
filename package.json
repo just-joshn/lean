@@ -32,10 +32,12 @@
   },
   "dependencies": {
     "@earendil-works/pi-ai": "1.5.0",
+    "@huggingface/jinja": "0.5.11",
     "@openai/agents": "^0.21.0",
     "@rezi-ui/core": "0.1.0-beta.2",
     "@rezi-ui/node": "0.1.0-beta.2",
     "shiki": "4.6.0",
+    "yaml": "2.9.1",
     "zod": "^4.6.7"
   }
 }
