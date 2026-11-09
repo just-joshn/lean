@@ -1,3 +1,5 @@
+import { displayText, joinSections } from "./tui-display.ts";
+
 export type RecordedAction = {
   readonly callId: string;
   readonly number: number;
@@ -19,10 +21,6 @@ const RESULT_TYPES = new Set([
   "apply_patch_call_output",
 ]);
 
-export function plain(text: string): string {
-  return text.replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, "").replace(/\u001b./g, "");
-}
-
 export function isUnifiedDiff(text: string): boolean {
   const lines = text.split("\n");
   if (lines.some((line) => line.startsWith("@@"))) return true;
@@ -33,14 +31,8 @@ export function isUnifiedDiff(text: string): boolean {
 }
 
 export function diffKind(line: string): "add" | "del" | "meta" | "text" {
-  if (
-    line.startsWith("diff ") ||
-    line.startsWith("+++") ||
-    line.startsWith("---") ||
-    line.startsWith("@@")
-  ) {
-    return "meta";
-  }
+  if (line.startsWith("diff ") || line.startsWith("@@")) return "meta";
+  if (line.startsWith("+++ ") || line.startsWith("--- ")) return "meta";
   if (line.startsWith("+")) return "add";
   if (line.startsWith("-")) return "del";
   return "text";
@@ -174,16 +166,19 @@ function statusOf(result: Record<string, unknown> | undefined): string {
 
 function shellText(output: unknown): string {
   if (!Array.isArray(output)) return "";
-  const chunks: string[] = [];
+  const blocks: string[] = [];
   for (const item of output) {
     const row = record(item);
     if (!row) continue;
-    const stdout = textOf(row.stdout);
-    const stderr = textOf(row.stderr);
-    if (stdout) chunks.push(stdout);
-    if (stderr) chunks.push(stdout ? `stderr:\n${stderr}` : stderr);
+    const stdout = displayText(textOf(row.stdout));
+    const stderr = displayText(textOf(row.stderr));
+    const block =
+      stdout && stderr
+        ? joinSections([stdout, `stderr:\n${stderr}`])
+        : stdout || stderr;
+    if (block) blocks.push(block);
   }
-  return chunks.join("");
+  return joinSections(blocks);
 }
 
 function functionText(output: unknown): string {
@@ -205,12 +200,12 @@ function outputOf(
     return shellText(result?.output);
   }
   if (type === "function_call" || type === "function_call_result") {
-    return functionText(result?.output);
+    return displayText(functionText(result?.output));
   }
-  const diff = textOf(record(call?.operation)?.diff);
-  const extra = textOf(result?.output);
-  if (diff && extra && !diff.includes(extra)) return `${diff}\n${extra}`;
-  return diff || extra;
+  const diff = displayText(textOf(record(call?.operation)?.diff));
+  const extra = displayText(textOf(result?.output));
+  if (diff !== "" && diff === extra) return diff;
+  return joinSections([diff, extra]);
 }
 
 function rawOf(item: Record<string, unknown>): string {
@@ -230,9 +225,9 @@ function describe(
   return {
     callId,
     number,
-    summary: plain(summaryOf(call, result)),
-    status: plain(statusOf(result)),
-    output: plain(outputOf(call, result)),
+    summary: displayText(summaryOf(call, result)),
+    status: displayText(statusOf(result)),
+    output: displayText(outputOf(call, result)),
     raw: rawOf(result ?? call ?? { callId }),
     sourcePath: readPath(call),
   };
@@ -278,7 +273,7 @@ export function replayItems(items: readonly unknown[]): ReplayEntry[] {
     const type = row.type;
     if (type === undefined || type === "message") {
       if (row.role !== "user" && row.role !== "assistant") continue;
-      const text = plain(contentText(row.content));
+      const text = displayText(contentText(row.content));
       if (!text) continue;
       entries.push({
         kind: row.role === "user" ? "user" : "assistant",

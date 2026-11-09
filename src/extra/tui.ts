@@ -1,7 +1,8 @@
 import type { Model } from "@openai/agents";
 import type { VNode } from "@rezi-ui/core";
+import { displayText } from "./tui-display.ts";
 import { createPainter } from "./tui-highlight.ts";
-import { demoActions, plain, replayItems } from "./tui-replay.ts";
+import { demoActions, replayItems } from "./tui-replay.ts";
 import {
   ONE_DARK_PRO,
   isThemeName,
@@ -12,17 +13,15 @@ import {
 } from "./tui-theme.ts";
 import {
   commands,
-  inspectorRows,
-  proposalRows,
+  pageTop,
   recordedActions,
   renderTui,
+  screenPlan,
   slashMatches,
-  transcriptRows,
   type CommandName,
   type InspectorState,
   type InspectorTab,
   type PaintFace,
-  type Phase,
   type TuiState,
   type TranscriptEntry,
 } from "./tui-view.ts";
@@ -30,7 +29,6 @@ import {
 const CANCELLED = "Cancelled. Completed tool side effects are not undone.";
 const WAIT = "Wait until the current turn finishes.";
 const EXIT_HINT = "Press Ctrl+C again to exit.";
-const PAGE_STEP = 5;
 
 export type TurnInput = {
   readonly text: string;
@@ -59,6 +57,7 @@ const closedInspector: InspectorState = {
   tab: "output",
   callId: null,
   offset: 0,
+  edge: "top",
 };
 
 export function demoDriver(): TurnDriver {
@@ -201,6 +200,7 @@ export async function createTuiController(options: {
     recall: null,
     stash: null,
     anchor: null,
+    scrollEdge: "top",
     inspector: closedInspector,
   };
   let stopped = false;
@@ -208,6 +208,8 @@ export async function createTuiController(options: {
   let sink: ScreenSink | null = null;
   let publish = false;
   let abort: AbortController | null = null;
+  let stream: AbortController | null = null;
+  let rawTurn = "";
   let pending: ((allowed: boolean) => void) | null = null;
   let proposalAt = -1;
   let streamAt = -1;
@@ -279,20 +281,6 @@ export async function createTuiController(options: {
       draft: { text, key: state.draft.key + 1 },
       exitArmed: false,
     });
-  }
-
-  function inspectorLines(): number {
-    const action = recordedActions(state.transcript).find(
-      (item) => item.callId === state.inspector.callId,
-    );
-    if (!action) return 1;
-    return inspectorRows(
-      action,
-      state.inspector.tab,
-      state.cols,
-      state.theme,
-      face,
-    ).length;
   }
 
   function consumes(name: string, focusedId: string | null): boolean {
@@ -368,7 +356,7 @@ export async function createTuiController(options: {
       pending = resolveApproval;
       proposalAt = state.transcript.length;
       patch({
-        phase: { kind: "approval", detail, offset: 0 },
+        phase: { kind: "approval", detail, offset: 0, edge: "top" },
         anchor: null,
         inspector: { ...state.inspector, open: false, offset: 0 },
         transcript: [
@@ -384,19 +372,22 @@ export async function createTuiController(options: {
   }
 
   function onText(delta: string) {
-    const visible = plain(delta);
-    if (stopped || visible === "") return;
-    const transcript = state.transcript.slice();
-    const current = transcript[streamAt];
-    if (streamAt >= 0 && current?.kind === "assistant") {
-      transcript[streamAt] = {
-        kind: "assistant",
-        text: current.text + visible,
-      };
-    } else {
-      streamAt = transcript.length;
-      transcript.push({ kind: "assistant", text: visible });
+    const current = stream;
+    if (!current || current !== abort || current.signal.aborted || stopped) {
+      return;
     }
+    rawTurn += delta;
+    const visible = displayText(rawTurn);
+    const transcript = state.transcript.slice();
+    const row = transcript[streamAt];
+    if (streamAt >= 0 && row?.kind === "assistant") {
+      transcript[streamAt] = { kind: "assistant", text: visible };
+      patch({ transcript });
+      return;
+    }
+    if (visible === "") return;
+    streamAt = transcript.length;
+    transcript.push({ kind: "assistant", text: visible });
     patch({ transcript });
   }
 
@@ -485,46 +476,51 @@ export async function createTuiController(options: {
   }
 
   function onPage(direction: -1 | 1) {
+    const screen = screenPlan(state, face);
     if (state.phase.kind === "approval") {
-      const count = proposalRows(
-        state.phase.detail,
-        state.cols,
-        state.theme,
-        face,
-      ).length;
+      const moved = pageTop(
+        state.phase.offset,
+        screen.proposal.length,
+        screen.plan.pageSize,
+        direction,
+      );
       patch({
         phase: {
           kind: "approval",
           detail: state.phase.detail,
-          offset: Math.max(
-            0,
-            Math.min(count - 1, state.phase.offset + direction * PAGE_STEP),
-          ),
+          offset: moved.top,
+          edge: moved.edge,
         },
       });
       return;
     }
     if (state.inspector.open && state.phase.kind === "idle") {
-      const count = inspectorLines();
+      const moved = pageTop(
+        state.inspector.offset,
+        screen.inspector.length,
+        screen.plan.pageSize,
+        direction,
+      );
       patch({
         inspector: {
           ...state.inspector,
-          offset: Math.max(
-            0,
-            Math.min(count - 1, state.inspector.offset + direction * PAGE_STEP),
-          ),
+          offset: moved.top,
+          edge: moved.edge,
         },
       });
       return;
     }
-    const last =
-      transcriptRows(state.transcript, state.cols, state.theme, face).length -
-      1;
-    if (last < 0) return;
-    const current =
-      state.anchor === null ? last : Math.max(0, Math.min(last, state.anchor));
-    const next = Math.max(0, Math.min(last, current + direction * PAGE_STEP));
-    patch({ anchor: next >= last ? null : next });
+    const count = screen.transcript.length;
+    const size = screen.plan.pageSize;
+    if (count <= 0 || size <= 0) return;
+    const maxTop = Math.max(0, count - size);
+    const current = state.anchor === null ? maxTop : state.anchor;
+    const moved = pageTop(current, count, size, direction);
+    if (moved.top >= maxTop) {
+      patch({ anchor: null, scrollEdge: "top" });
+      return;
+    }
+    patch({ anchor: moved.top, scrollEdge: moved.edge });
   }
 
   function toggleInspector() {
@@ -545,6 +541,7 @@ export async function createTuiController(options: {
         tab: "output",
         callId: current.callId,
         offset: 0,
+        edge: "top",
       },
     });
   }
@@ -753,6 +750,8 @@ export async function createTuiController(options: {
     const start = state.transcript.length;
     const controller = new AbortController();
     abort = controller;
+    stream = controller;
+    rawTurn = "";
     streamAt = -1;
     proposalAt = -1;
     replaceDraft("", {
@@ -790,6 +789,10 @@ export async function createTuiController(options: {
         }
       }
     } finally {
+      if (stream === controller) {
+        stream = null;
+        rawTurn = "";
+      }
       if (abort === controller) abort = null;
       streamAt = -1;
       if (pending) {
@@ -803,11 +806,13 @@ export async function createTuiController(options: {
       return;
     }
     if (!saved) {
+      const kept = state.draft.text !== "";
       patch({
         phase: { kind: "idle" },
         blocked,
         anchor: null,
-        draft: { text, key: state.draft.key + 1 },
+        scrollEdge: "top",
+        draft: kept ? state.draft : { text, key: state.draft.key + 1 },
         transcript: [
           ...state.transcript.slice(0, start),
           {
@@ -817,7 +822,7 @@ export async function createTuiController(options: {
           },
         ],
       });
-      draftCursor = text.length;
+      if (!kept) draftCursor = text.length;
       return;
     }
     patch({ phase: { kind: "idle" }, blocked });
@@ -828,20 +833,27 @@ export async function createTuiController(options: {
     }
   }
 
+  function isLocalExit(text: string): boolean {
+    const trimmed = text.trim();
+    if (!trimmed.startsWith("/")) return false;
+    const name = trimmed.slice(1).split(/\s/, 1)[0] ?? "";
+    return name === "exit";
+  }
+
   async function submit() {
-    if (busy || state.blocked || state.phase.kind !== "idle") {
-      notice(
-        state.blocked && !busy && state.phase.kind === "idle"
-          ? "Turns are refused because restoring the session failed."
-          : WAIT,
-        state.blocked && !busy && state.phase.kind === "idle"
-          ? "error"
-          : "info",
-      );
+    if (busy || state.phase.kind !== "idle") {
+      notice(WAIT, "info");
       return;
     }
     const text = state.draft.text;
     if (text.trim() === "") return;
+    if (state.blocked && !isLocalExit(text)) {
+      notice(
+        "Turns are refused because restoring the session failed.",
+        "error",
+      );
+      return;
+    }
     const trimmed = text.trim();
     busy = true;
     const task = (async () => {
@@ -912,42 +924,39 @@ export async function createTuiController(options: {
     key,
     consumes,
     resize(cols: number, rows?: number) {
-      const next = Math.max(1, Math.floor(cols));
+      const nextCols = Math.max(1, Math.floor(cols));
       const nextRows =
         rows === undefined
           ? state.rows
           : Math.max(1, Math.floor(Number.isFinite(rows) ? rows : 1));
-      if (state.phase.kind !== "approval") {
-        const count = state.inspector.open ? inspectorLines() : 0;
-        patch({
-          cols: next,
-          rows: nextRows,
-          inspector: state.inspector.open
+      const previousPage = screenPlan(state, face).plan.pageSize;
+      const screen = screenPlan(
+        { ...state, cols: nextCols, rows: nextRows },
+        face,
+      );
+      const pageChanged = screen.plan.pageSize !== previousPage;
+      patch({
+        cols: nextCols,
+        rows: nextRows,
+        anchor: pageChanged ? null : state.anchor,
+        scrollEdge: pageChanged ? "top" : state.scrollEdge,
+        inspector: {
+          ...state.inspector,
+          offset: Math.min(
+            state.inspector.offset,
+            Math.max(0, screen.inspector.length - 1),
+          ),
+        },
+        phase:
+          state.phase.kind === "approval"
             ? {
-                ...state.inspector,
+                ...state.phase,
                 offset: Math.min(
-                  state.inspector.offset,
-                  Math.max(0, count - 1),
+                  state.phase.offset,
+                  Math.max(0, screen.proposal.length - 1),
                 ),
               }
-            : state.inspector,
-        });
-        return;
-      }
-      const count = proposalRows(
-        state.phase.detail,
-        next,
-        state.theme,
-        face,
-      ).length;
-      patch({
-        cols: next,
-        rows: nextRows,
-        phase: {
-          kind: "approval",
-          detail: state.phase.detail,
-          offset: Math.min(state.phase.offset, Math.max(0, count - 1)),
-        },
+            : state.phase,
       });
     },
     allow,

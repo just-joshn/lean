@@ -44,6 +44,8 @@ export type TranscriptEntry =
     }
   | { readonly kind: "action"; readonly action: RecordedAction };
 
+export type ScrollEdge = "top" | "bottom";
+
 export type Phase =
   | { readonly kind: "idle" }
   | { readonly kind: "running" }
@@ -51,6 +53,7 @@ export type Phase =
       readonly kind: "approval";
       readonly detail: string;
       readonly offset: number;
+      readonly edge: ScrollEdge;
     };
 
 export type InspectorTab = "output" | "raw";
@@ -60,6 +63,7 @@ export type InspectorState = {
   readonly tab: InspectorTab;
   readonly callId: string | null;
   readonly offset: number;
+  readonly edge: ScrollEdge;
 };
 
 export type TuiState = {
@@ -83,6 +87,7 @@ export type TuiState = {
   readonly recall: number | null;
   readonly stash: string | null;
   readonly anchor: number | null;
+  readonly scrollEdge: ScrollEdge;
   readonly inspector: InspectorState;
 };
 
@@ -100,8 +105,277 @@ export type PaintFace = {
   readonly noColor: boolean;
 };
 
-const PROPOSAL_ROWS = 6;
-const INSPECTOR_ROWS = 8;
+const PROPOSAL_CAP = 6;
+const INSPECTOR_CAP = 8;
+
+export type PaneActivity = "transcript" | "proposal" | "inspector";
+
+type PaneHeights = {
+  header: number;
+  beforeTranscript: number;
+  transcript: number;
+  proposalLabel: number;
+  proposal: number;
+  inspectorTitle: number;
+  inspectorTabs: number;
+  inspector: number;
+  record: number;
+  beforeComposer: number;
+  buttons: number;
+  prompt: number;
+  afterComposer: number;
+  footer: number;
+  slash: number;
+};
+
+export type PanePlan = {
+  readonly chromeWidth: number;
+  readonly contentWidth: number;
+  readonly proposalWidth: number;
+  readonly heights: PaneHeights;
+  readonly slashStart: number;
+  readonly pageSize: number;
+};
+
+type PaneSlot = {
+  id: keyof PaneHeights;
+  want: number;
+  min: number;
+  rank: number;
+};
+
+const emptyHeights = (): PaneHeights => ({
+  header: 0,
+  beforeTranscript: 0,
+  transcript: 0,
+  proposalLabel: 0,
+  proposal: 0,
+  inspectorTitle: 0,
+  inspectorTabs: 0,
+  inspector: 0,
+  record: 0,
+  beforeComposer: 0,
+  buttons: 0,
+  prompt: 0,
+  afterComposer: 0,
+  footer: 0,
+  slash: 0,
+});
+
+export function panePlan(input: {
+  readonly rows: number;
+  readonly cols: number;
+  readonly slashMatches: number;
+  readonly slashIndex: number;
+  readonly active: PaneActivity;
+  readonly transcriptLines: number;
+  readonly proposalLines: number;
+  readonly inspectorLines: number;
+  readonly record: boolean;
+}): PanePlan {
+  const cols = Math.max(1, Math.floor(input.cols));
+  const rows = Math.max(1, Math.floor(input.rows));
+  const slots: PaneSlot[] = [
+    { id: "header", want: 1, min: 0, rank: 4 },
+    { id: "beforeTranscript", want: 1, min: 0, rank: 0 },
+    {
+      id: "transcript",
+      want: 0,
+      min: 0,
+      rank: input.active === "transcript" ? 100 : 2,
+    },
+  ];
+  if (input.proposalLines > 0) {
+    slots.push(
+      { id: "proposalLabel", want: 1, min: 0, rank: 6 },
+      {
+        id: "proposal",
+        want: Math.min(PROPOSAL_CAP, input.proposalLines),
+        min: 0,
+        rank: input.active === "proposal" ? 100 : 2,
+      },
+      { id: "buttons", want: 1, min: 0, rank: 6 },
+    );
+  }
+  if (input.inspectorLines > 0) {
+    slots.push(
+      { id: "inspectorTitle", want: 1, min: 0, rank: 6 },
+      { id: "inspectorTabs", want: 1, min: 0, rank: 6 },
+      {
+        id: "inspector",
+        want: Math.min(INSPECTOR_CAP, input.inspectorLines),
+        min: 0,
+        rank: input.active === "inspector" ? 100 : 2,
+      },
+    );
+  }
+  if (input.record) slots.push({ id: "record", want: 1, min: 0, rank: 3 });
+  slots.push(
+    { id: "beforeComposer", want: 1, min: 0, rank: 0 },
+    { id: "prompt", want: 1, min: 1, rank: 8 },
+    { id: "afterComposer", want: 1, min: 0, rank: 0 },
+  );
+  if (input.slashMatches > 0) {
+    slots.push({
+      id: "slash",
+      want: input.slashMatches,
+      min: 0,
+      rank: 1,
+    });
+  } else {
+    slots.push({ id: "footer", want: 1, min: 0, rank: 5 });
+  }
+
+  const heights = emptyHeights();
+  for (const slot of slots) heights[slot.id] = slot.want;
+  const activeId: keyof PaneHeights =
+    input.active === "proposal"
+      ? "proposal"
+      : input.active === "inspector"
+        ? "inspector"
+        : "transcript";
+  const activeLines =
+    input.active === "proposal"
+      ? input.proposalLines
+      : input.active === "inspector"
+        ? input.inspectorLines
+        : input.transcriptLines;
+  const activeCap =
+    input.active === "transcript" ? Number.POSITIVE_INFINITY : activeLines;
+  const sum = () => {
+    let total = 0;
+    for (const slot of slots) total += heights[slot.id];
+    return total;
+  };
+  let extra = rows - sum();
+  if (extra > 0) {
+    const room = Math.max(0, activeCap - heights[activeId]);
+    const give = Math.min(extra, room);
+    heights[activeId] += give;
+    extra -= give;
+  }
+  if (extra > 0 && activeId !== "transcript") heights.transcript += extra;
+  const ranked = [...slots].sort((left, right) => left.rank - right.rank);
+  let shrunk = true;
+  while (sum() > rows && shrunk) {
+    shrunk = false;
+    for (const slot of ranked) {
+      if (sum() <= rows) break;
+      if (heights[slot.id] > slot.min) {
+        heights[slot.id] -= 1;
+        shrunk = true;
+      }
+    }
+  }
+  const floor = activeLines > 0 ? 1 : 0;
+  while (heights[activeId] < floor) {
+    const donor = ranked.find(
+      (slot) => slot.id !== activeId && heights[slot.id] > slot.min,
+    );
+    if (!donor) break;
+    heights[donor.id] -= 1;
+    heights[activeId] += 1;
+  }
+  return {
+    chromeWidth: cols,
+    contentWidth: Math.max(1, cols - 1),
+    proposalWidth: cols,
+    heights,
+    slashStart: slashStart(input.slashMatches, input.slashIndex, heights.slash),
+    pageSize: heights[activeId],
+  };
+}
+
+function slashStart(count: number, index: number, height: number): number {
+  if (height <= 0 || height >= count) return 0;
+  const selected = Math.max(0, Math.min(count - 1, index));
+  return Math.max(
+    0,
+    Math.min(count - height, selected - Math.floor((height - 1) / 2)),
+  );
+}
+
+export function pageTop(
+  top: number,
+  count: number,
+  pageSize: number,
+  direction: -1 | 1,
+): { top: number; edge: ScrollEdge } {
+  const size = Math.max(1, pageSize);
+  const maxTop = Math.max(0, count - size);
+  const current = Math.max(0, Math.min(maxTop, top));
+  const next = Math.max(0, Math.min(maxTop, current + direction * size));
+  return { top: next, edge: direction < 0 ? "top" : "bottom" };
+}
+
+export function ensuredIndex(
+  top: number | null,
+  count: number,
+  pageSize: number,
+  edge: ScrollEdge,
+): { index: number; sticky: boolean } {
+  if (count <= 0) return { index: 0, sticky: true };
+  if (top === null) return { index: count - 1, sticky: true };
+  const clamped = Math.max(0, Math.min(count - 1, top));
+  if (edge === "bottom") {
+    return {
+      index: Math.min(count - 1, clamped + Math.max(1, pageSize) - 1),
+      sticky: false,
+    };
+  }
+  return { index: clamped, sticky: false };
+}
+
+export function screenPlan(state: TuiState, face: PaintFace) {
+  const active: PaneActivity =
+    state.phase.kind === "approval"
+      ? "proposal"
+      : state.inspector.open && state.phase.kind === "idle"
+        ? "inspector"
+        : "transcript";
+  const transcript = transcriptRows(
+    state.transcript,
+    state.cols,
+    state.theme,
+    face,
+  );
+  const proposal =
+    state.phase.kind === "approval"
+      ? proposalRows(state.phase.detail, state.cols, state.theme, face)
+      : [];
+  const actions = recordedActions(state.transcript);
+  const selected =
+    actions.find((action) => action.callId === state.inspector.callId) ??
+    actions[actions.length - 1];
+  const inspector =
+    active === "inspector" && selected
+      ? inspectorRows(
+          selected,
+          state.inspector.tab,
+          state.cols,
+          state.theme,
+          face,
+        )
+      : [];
+  return {
+    active,
+    transcript,
+    proposal,
+    inspector,
+    selected,
+    plan: panePlan({
+      rows: state.rows,
+      cols: state.cols,
+      slashMatches: slashMatches(state.draft.text).length,
+      slashIndex: state.slashIndex,
+      active,
+      transcriptLines: transcript.length,
+      proposalLines: proposal.length,
+      inspectorLines: inspector.length,
+      record: active === "transcript" && selected !== undefined,
+    }),
+  };
+}
 
 export function slashMatches(
   text: string,
@@ -189,7 +463,7 @@ export function proposalRows(
   return face.painter.rows({
     theme,
     source: jsonSource(detail),
-    width: Math.max(10, cols),
+    width: Math.max(1, cols),
   });
 }
 
@@ -200,7 +474,7 @@ export function inspectorRows(
   theme: ThemeName,
   face: PaintFace,
 ): readonly VisualRow[] {
-  const width = Math.max(10, cols - 1);
+  const width = Math.max(1, cols - 1);
   const body = tab === "raw" ? action.raw : action.output;
   if (body.length === 0) {
     return face.painter.rows({
@@ -212,10 +486,10 @@ export function inspectorRows(
   const source: PaintSource =
     tab === "raw"
       ? { kind: "json", text: body }
-      : isUnifiedDiff(action.output)
-        ? { kind: "diff", text: body }
-        : action.sourcePath
-          ? { kind: "file", text: body, path: action.sourcePath }
+      : action.sourcePath
+        ? { kind: "file", text: body, path: action.sourcePath }
+        : isUnifiedDiff(action.output)
+          ? { kind: "diff", text: body }
           : { kind: "plain", text: body, tone: "text" };
   return face.painter.rows({ theme, source, width });
 }
@@ -228,14 +502,19 @@ export function renderTui(
   const chrome = chromeFor(state.theme, face.noColor);
   const text = ink(chrome.text, chrome.canvas);
   const secondary = ink(chrome.secondary, chrome.canvas);
+  const screen = screenPlan(state, face);
+  const { plan } = screen;
+  const grow =
+    state.phase.kind === "approval" && plan.heights.proposal > 0
+      ? "proposal"
+      : state.inspector.open && plan.heights.inspector > 0
+        ? "inspector"
+        : "transcript";
+  const paneSize = (id: typeof grow, height: number) =>
+    id === grow ? { flex: 1 } : { height };
+  const width = plan.chromeWidth;
   const matches = slashMatches(state.draft.text);
-  const slashIndex =
-    matches.length === 0 ? 0 : Math.min(state.slashIndex, matches.length - 1);
-  const width = Math.max(10, state.cols);
-  const actions = recordedActions(state.transcript);
-  const selected =
-    actions.find((action) => action.callId === state.inspector.callId) ??
-    actions[actions.length - 1];
+  const selected = screen.selected;
   const button = (props: ButtonProps, kind: ControlKind): VNode => {
     const node = ui.button({
       ...props,
@@ -247,38 +526,45 @@ export function renderTui(
     const override = controlOverride(state.theme, face.noColor, kind);
     return override ? ui.themed(override, [node]) : node;
   };
-  const children: VNode[] = [
-    ui.row({ width: "full", height: 1, gap: 0 }, [
-      ui.text("* ", { fg: chrome.accent, bold: true, dim: false }),
-      ui.text("Lean ", { fg: chrome.text, bold: true, dim: false }),
-      ui.text(`${state.cwd} · ${state.modelLabel}`, {
-        style: secondary,
-        textOverflow: "ellipsis",
-        maxWidth: Math.max(1, width - 8),
-      }),
-    ]),
-    ui.divider({ color: "border.subtle" }),
-  ];
-
-  const rows = transcriptRows(state.transcript, state.cols, state.theme, face);
-  if (rows.length === 0) {
-    children.push(ui.spacer({ flex: 1 }));
-  } else {
-    const last = rows.length - 1;
-    const pinned =
-      state.anchor === null ? null : Math.max(0, Math.min(last, state.anchor));
+  const children: VNode[] = [];
+  if (plan.heights.header > 0) {
+    children.push(
+      ui.row({ width: "full", height: 1, gap: 0 }, [
+        ui.text("* ", { fg: chrome.accent, bold: true, dim: false }),
+        ui.text("Lean ", { fg: chrome.text, bold: true, dim: false }),
+        ui.text(`${state.cwd} · ${state.modelLabel}`, {
+          style: secondary,
+          textOverflow: "ellipsis",
+          maxWidth: Math.max(1, width - 8),
+        }),
+      ]),
+    );
+  }
+  if (plan.heights.beforeTranscript > 0) {
+    children.push(ui.divider({ color: "border.subtle" }));
+  }
+  if (screen.transcript.length === 0) {
+    if (plan.heights.transcript > 0) {
+      children.push(ui.spacer({ size: plan.heights.transcript }));
+    }
+  } else if (plan.heights.transcript > 0) {
+    const target = ensuredIndex(
+      state.anchor,
+      screen.transcript.length,
+      plan.heights.transcript,
+      state.scrollEdge,
+    );
     children.push(
       ui.virtualList({
-        id:
-          pinned === null ? "transcript" : `transcript:${pinned}:${state.cols}`,
-        flex: 1,
+        id: "transcript",
         width: "full",
+        ...paneSize("transcript", plan.heights.transcript),
         focusable: false,
         keyboardNavigation: false,
-        items: rows,
+        items: screen.transcript,
         itemHeight: 1,
-        ensureVisibleIndex: pinned ?? last,
-        ensureVisibleMode: pinned === null ? "sticky" : "always",
+        ensureVisibleIndex: target.index,
+        ensureVisibleMode: target.sticky ? "sticky" : "always",
         renderItem: (row) => ui.richText(row.spans),
       }),
     );
@@ -286,125 +572,139 @@ export function renderTui(
 
   const composer: VNode[] = [];
   if (state.phase.kind === "approval") {
-    const lines = proposalRows(
-      state.phase.detail,
-      state.cols,
-      state.theme,
-      face,
+    if (plan.heights.proposalLabel > 0) {
+      children.push(
+        ui.text("Proposed call. Nothing has run.", {
+          fg: chrome.text,
+          bold: true,
+          dim: false,
+        }),
+      );
+    }
+    if (plan.heights.proposal > 0) {
+      const target = ensuredIndex(
+        state.phase.offset,
+        screen.proposal.length,
+        plan.heights.proposal,
+        state.phase.edge,
+      );
+      children.push(
+        ui.virtualList({
+          id: "proposal",
+          width: "full",
+          ...paneSize("proposal", plan.heights.proposal),
+          focusable: false,
+          keyboardNavigation: false,
+          items: screen.proposal,
+          itemHeight: 1,
+          ensureVisibleIndex: target.index,
+          ensureVisibleMode: "always",
+          renderItem: (line) => ui.richText(line.spans),
+        }),
+      );
+    }
+    if (plan.heights.buttons > 0)
+      composer.push(
+        ui.row({ height: 1, gap: 1 }, [
+          button(
+            {
+              id: "allow",
+              label: "Allow",
+              dsVariant: "soft",
+              dsTone: "success",
+              onPress: handlers.allow,
+            },
+            "success",
+          ),
+          button(
+            {
+              id: "deny",
+              label: "Deny",
+              dsVariant: "soft",
+              dsTone: "danger",
+              onPress: handlers.deny,
+            },
+            "danger",
+          ),
+        ]),
+      );
+  } else if (
+    state.phase.kind === "idle" &&
+    selected &&
+    state.inspector.open &&
+    plan.heights.inspector > 0
+  ) {
+    const target = ensuredIndex(
+      state.inspector.offset,
+      screen.inspector.length,
+      plan.heights.inspector,
+      state.inspector.edge,
     );
-    const offset = Math.max(0, Math.min(lines.length - 1, state.phase.offset));
+    if (plan.heights.inspectorTitle > 0) {
+      children.push(
+        clip(
+          `Recorded ${String(selected.number).padStart(2, "0")} · ${selected.summary}`,
+          width,
+          text,
+        ),
+      );
+    }
+    if (plan.heights.inspectorTabs > 0) {
+      children.push(
+        ui.row({ height: 1, gap: 1 }, [
+          button(
+            {
+              id: "tab-output",
+              label: "Output",
+              dsVariant: state.inspector.tab === "output" ? "solid" : "soft",
+              dsTone: state.inspector.tab === "output" ? "primary" : "default",
+              onPress: () => handlers.setInspectorTab("output"),
+            },
+            state.inspector.tab === "output" ? "tab" : "secondary",
+          ),
+          button(
+            {
+              id: "tab-raw",
+              label: "Raw result",
+              dsVariant: state.inspector.tab === "raw" ? "solid" : "soft",
+              dsTone: state.inspector.tab === "raw" ? "primary" : "default",
+              onPress: () => handlers.setInspectorTab("raw"),
+            },
+            state.inspector.tab === "raw" ? "tab" : "secondary",
+          ),
+          button(
+            {
+              id: "inspect-close",
+              label: "Close",
+              dsVariant: "soft",
+              dsTone: "default",
+              onPress: handlers.closeInspector,
+            },
+            "secondary",
+          ),
+        ]),
+      );
+    }
     children.push(
-      ui.text("Proposed call. Nothing has run.", {
-        fg: chrome.text,
-        bold: true,
-        dim: false,
-      }),
-      ui.virtualList({
-        id: "proposal",
-        width: "full",
-        height: Math.min(PROPOSAL_ROWS, lines.length),
-        focusable: false,
-        keyboardNavigation: false,
-        items: lines,
-        itemHeight: 1,
-        ensureVisibleIndex: offset,
-        ensureVisibleMode: "always",
-        renderItem: (line) => ui.richText(line.spans),
-      }),
-    );
-    composer.push(
-      ui.row({ gap: 1 }, [
-        button(
-          {
-            id: "allow",
-            label: "Allow",
-            dsVariant: "soft",
-            dsTone: "success",
-            onPress: handlers.allow,
-          },
-          "success",
-        ),
-        button(
-          {
-            id: "deny",
-            label: "Deny",
-            dsVariant: "soft",
-            dsTone: "danger",
-            onPress: handlers.deny,
-          },
-          "danger",
-        ),
-      ]),
-    );
-  } else if (state.phase.kind === "idle" && selected && state.inspector.open) {
-    const lines = inspectorRows(
-      selected,
-      state.inspector.tab,
-      state.cols,
-      state.theme,
-      face,
-    );
-    const offset = Math.max(
-      0,
-      Math.min(lines.length - 1, state.inspector.offset),
-    );
-    children.push(
-      clip(
-        `Recorded ${String(selected.number).padStart(2, "0")} · ${selected.summary}`,
-        width,
-        text,
-      ),
-      ui.row({ gap: 1 }, [
-        button(
-          {
-            id: "tab-output",
-            label: "Output",
-            dsVariant: state.inspector.tab === "output" ? "solid" : "soft",
-            dsTone: state.inspector.tab === "output" ? "primary" : "default",
-            onPress: () => handlers.setInspectorTab("output"),
-          },
-          state.inspector.tab === "output" ? "tab" : "secondary",
-        ),
-        button(
-          {
-            id: "tab-raw",
-            label: "Raw result",
-            dsVariant: state.inspector.tab === "raw" ? "solid" : "soft",
-            dsTone: state.inspector.tab === "raw" ? "primary" : "default",
-            onPress: () => handlers.setInspectorTab("raw"),
-          },
-          state.inspector.tab === "raw" ? "tab" : "secondary",
-        ),
-        button(
-          {
-            id: "inspect-close",
-            label: "Close",
-            dsVariant: "soft",
-            dsTone: "default",
-            onPress: handlers.closeInspector,
-          },
-          "secondary",
-        ),
-      ]),
       ui.virtualList({
         id: "inspector-body",
         width: "full",
-        height: Math.min(INSPECTOR_ROWS, Math.max(1, lines.length)),
+        ...paneSize("inspector", plan.heights.inspector),
         focusable: false,
         keyboardNavigation: false,
-        items: lines,
+        items: screen.inspector,
         itemHeight: 1,
-        ensureVisibleIndex: offset,
+        ensureVisibleIndex: target.index,
         ensureVisibleMode: "always",
         renderItem: (line) => ui.richText(line.spans),
       }),
     );
-  } else if (state.phase.kind === "idle" && selected) {
+  } else if (plan.heights.record > 0 && selected) {
     children.push(
-      ui.row({ width: "full", gap: 1 }, [
+      ui.row({ width: "full", height: 1, gap: 1 }, [
         clip(
           `Recorded ${String(selected.number).padStart(2, "0")} · ${selected.summary}`,
-          Math.max(10, width - 12),
+          Math.max(1, width - 12),
           text,
         ),
         button(
@@ -436,18 +736,29 @@ export function renderTui(
     ]),
   );
 
-  children.push(
-    ui.divider({ color: "border.subtle" }),
-    ui.focusTrap({ id: "composer", active: true, initialFocus: "prompt" }, [
-      ui.column({ gap: 0, width: "full" }, composer),
-    ]),
-    ui.divider({ color: "border.subtle" }),
-  );
+  if (plan.heights.beforeComposer > 0) {
+    children.push(ui.divider({ color: "border.subtle" }));
+  }
+  if (plan.heights.prompt > 0) {
+    children.push(
+      ui.focusTrap({ id: "composer", active: true, initialFocus: "prompt" }, [
+        ui.column({ gap: 0, width: "full" }, composer),
+      ]),
+    );
+  }
+  if (plan.heights.afterComposer > 0) {
+    children.push(ui.divider({ color: "border.subtle" }));
+  }
 
-  if (matches.length > 0) {
-    for (const [index, command] of matches.entries()) {
-      const mark = index === slashIndex ? ">" : " ";
-      const selectedRow = index === slashIndex;
+  if (plan.heights.slash > 0) {
+    const visible = matches.slice(
+      plan.slashStart,
+      plan.slashStart + plan.heights.slash,
+    );
+    for (const [offset, command] of visible.entries()) {
+      const index = plan.slashStart + offset;
+      const mark = index === state.slashIndex ? ">" : " ";
+      const selectedRow = index === state.slashIndex;
       children.push(
         clip(
           `${mark} /${command.name}  ${command.summary}`,
@@ -456,22 +767,24 @@ export function renderTui(
         ),
       );
     }
-  } else if (state.phase.kind === "approval") {
+  } else if (plan.heights.footer > 0 && state.phase.kind === "approval") {
     children.push(
       clip(
-        "y allow · n, enter, or esc deny · page up and page down scroll",
+        state.draft.text === ""
+          ? "y allow · n, enter, or esc deny · page up and page down scroll"
+          : "esc deny · page up and page down scroll",
         width,
         secondary,
       ),
     );
-  } else if (state.inspector.open) {
+  } else if (plan.heights.footer > 0 && state.inspector.open) {
     children.push(
       clip("tab output/raw · left right select · esc close", width, secondary),
     );
-  } else {
+  } else if (plan.heights.footer > 0) {
     children.push(
       clip(
-        actions.length > 0
+        selected
           ? "enter send · esc cancel · ctrl-c interrupt · ctrl-o results · /help"
           : "enter send · esc cancel · ctrl-c interrupt · /help",
         width,
@@ -558,7 +871,7 @@ function jsonSource(detail: string): PaintSource {
 }
 
 function contentWidth(cols: number): number {
-  return Math.max(10, cols - 1);
+  return Math.max(1, cols - 1);
 }
 
 function ink(fg: number, bg: number, bold = false): TextStyle {

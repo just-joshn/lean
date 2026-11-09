@@ -436,7 +436,8 @@ function pack(
   const rows: RichTextSpan[][] = [];
   let spans: RichTextSpan[] = [];
   let cells = 0;
-  for (const atom of atomsInLine) {
+  let column = 0;
+  const emit = (atom: { text: string; cells: number; style: TextStyle }) => {
     if (spans.length > 0 && cells + atom.cells > max) {
       rows.push(spans);
       spans = [];
@@ -452,6 +453,17 @@ function pack(
       spans.push({ text: atom.text, style: atom.style });
     }
     cells += atom.cells;
+    column += atom.cells;
+  };
+  for (const atom of atomsInLine) {
+    if (atom.text !== "\t") {
+      emit(atom);
+      continue;
+    }
+    const count = 8 - (column % 8);
+    for (let index = 0; index < count; index += 1) {
+      emit({ text: " ", cells: 1, style: atom.style });
+    }
   }
   if (spans.length > 0) rows.push(spans);
   return rows.map((row) => ({ spans: row }));

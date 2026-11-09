@@ -139,7 +139,7 @@ async function runScreen(
   });
   app.onEvent((event) => {
     if (event.kind === "engine" && event.event.kind === "resize") {
-      controller.resize(event.event.cols);
+      controller.resize(event.event.cols, event.event.rows);
     }
   });
   const onSignal = () => {
