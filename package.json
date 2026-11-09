@@ -8,8 +8,10 @@
   "private": true,
   "scripts": {
     "start": "bun run src/index.ts",
+    "tui": "bun run src/extra/tui-main.ts",
     "test": "vitest run",
     "test:terminal": "python3 scripts/verify-cli.py src/index.ts .lean/terminal-checks",
+    "test:tui": "python3 scripts/verify-tui.py src/extra/tui-main.ts .lean/tui-checks",
     "test:subscriptions": "python3 scripts/verify-subscriptions.py src/index.ts .lean/subscription-checks/shell && python3 scripts/verify-subscriptions.py src/index.ts .lean/subscription-checks/patch --tool apply_patch",
     "test:login-cancel": "python3 scripts/verify-login-cancel.py src/index.ts .lean/login-cancel-checks",
     "typecheck": "bun check",
@@ -30,6 +32,8 @@
   },
   "dependencies": {
     "@openai/agents": "^0.21.0",
+    "@rezi-ui/core": "0.1.0-beta.2",
+    "@rezi-ui/node": "0.1.0-beta.2",
     "zod": "^4.6.7",
     "@earendil-works/pi-ai": "1.5.0"
   }
