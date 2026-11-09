@@ -653,7 +653,7 @@ test("shows the same readable text for a whole control and a control split acros
     ["\u001b]8;;http://example.test\u0007link\u001b]8;;\u0007", "link"],
     ["\u001b]0;title\u0007done", "done"],
     ["0%\r100%\n", "100%\n"],
-    ["\tgoal", "        goal"],
+    ["\tgoal", "\tgoal"],
     ["hello\rX", "Xello"],
     ["a\r\nb", "a\nb"],
   ] as const;
@@ -663,6 +663,9 @@ test("shows the same readable text for a whole control and a control split acros
     });
     expect(assistantText(replayed)).toBe(expected);
     expect(assistantText(replayed)).not.toContain("\u001b");
+    if (raw === "\tgoal") {
+      expect(render(replayed, 40, 24).toText()).toContain("        goal");
+    }
     let turn = 0;
     const parts = cuts(raw);
     const streamed = await open({
@@ -840,4 +843,36 @@ test("keeps rows reachable after a resize", async () => {
     controller.key("pageup");
   }
   expect([...seen].sort()).toEqual(lines);
+});
+
+test("keeps a makefile tab so @ stays keyword purple and the indent is eight spaces", async () => {
+  const source = "all:\n\t@echo hello\n";
+  const controller = await open({
+    items: [
+      {
+        type: "function_call",
+        callId: "read",
+        name: "read",
+        arguments: JSON.stringify({ path: "Makefile" }),
+      },
+      {
+        type: "function_call_result",
+        callId: "read",
+        output: source,
+      },
+    ],
+  });
+  const action = controller.state.transcript.find(
+    (entry) => entry.kind === "action",
+  );
+  if (action?.kind !== "action") throw new Error("missing read");
+  expect(action.action.output).toContain("\t@echo hello");
+  expect(action.action.raw).toContain("@echo hello");
+  expect(controller.key("ctrl+o")).toBe(true);
+  await expect
+    .poll(() => drawn(render(controller, 80, 24), "@")?.style?.fg, {
+      timeout: 4000,
+    })
+    .toBe(0xc678dd);
+  expect(render(controller, 80, 24).toText()).toContain("        @echo hello");
 });
