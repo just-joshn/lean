@@ -88,70 +88,181 @@ async function postJson(
   return parsed;
 }
 
+function imageBlock(block: Record<string, unknown>): Record<string, unknown> {
+  const image = block.image_url;
+  const url =
+    typeof image === "string"
+      ? image
+      : isRecord(image)
+        ? String(image.url ?? "")
+        : "";
+  const cache =
+    "cache_control" in block ? { cache_control: block.cache_control } : {};
+  if (url.startsWith("https://")) {
+    return { type: "image", source: { type: "url", url }, ...cache };
+  }
+  const match = /^data:([^;,]+);base64,([\s\S]*)$/u.exec(url);
+  if (!match) return block;
+  return {
+    type: "image",
+    source: { type: "base64", media_type: match[1], data: match[2] },
+    ...cache,
+  };
+}
+
+function contentBlocks(content: unknown): unknown[] {
+  if (typeof content === "string") return [{ type: "text", text: content }];
+  if (!Array.isArray(content)) return [];
+  return content.flatMap((block) => {
+    if (!isRecord(block)) return [];
+    if (block.type === "image_url") return [imageBlock(block)];
+    if (block.type === "text") {
+      const text: Record<string, unknown> = { type: "text", text: block.text };
+      if (block.cache_control) text.cache_control = block.cache_control;
+      return [text];
+    }
+    return [block];
+  });
+}
+
+function toolResult(message: Message): Record<string, unknown> {
+  const result: Record<string, unknown> = {
+    type: "tool_result",
+    tool_use_id: message.tool_call_id,
+    content:
+      typeof message.content === "string"
+        ? message.content
+        : contentBlocks(message.content),
+  };
+  if (message.cache_control) result.cache_control = message.cache_control;
+  return result;
+}
+
+function toolUse(call: unknown): Record<string, unknown> | undefined {
+  if (!isRecord(call) || !isRecord(call.function)) return undefined;
+  let input: unknown = {};
+  try {
+    input = JSON.parse(String(call.function.arguments ?? "{}"));
+  } catch {
+    input = {};
+  }
+  return {
+    type: "tool_use",
+    id: call.id,
+    name: call.function.name,
+    input,
+  };
+}
+
+function thinkingBlocks(message: Message): unknown[] {
+  return Array.isArray(message.thinking_blocks) ? message.thinking_blocks : [];
+}
+
+function assistantBlocks(message: Message): unknown[] {
+  const content = message.content;
+  const listed = Array.isArray(content);
+  const inlineThinking =
+    listed &&
+    content.some(
+      (block) =>
+        isRecord(block) &&
+        (block.type === "thinking" || block.type === "redacted_thinking"),
+    );
+  const blocks: unknown[] = [];
+  if (!inlineThinking) blocks.push(...thinkingBlocks(message));
+  if (typeof content === "string" && content) {
+    const text: Record<string, unknown> = { type: "text", text: content };
+    if (message.cache_control) text.cache_control = message.cache_control;
+    blocks.push(text);
+  } else if (listed) {
+    blocks.push(...contentBlocks(content));
+  }
+  if (Array.isArray(message.tool_calls)) {
+    for (const call of message.tool_calls) {
+      const block = toolUse(call);
+      if (block) blocks.push(block);
+    }
+  }
+  return blocks;
+}
+
 function anthropicMessages(messages: Message[]): {
-  system?: string;
+  system?: unknown[];
   messages: unknown[];
 } {
-  const system: string[] = [];
+  const system: unknown[] = [];
   const converted: unknown[] = [];
+  let index = 0;
   for (const message of messages) {
-    if (message.role === "system") {
-      if (typeof message.content === "string") system.push(message.content);
+    if (message.role !== "system") continue;
+    if (typeof message.content === "string") {
+      if (!message.content) continue;
+      const block: Record<string, unknown> = {
+        type: "text",
+        text: message.content,
+      };
+      if (message.cache_control) block.cache_control = message.cache_control;
+      system.push(block);
+    } else {
+      for (const block of contentBlocks(message.content)) {
+        if (isRecord(block) && block.type === "text" && !block.text) continue;
+        system.push(block);
+      }
+    }
+  }
+  while (index < messages.length) {
+    const message = messages[index];
+    if (!message || message.role === "system") {
+      index += 1;
       continue;
     }
-    if (message.role === "tool") {
-      converted.push({
-        role: "user",
-        content: [
-          {
-            type: "tool_result",
-            tool_use_id: message.tool_call_id,
-            content: typeof message.content === "string" ? message.content : "",
-          },
-        ],
-      });
+    if (
+      message.role === "user" ||
+      message.role === "tool" ||
+      message.role === "function"
+    ) {
+      const content: unknown[] = [];
+      while (index < messages.length) {
+        const current = messages[index];
+        if (
+          !current ||
+          !["user", "tool", "function"].includes(String(current.role))
+        )
+          break;
+        if (current.role === "tool" || current.role === "function")
+          content.push(toolResult(current));
+        else content.push(...contentBlocks(current.content));
+        index += 1;
+      }
+      if (content.length > 0) converted.push({ role: "user", content });
       continue;
     }
     if (message.role === "assistant") {
-      const blocks: unknown[] = [];
-      if (Array.isArray(message.content)) blocks.push(...message.content);
-      else if (typeof message.content === "string" && message.content) {
-        blocks.push({ type: "text", text: message.content });
+      const content: unknown[] = [];
+      while (index < messages.length && messages[index]?.role === "assistant") {
+        const current = messages[index];
+        if (current) content.push(...assistantBlocks(current));
+        index += 1;
       }
-      if (Array.isArray(message.tool_calls)) {
-        for (const call of message.tool_calls) {
-          if (!isRecord(call) || !isRecord(call.function)) continue;
-          let input: unknown = {};
-          try {
-            input = JSON.parse(String(call.function.arguments ?? "{}"));
-          } catch {
-            input = {};
-          }
-          blocks.push({
-            type: "tool_use",
-            id: call.id,
-            name: call.function.name,
-            input,
-          });
-        }
-      }
-      converted.push({ role: "assistant", content: blocks });
+      converted.push({ role: "assistant", content });
       continue;
     }
-    converted.push({ role: "user", content: message.content });
+    converted.push({ role: message.role, content: message.content });
+    index += 1;
   }
   return {
-    system: system.length > 0 ? system.join("\n\n") : undefined,
+    system: system.length > 0 ? system : undefined,
     messages: converted,
   };
 }
 
 function fromAnthropic(body: Record<string, unknown>): ChatResponse {
   const blocks = Array.isArray(body.content) ? body.content : [];
-  const toolCalls = blocks.flatMap((block) => {
+  const toolCalls = blocks.flatMap((block, index) => {
     if (!isRecord(block) || block.type !== "tool_use") return [];
     return [
       {
+        index,
         id: block.id,
         type: "function",
         function: {
@@ -161,18 +272,23 @@ function fromAnthropic(body: Record<string, unknown>): ChatResponse {
       },
     ];
   });
-  const kept = blocks.filter(
-    (block) => isRecord(block) && block.type !== "tool_use",
-  );
-  const text = kept
-    .filter((block) => isRecord(block) && block.type === "text")
-    .map((block) => (isRecord(block) ? String(block.text ?? "") : ""))
-    .join("");
-  const hasThinking = kept.some(
+  const thinking = blocks.filter(
     (block) =>
       isRecord(block) &&
       (block.type === "thinking" || block.type === "redacted_thinking"),
   );
+  const text = blocks
+    .filter((block) => isRecord(block) && block.type === "text")
+    .map((block) => (isRecord(block) ? String(block.text ?? "") : ""))
+    .join("");
+  const reasoning = thinking
+    .map((block) =>
+      isRecord(block) && block.type === "thinking"
+        ? String(block.thinking ?? "")
+        : "",
+    )
+    .filter((item) => item)
+    .join("");
   const usage = isRecord(body.usage) ? body.usage : {};
   const input = Number(usage.input_tokens ?? 0);
   const read = Number(usage.cache_read_input_tokens ?? 0);
@@ -193,8 +309,16 @@ function fromAnthropic(body: Record<string, unknown>): ChatResponse {
         finish_reason: finish,
         message: {
           role: "assistant",
-          content: hasThinking ? kept : text || null,
+          content: text || null,
           tool_calls: toolCalls.length > 0 ? toolCalls : null,
+          function_call: null,
+          provider_specific_fields: {
+            citations: null,
+            thinking_blocks: thinking.length > 0 ? thinking : null,
+          },
+          ...(thinking.length > 0
+            ? { thinking_blocks: thinking, reasoning_content: reasoning }
+            : {}),
         },
       },
     ],
@@ -227,6 +351,7 @@ export async function completeChat(options: {
   delete kwargs.api_key;
   delete kwargs.api_base;
   delete kwargs.custom_llm_provider;
+  delete kwargs.drop_params;
   if (usesAnthropic(options.model)) {
     const key = apiKey || process.env.ANTHROPIC_API_KEY || "";
     const converted = anthropicMessages(options.messages);

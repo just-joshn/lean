@@ -237,7 +237,7 @@ describe("LitellmModel", () => {
     ]);
     expect(requests[0]?.url).toBe("/v1/messages");
     const sent = requests[0]?.body.messages as Array<{ content: unknown }>;
-    expect(sent[0]?.content).toBe("Hello");
+    expect(sent[0]?.content).toEqual([{ type: "text", text: "Hello" }]);
     expect(sent[1]?.content).toEqual([{ type: "text", text: "noted" }]);
     const last = sent.at(-1)?.content as Array<{
       cache_control?: { type: string };
@@ -255,10 +255,11 @@ describe("LitellmModel", () => {
       { command: "pwd", tool_call_id: "toolu_1" },
     ]);
     expect(message.extra?.cost).toBeCloseTo(0.0009495);
-    expect(message.content).toEqual([
+    expect(message.content).toBe("ok");
+    expect(message.thinking_blocks).toEqual([
       { type: "thinking", thinking: "hmm" },
-      { type: "text", text: "ok" },
     ]);
+    expect(message.reasoning_content).toBe("hmm");
   });
 
   test("uses a custom registry file and ignores a zero cost when asked", async () => {
