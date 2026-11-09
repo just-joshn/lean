@@ -7,6 +7,7 @@ import type {
 import { FormatError } from "../../exceptions.ts";
 import { renderStrict } from "../../utils/render.ts";
 import { dictionaryOrAttribute as read } from "../response-access.ts";
+import { responseArguments } from "./response-json.ts";
 
 export const BASH_TOOL_RESPONSE_API = {
   type: "function",
@@ -84,7 +85,7 @@ export function parseToolcallActionsResponse(
     let args: unknown = {};
     try {
       const raw = read(toolCall, "arguments");
-      args = JSON.parse(typeof raw === "string" ? raw : "{}");
+      args = responseArguments(raw === undefined ? "{}" : raw);
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : String(caught);
       error = `Error parsing tool call arguments: ${message}.`;

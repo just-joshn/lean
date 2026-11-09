@@ -272,6 +272,7 @@ export async function postResponse(
   body: unknown,
   policy: AttemptPolicy,
   execution?: AttemptDependencies,
+  errorOf?: (response: ReceivedResponse) => Error,
 ): Promise<ReceivedResponse> {
   const response = await attemptResponse(
     url,
@@ -284,10 +285,9 @@ export async function postResponse(
     execution,
   );
   if (response.ok) return response;
-  const error = statusError(
-    response.status,
-    response.text || response.statusText,
-  );
+  const error = errorOf
+    ? errorOf(response)
+    : statusError(response.status, response.text || response.statusText);
   Object.assign(error, { rawText: response.text, statusCode: response.status });
   throw error;
 }

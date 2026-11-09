@@ -1,5 +1,14 @@
 import type { Message } from "../protocols.ts";
-import type { ReceivedResponse } from "./received-response.ts";
+import sourceSchema from "./data/responses-schema.json" with { type: "json" };
+import {
+  responseJsonText,
+  type ReceivedResponse,
+} from "./received-response.ts";
+import {
+  AuthenticationError,
+  ContextWindowExceededError,
+  NotFoundError,
+} from "./errors.ts";
 import type { AttemptDependencies } from "./attempt.ts";
 import { responsesRequest } from "./responses-request.ts";
 import { ProviderParityGateError } from "./route.ts";
@@ -14,7 +23,7 @@ import {
 type Dictionary = Record<string, unknown>;
 type Parser = (value: unknown) => unknown;
 type Fields = Record<string, { parse: Parser; fallback?: unknown }>;
-type DumpOptions = { mode?: "json" };
+type DumpOptions = { mode?: string };
 
 class ValidationFailure extends Error {}
 
@@ -62,11 +71,38 @@ const integer: Parser = (value) => {
   }
   return converted;
 };
+const responseInteger: Parser = (value) => {
+  if (
+    typeof value === "string" &&
+    !/^[+-]?\d(?:_?\d)*(?:\.0+)?$/u.test(value.trim())
+  )
+    throw new ValidationFailure();
+  return integer(typeof value === "string" ? value.replaceAll("_", "") : value);
+};
+const trueBooleans = new Set<unknown>([
+  true,
+  1,
+  "true",
+  "1",
+  "t",
+  "y",
+  "yes",
+  "on",
+]);
+const falseBooleans = new Set<unknown>([
+  false,
+  0,
+  "false",
+  "0",
+  "f",
+  "n",
+  "no",
+  "off",
+]);
 const boolean: Parser = (value) => {
-  if (value === true || value === 1 || value === "true" || value === "1")
-    return true;
-  if (value === false || value === 0 || value === "false" || value === "0")
-    return false;
+  const normalized = typeof value === "string" ? value.toLowerCase() : value;
+  if (trueBooleans.has(normalized)) return true;
+  if (falseBooleans.has(normalized)) return false;
   throw new ValidationFailure();
 };
 const literal = (...values: unknown[]): Parser =>
@@ -123,7 +159,26 @@ class ResponseFields {
   }
 }
 
+class ResponseIterator {
+  readonly values: Iterator<unknown>;
+  readonly parse: Parser;
+  constructor(values: Iterator<unknown>, parse: Parser) {
+    this.values = values;
+    this.parse = parse;
+  }
+  *[Symbol.iterator](): Generator<unknown> {
+    for (let next = this.values.next(); !next.done; next = this.values.next())
+      yield this.parse(next.value);
+  }
+}
+
 function dump(value: unknown, options?: DumpOptions): unknown {
+  if (value instanceof ResponseIterator) {
+    const entries = (function* () {
+      for (const entry of value) yield dump(entry, options);
+    })();
+    return options?.mode === "json" ? Array.from(entries) : entries;
+  }
   if (value instanceof ResponseFields) return value.model_dump(options);
   if (Array.isArray(value)) return value.map((entry) => dump(entry, options));
   if (isDictionary(value)) {
@@ -138,115 +193,106 @@ const model =
   (fields: Fields): Parser =>
   (value) =>
     new ResponseFields(validate(fields, value));
-const status = literal("in_progress", "completed", "incomplete");
-const caller = model({ type: required(literal("direct")) });
-const programCaller = model({
-  type: required(literal("program")),
-  caller_id: required(string),
-});
-const functionFields: Fields = {
-  arguments: required(string),
-  call_id: required(string),
-  name: required(string),
-  type: required(literal("function_call")),
-  id: nullable(string),
-  async_: nullable(boolean),
-  caller: nullable((value) => {
-    if (isDictionary(value) && value.type === "program")
-      return programCaller(value);
-    return caller(value);
-  }),
-  namespace: nullable(string),
-  status: nullable(status),
-};
-const outputTextFields: Fields = {
-  annotations: required(list(dictionary)),
-  text: required(string),
-  type: required(literal("output_text")),
-  logprobs: nullable(list(dictionary)),
-};
-const messageFields: Fields = {
-  id: required(string),
-  content: required(
-    list((value) => {
-      if (isDictionary(value) && value.type === "refusal") {
-        return model({
-          type: required(literal("refusal")),
-          refusal: required(string),
-        })(value);
-      }
-      return model(outputTextFields)(value);
-    }),
-  ),
-  role: required(literal("assistant")),
-  status: required(status),
-  type: required(literal("message")),
-  phase: nullable(literal("commentary", "final_answer")),
-};
-const reasoningFields: Fields = {
-  id: required(string),
-  summary: required(
-    list(
-      model({
-        text: required(string),
-        type: required(literal("summary_text")),
-      }),
-    ),
-  ),
-  type: required(literal("reasoning")),
-  content: nullable(
-    list(
-      model({
-        text: required(string),
-        type: required(literal("reasoning_text")),
-      }),
-    ),
-  ),
-  encrypted_content: nullable(string),
-  status: nullable(status),
-};
-const toolSearchFields: Fields = {
-  id: required(string),
-  call_id: nullable(string),
-  execution: required(literal("server", "client")),
-  status: required(status),
-  created_by: nullable(string),
-};
-const outputModels: Record<string, Fields> = {
-  function_call: functionFields,
-  message: messageFields,
-  reasoning: reasoningFields,
-  tool_search_call: {
-    ...toolSearchFields,
-    arguments: required(anything),
-    type: required(literal("tool_search_call")),
-  },
-  tool_search_output: {
-    ...toolSearchFields,
-    tools: required(list(dictionary)),
-    type: required(literal("tool_search_output")),
-  },
-};
+interface Schema {
+  record?: boolean;
+  iterable?: boolean;
+  $ref?: string;
+  type?: string;
+  const?: unknown;
+  enum?: unknown[];
+  anyOf?: Schema[];
+  items?: Schema;
+  properties?: Record<string, Schema>;
+  required?: string[];
+  default?: unknown;
+  additionalProperties?: boolean | Schema;
+}
+const schemas: {
+  fields: Record<string, Schema>;
+  models: Record<string, Schema>;
+} = sourceSchema;
 
-function outputItem(value: unknown): unknown {
-  if (!isDictionary(value)) throw new ValidationFailure();
-  const fields =
-    typeof value.type === "string" && Object.hasOwn(outputModels, value.type)
-      ? outputModels[value.type]
-      : undefined;
-  if (!fields) return value;
-  try {
-    const input =
-      value.type === "function_call" && Object.hasOwn(value, "async")
-        ? { ...value, async_: value.async }
-        : value;
-    const validated = validate(fields, input);
-    if (input !== value) delete validated.async;
-    return new ResponseFields(validated);
-  } catch (error) {
-    if (!(error instanceof ValidationFailure)) throw error;
+function dictionaryAlternative(schema: Schema): boolean {
+  return (
+    (schema.type === "object" && !schema.properties) ||
+    (schema.type === "array" &&
+      schema.items !== undefined &&
+      dictionaryAlternative(schema.items))
+  );
+}
+
+function parseSchema(schema: Schema, value: unknown, exact = false): unknown {
+  if (schema.$ref) {
+    const name = schema.$ref.split("/").at(-1)!;
+    const shape = schemas.models[name]!;
+    if (!isDictionary(value)) throw new ValidationFailure();
+    const result: Dictionary = {};
+    const consumed = new Set<string>();
+    for (const [key, field] of Object.entries(shape.properties ?? {})) {
+      const alias = key === "async" ? "async_" : key;
+      if (Object.hasOwn(value, key)) {
+        result[alias] = parseSchema(field, value[key], exact);
+        consumed.add(key);
+      } else if (Object.hasOwn(field, "default")) result[alias] = field.default;
+      else if (shape.required?.includes(key)) throw new ValidationFailure();
+    }
+    for (const [key, entry] of Object.entries(value)) {
+      if (!consumed.has(key) && shape.additionalProperties !== false)
+        result[key] = entry;
+    }
+    return shape.record ? result : new ResponseFields(result);
+  }
+  if (schema.anyOf) {
+    const strict = exact || schema.anyOf.some(dictionaryAlternative);
+    for (const alternative of schema.anyOf) {
+      try {
+        return parseSchema(alternative, value, strict);
+      } catch (error) {
+        if (!(error instanceof ValidationFailure)) throw error;
+      }
+    }
+    throw new ValidationFailure();
+  }
+  if (Object.hasOwn(schema, "const")) return literal(schema.const)(value);
+  if (schema.enum) return literal(...schema.enum)(value);
+  if (schema.iterable) {
+    if (!Array.isArray(value)) throw new ValidationFailure();
+    return new ResponseIterator(value.values(), (entry) =>
+      parseSchema(schema.items ?? {}, entry, exact),
+    );
+  }
+  if (schema.type === "array")
+    return list((entry) => parseSchema(schema.items ?? {}, entry, exact))(
+      value,
+    );
+  if (schema.type === "object") {
+    dictionary(value);
+    const entries = schema.additionalProperties;
+    if (isDictionary(value) && typeof entries === "object") {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, entry]) => [
+          key,
+          parseSchema(entries, entry, exact),
+        ]),
+      );
+    }
     return value;
   }
+  const parser =
+    schema.type === "string"
+      ? string
+      : schema.type === "integer"
+        ? responseInteger
+        : schema.type === "number"
+          ? number
+          : schema.type === "boolean"
+            ? boolean
+            : schema.type === "null"
+              ? literal(null)
+              : anything;
+  const parsed = parser(value);
+  if (exact && !Object.is(parsed, value)) throw new ValidationFailure();
+  return parsed;
 }
 
 const inputDetails: Fields = {
@@ -278,24 +324,34 @@ const responseFields: Fields = {
   id: required(string),
   created_at: required(integer),
   error: nullable(dictionary),
-  incomplete_details: nullable(dictionary),
+  incomplete_details: {
+    parse: (value) => parseSchema(schemas.fields.incomplete_details!, value),
+    fallback: null,
+  },
   instructions: nullable(string),
   metadata: nullable(dictionary),
   model: nullable(string),
   object: nullable(string),
-  output: required(list(outputItem)),
+  output: required((value) => parseSchema(schemas.fields.output!, value)),
   parallel_tool_calls: nullable(boolean),
   temperature: nullable(number),
-  tool_choice: nullable((value) =>
-    typeof value === "string" ? string(value) : dictionary(value),
-  ),
-  tools: nullable(list(dictionary)),
+  tool_choice: {
+    parse: (value) => parseSchema(schemas.fields.tool_choice!, value),
+    fallback: null,
+  },
+  tools: {
+    parse: (value) => parseSchema(schemas.fields.tools!, value),
+    fallback: null,
+  },
   top_p: nullable(number),
-  max_output_tokens: nullable(integer),
+  max_output_tokens: nullable(responseInteger),
   previous_response_id: nullable(string),
   reasoning: nullable(dictionary),
   status: nullable(string),
-  text: nullable(dictionary),
+  text: {
+    parse: (value) => parseSchema(schemas.fields.text!, value),
+    fallback: null,
+  },
   truncation: nullable(literal("auto", "disabled")),
   usage: nullable(model(usageFields)),
   user: nullable(string),
@@ -329,7 +385,7 @@ class ResponsesResult extends ResponseFields {
 function fromReceived(received: ReceivedResponse): ResponsesResult {
   let body: unknown;
   try {
-    body = JSON.parse(received.text);
+    body = JSON.parse(responseJsonText(received.bytes));
     if (!isDictionary(body) || !Object.hasOwn(body, "created_at")) {
       throw new Error("Missing created_at");
     }
@@ -352,6 +408,37 @@ function fromReceived(received: ReceivedResponse): ResponsesResult {
     if (!(error instanceof ValidationFailure)) throw error;
     return new ResponsesResult(defaults(responseFields, body));
   }
+}
+
+function responseError(received: ReceivedResponse): Error {
+  const detail = received.text;
+  const lower = detail.toLowerCase();
+  let name =
+    received.status === 400
+      ? "BadRequestError"
+      : received.status === 401
+        ? "AuthenticationError"
+        : received.status === 404
+          ? "NotFoundError"
+          : received.status === 429
+            ? "RateLimitError"
+            : received.status >= 500
+              ? "InternalServerError"
+              : "APIError";
+  if (
+    lower.includes("this model's maximum context length is") &&
+    !lower.includes("string_above_max_length")
+  )
+    name = "ContextWindowExceededError";
+  const prefix = name === "BadRequestError" ? "" : `${name}: `;
+  const message = `litellm.${name}: ${name === "ContextWindowExceededError" ? "litellm.BadRequestError: " : ""}${prefix}OpenAIException - ${detail}`;
+  if (name === "AuthenticationError") return new AuthenticationError(message);
+  if (name === "ContextWindowExceededError")
+    return new ContextWindowExceededError(message);
+  if (name === "NotFoundError") return new NotFoundError(message);
+  const error = new Error(message);
+  error.name = name;
+  return error;
 }
 
 export async function completeResponses(options: {
@@ -394,6 +481,7 @@ export async function completeResponses(options: {
       signal: options.signal,
     },
     options.execution,
+    responseError,
   );
   return fromReceived(received);
 }
