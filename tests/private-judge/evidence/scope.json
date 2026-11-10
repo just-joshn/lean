@@ -1,0 +1,41 @@
+{
+  "frozenFilesVerifiedUnchanged": 26,
+  "extractedFunctionsMatchFrozenBaseline": [
+    "parse_packets",
+    "rows_of",
+    "positive_pid",
+    "order_of",
+    "env_issues",
+    "stream_identity",
+    "close_row",
+    "judge_normal",
+    "judge_throw"
+  ],
+  "modifiedFunctions": [
+    "judge_throw"
+  ],
+  "codeHashes": {
+    "controller.py": "7985c054f7d60745961b1489382f29a3d46094047492190db1f7ec3f4c99771f",
+    "check.py": "557342072c0ee3988917500d55e5e9f11870b1e2859def90b3c6950feede98ad",
+    "saved-cases.json": "9f1be3faa72d6b8ad35be4e188d6c03978e4101ac988e6afe1fe9f365a263dd6"
+  },
+  "openGates": [
+    "Frozen external prototype remains unchanged. Adopt the copied judge_throw before using that prototype as a gate.",
+    "Run-1 Node start-throw has no historical collector close or join proof. No PID was probed or signaled.",
+    "No direct Python collector counterpart exists. The pinned Python local environment uses Popen/communicate. This correction proves the saved native observation contract only.",
+    "Normal-judge hardening, import/runtime/stream metadata validation, metadata-helper PATH ownership and a live timeout backstop are outside this pure correction.",
+    "Shell descendants, timeouts, process-group stop, interruption, spawn failures, finalizers, actual CLI and full environment acceptance remain unproved by this gate.",
+    "No independent subagent comment review ran because spawning subagents was prohibited. No comments or suppressions were added."
+  ],
+  "counts": {
+    "actualAcceptedBefore": 4,
+    "actualAcceptedAfter": 4,
+    "recordedFalseAcceptedBefore": 4,
+    "recordedFalseAcceptedAfter": 0,
+    "negativeControls": 278,
+    "negativeAcceptedBefore": 228,
+    "negativeAcceptedAfter": 0,
+    "closeBeforeRejectionAcceptedBefore": 2,
+    "closeBeforeRejectionAcceptedAfter": 2
+  }
+}
