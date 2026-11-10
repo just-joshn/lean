@@ -1,0 +1,441 @@
+{
+  "reference": "04d809ceab9df28f9adaed044884180159172930",
+  "cases": [
+    {
+      "case": "bare AgentConfig",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "2 validation errors for AgentConfig\nsystem_template\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\ninstance_template\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing",
+      "details": [
+        {
+          "type": "missing",
+          "loc": ["system_template"],
+          "msg": "Field required",
+          "input": {}
+        },
+        {
+          "type": "missing",
+          "loc": ["instance_template"],
+          "msg": "Field required",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "case": "bare DockerEnvironmentConfig",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for DockerEnvironmentConfig\nimage\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing",
+      "details": [
+        {
+          "type": "missing",
+          "loc": ["image"],
+          "msg": "Field required",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "case": "bare LitellmModelConfig",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for LitellmModelConfig\nmodel_name\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing",
+      "details": [
+        {
+          "type": "missing",
+          "loc": ["model_name"],
+          "msg": "Field required",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "case": "integer string",
+      "accepted": true,
+      "dump": {
+        "system_template": "sys",
+        "instance_template": "task",
+        "step_limit": 3,
+        "cost_limit": 3.0,
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": null
+      },
+      "field_types": {
+        "system_template": "str",
+        "instance_template": "str",
+        "step_limit": "int",
+        "cost_limit": "float",
+        "wall_time_limit_seconds": "int",
+        "max_consecutive_format_errors": "int",
+        "output_path": "NoneType"
+      }
+    },
+    {
+      "case": "fractional integer string",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for AgentConfig\nstep_limit\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='1.1', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/int_parsing",
+      "details": [
+        {
+          "type": "int_parsing",
+          "loc": ["step_limit"],
+          "msg": "Input should be a valid integer, unable to parse string as an integer",
+          "input": "1.1"
+        }
+      ]
+    },
+    {
+      "case": "zero float string",
+      "accepted": true,
+      "dump": {
+        "system_template": "sys",
+        "instance_template": "task",
+        "step_limit": 0,
+        "cost_limit": 0.0,
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": null
+      },
+      "field_types": {
+        "system_template": "str",
+        "instance_template": "str",
+        "step_limit": "int",
+        "cost_limit": "float",
+        "wall_time_limit_seconds": "int",
+        "max_consecutive_format_errors": "int",
+        "output_path": "NoneType"
+      }
+    },
+    {
+      "case": "fractional cost string",
+      "accepted": true,
+      "dump": {
+        "system_template": "sys",
+        "instance_template": "task",
+        "step_limit": 0,
+        "cost_limit": 3.5,
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": null
+      },
+      "field_types": {
+        "system_template": "str",
+        "instance_template": "str",
+        "step_limit": "int",
+        "cost_limit": "float",
+        "wall_time_limit_seconds": "int",
+        "max_consecutive_format_errors": "int",
+        "output_path": "NoneType"
+      }
+    },
+    {
+      "case": "nan cost string",
+      "accepted": true,
+      "dump": {
+        "system_template": "sys",
+        "instance_template": "task",
+        "step_limit": 0,
+        "cost_limit": {
+          "float": "nan"
+        },
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": null
+      },
+      "field_types": {
+        "system_template": "str",
+        "instance_template": "str",
+        "step_limit": "int",
+        "cost_limit": "float",
+        "wall_time_limit_seconds": "int",
+        "max_consecutive_format_errors": "int",
+        "output_path": "NoneType"
+      }
+    },
+    {
+      "case": "invalid cost tracking literal",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for LitellmModelConfig\ncost_tracking\n  Input should be 'default' or 'ignore_errors' [type=literal_error, input_value='bogus', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/literal_error",
+      "details": [
+        {
+          "type": "literal_error",
+          "loc": ["cost_tracking"],
+          "msg": "Input should be 'default' or 'ignore_errors'",
+          "input": "bogus",
+          "ctx": {
+            "expected": "'default' or 'ignore_errors'"
+          }
+        }
+      ]
+    },
+    {
+      "case": "invalid cache literal",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for LitellmModelConfig\nset_cache_control\n  Input should be 'default_end' [type=literal_error, input_value='nope', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/literal_error",
+      "details": [
+        {
+          "type": "literal_error",
+          "loc": ["set_cache_control"],
+          "msg": "Input should be 'default_end'",
+          "input": "nope",
+          "ctx": {
+            "expected": "'default_end'"
+          }
+        }
+      ]
+    },
+    {
+      "case": "path from string",
+      "accepted": true,
+      "dump": {
+        "system_template": "sys",
+        "instance_template": "task",
+        "step_limit": 0,
+        "cost_limit": 3.0,
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": {
+          "type": "PosixPath",
+          "text": "runs/out.json",
+          "parts": ["runs", "out.json"]
+        }
+      },
+      "field_types": {
+        "system_template": "str",
+        "instance_template": "str",
+        "step_limit": "int",
+        "cost_limit": "float",
+        "wall_time_limit_seconds": "int",
+        "max_consecutive_format_errors": "int",
+        "output_path": "PosixPath"
+      }
+    },
+    {
+      "case": "null required string",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for AgentConfig\nsystem_template\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+      "details": [
+        {
+          "type": "string_type",
+          "loc": ["system_template"],
+          "msg": "Input should be a valid string",
+          "input": null
+        }
+      ]
+    },
+    {
+      "case": "numeric required string",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for AgentConfig\nsystem_template\n  Input should be a valid string [type=string_type, input_value=2, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+      "details": [
+        {
+          "type": "string_type",
+          "loc": ["system_template"],
+          "msg": "Input should be a valid string",
+          "input": 2
+        }
+      ]
+    },
+    {
+      "case": "false from string",
+      "accepted": true,
+      "dump": {
+        "system_template": "sys",
+        "instance_template": "task",
+        "step_limit": 0,
+        "cost_limit": 3.0,
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": null,
+        "mode": "confirm",
+        "whitelist_actions": [],
+        "confirm_exit": false
+      },
+      "field_types": {
+        "system_template": "str",
+        "instance_template": "str",
+        "step_limit": "int",
+        "cost_limit": "float",
+        "wall_time_limit_seconds": "int",
+        "max_consecutive_format_errors": "int",
+        "output_path": "NoneType",
+        "mode": "str",
+        "whitelist_actions": "list",
+        "confirm_exit": "bool"
+      }
+    },
+    {
+      "case": "explicit empty required strings",
+      "accepted": true,
+      "dump": {
+        "system_template": "",
+        "instance_template": "",
+        "step_limit": 0,
+        "cost_limit": 3.0,
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": null
+      },
+      "field_types": {
+        "system_template": "str",
+        "instance_template": "str",
+        "step_limit": "int",
+        "cost_limit": "float",
+        "wall_time_limit_seconds": "int",
+        "max_consecutive_format_errors": "int",
+        "output_path": "NoneType"
+      }
+    },
+    {
+      "case": "empty required image",
+      "accepted": true,
+      "dump": {
+        "image": "",
+        "cwd": "/",
+        "env": {},
+        "forward_env": [],
+        "timeout": 30,
+        "executable": "docker",
+        "run_args": ["--rm"],
+        "container_timeout": "2h",
+        "pull_timeout": 120,
+        "interpreter": ["bash", "-lc"]
+      },
+      "field_types": {
+        "image": "str",
+        "cwd": "str",
+        "env": "dict",
+        "forward_env": "list",
+        "timeout": "int",
+        "executable": "str",
+        "run_args": "list",
+        "container_timeout": "str",
+        "pull_timeout": "int",
+        "interpreter": "list"
+      }
+    },
+    {
+      "case": "declared subclass override",
+      "accepted": true,
+      "dump": {
+        "model_name": "m",
+        "model_kwargs": {},
+        "litellm_model_registry": null,
+        "set_cache_control": null,
+        "cost_tracking": "default",
+        "format_error_template": "{{ error }}",
+        "observation_template": "{% if output.exception_info %}<exception>{{output.exception_info}}</exception>\n{% endif %}<returncode>{{output.returncode}}</returncode>\n<output>\n{{output.output}}</output>",
+        "multimodal_regex": "",
+        "reviewer": "bob"
+      },
+      "field_types": {
+        "model_name": "str",
+        "model_kwargs": "dict",
+        "litellm_model_registry": "NoneType",
+        "set_cache_control": "NoneType",
+        "cost_tracking": "str",
+        "format_error_template": "str",
+        "observation_template": "str",
+        "multimodal_regex": "str",
+        "reviewer": "str"
+      }
+    },
+    {
+      "case": "subclass string rejects number",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for ReviewConfig\nreviewer\n  Input should be a valid string [type=string_type, input_value=7, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+      "details": [
+        {
+          "type": "string_type",
+          "loc": ["reviewer"],
+          "msg": "Input should be a valid string",
+          "input": 7
+        }
+      ]
+    },
+    {
+      "case": "constructor normalization",
+      "accepted": true,
+      "dump": {
+        "model_name": "m",
+        "model_kwargs": {},
+        "litellm_model_registry": null,
+        "set_cache_control": null,
+        "cost_tracking": "default",
+        "format_error_template": "{{ error }}",
+        "observation_template": "{% if output.exception_info %}<exception>{{output.exception_info}}</exception>\n{% endif %}<returncode>{{output.returncode}}</returncode>\n<output>\n{{output.output}}</output>",
+        "multimodal_regex": "",
+        "reviewer": "bob"
+      },
+      "field_types": {
+        "model_name": "str",
+        "model_kwargs": "dict",
+        "litellm_model_registry": "NoneType",
+        "set_cache_control": "NoneType",
+        "cost_tracking": "str",
+        "format_error_template": "str",
+        "observation_template": "str",
+        "multimodal_regex": "str",
+        "reviewer": "str"
+      }
+    },
+    {
+      "case": "model constructor config class",
+      "accepted": true,
+      "dump": {
+        "model_name": "m",
+        "model_kwargs": {},
+        "litellm_model_registry": null,
+        "set_cache_control": null,
+        "cost_tracking": "default",
+        "format_error_template": "{{ error }}",
+        "observation_template": "{% if output.exception_info %}<exception>{{output.exception_info}}</exception>\n{% endif %}<returncode>{{output.returncode}}</returncode>\n<output>\n{{output.output}}</output>",
+        "multimodal_regex": "",
+        "reviewer": "bob"
+      },
+      "field_types": {
+        "model_name": "str",
+        "model_kwargs": "dict",
+        "litellm_model_registry": "NoneType",
+        "set_cache_control": "NoneType",
+        "cost_tracking": "str",
+        "format_error_template": "str",
+        "observation_template": "str",
+        "multimodal_regex": "str",
+        "reviewer": "str"
+      }
+    },
+    {
+      "case": "model factory config class dictionary",
+      "accepted": true,
+      "dump": {
+        "model_name": "m",
+        "model_kwargs": {},
+        "litellm_model_registry": null,
+        "set_cache_control": null,
+        "cost_tracking": "default",
+        "format_error_template": "{{ error }}",
+        "observation_template": "{% if output.exception_info %}<exception>{{output.exception_info}}</exception>\n{% endif %}<returncode>{{output.returncode}}</returncode>\n<output>\n{{output.output}}</output>",
+        "multimodal_regex": "",
+        "reviewer": "bob"
+      },
+      "field_types": {
+        "model_name": "str",
+        "model_kwargs": "dict",
+        "litellm_model_registry": "NoneType",
+        "set_cache_control": "NoneType",
+        "cost_tracking": "str",
+        "format_error_template": "str",
+        "observation_template": "str",
+        "multimodal_regex": "str",
+        "reviewer": "str"
+      }
+    }
+  ]
+}

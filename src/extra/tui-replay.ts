@@ -100,7 +100,9 @@ function contentText(content: unknown): string {
     const row = record(part);
     if (!row) continue;
     if (
-      (row.type === "output_text" || row.type === "input_text") &&
+      (row.type === "output_text" ||
+        row.type === "input_text" ||
+        row.type === "text") &&
       typeof row.text === "string"
     ) {
       parts.push(row.text);
@@ -248,7 +250,81 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function replayTrajectory(items: readonly unknown[]): ReplayEntry[] {
+  const entries: ReplayEntry[] = [];
+  let number = 0;
+  for (const [index, item] of items.entries()) {
+    const row = record(item);
+    if (!row) continue;
+    const extra = record(row.extra);
+    if (
+      (row.role === "user" || row.role === "assistant") &&
+      !(extra && "raw_output" in extra)
+    ) {
+      const text = displayText(contentText(row.content));
+      if (text) entries.push({ kind: row.role, text });
+    }
+    if (row.role === "exit") {
+      entries.push({
+        kind: "assistant",
+        text: displayText(
+          joinSections([
+            `Task ended (${String(extra?.exit_status ?? "unknown")}).`,
+            textOf(extra?.submission),
+          ]),
+        ),
+      });
+    }
+    if (row.role !== "assistant" || !Array.isArray(extra?.actions)) continue;
+    const following: Record<string, unknown>[] = [];
+    for (const next of items.slice(index + 1)) {
+      const result = record(next);
+      if (result?.role === "assistant" || result?.role === "system") break;
+      const output = record(result?.extra);
+      if (result && output && "raw_output" in output) following.push(result);
+    }
+    for (const [actionIndex, value] of extra.actions.entries()) {
+      const action = record(value);
+      if (!action) continue;
+      const result = action.tool_call_id
+        ? following.find(
+            (result) => result.tool_call_id === action.tool_call_id,
+          )
+        : following[actionIndex];
+      const output = record(result?.extra);
+      number += 1;
+      entries.push({
+        kind: "action",
+        action: {
+          callId: `mini:${index}:${actionIndex}`,
+          number,
+          summary: displayText(`bash  ${String(action.command ?? "")}`),
+          status: output ? `exit ${String(output.returncode)}` : "no result",
+          output: displayText(
+            joinSections([
+              textOf(output?.raw_output),
+              textOf(output?.exception_info),
+            ]),
+          ),
+          raw: rawOf(result ?? action),
+          sourcePath: null,
+        },
+      });
+    }
+  }
+  return entries;
+}
+
 export function replayItems(items: readonly unknown[]): ReplayEntry[] {
+  if (
+    items.some(
+      (item) =>
+        record(item)?.role === "exit" ||
+        Array.isArray(record(record(item)?.extra)?.actions),
+    )
+  ) {
+    return replayTrajectory(items);
+  }
   const calls = new Map<
     string,
     { item: Record<string, unknown>; used: boolean }

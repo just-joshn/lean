@@ -64,22 +64,37 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
-# Lean Design Principles
 
-- Native tool calling by default (instead of regex-based text parsing)
-- Has a completely linear history
-- Executes actions with `util.promisify(execFile)`, `util.promisify(exec)`, `child_process.execFileSync`, or other that are similar
-- Simple enough to understand at a glance
-- Convenient enough to use in daily workflows
-- Flexible to extend
-- Minimalism, hackability, and code quality: Keep the project small, easy to modify, and well written.
-- Extend through alternative components: Prefer adding another version of a component over increasing the complexity of existing components.
-- Keep components largely independent: Put shared helpers in a `utils` directory when useful, while keeping the arrangement simple.
-- Separate specialized components: Put components for more specific uses in an `extra` directory.
-- Design for users willing to edit code: The intended audience is comfortable adapting code, particularly run scripts.
-- Make customization through code straightforward: Configuration files need not expose every capability; using capabilities from a custom run script should be easy.
-- Keep implementation and tests concise: Remove unnecessary verbosity from model-generated code and tests while preserving readability.
-- Enforce the project’s style before committing: Install and run `pre-commit`
+# Lean Non-negotiable Design Principles
+
+| Principle | What strict adherence means for Lean |
+|---|---|
+| **Radical minimalism** | The smallest comprehensible implementation is preferred over a sophisticated framework, even when the framework offers more functionality. |
+| **Model-centered intelligence** | The model reasons about engineering work; the scaffold does not encode an elaborate decision-making system. |
+| **Bash-only computer interface** | The agent can execute shell commands. It does not receive a catalog of specialized coding, review, planning, browser, or delegation tools. |
+| **Simple control flow** | The core process is model query, execute action, return observation, repeat. |
+| **Linear message history** | Each model response and resulting observation is appended to one chronological record. |
+| **Independent command execution** | Each action launches a new command process rather than entering text into a persistent interactive shell. |
+| **Minimal internal state** | The agent retains the state necessary for execution and accounting, not a second hidden workflow state machine. |
+| **Small, separable components** | Model selection, action execution, and agent control flow remain separate. |
+| **Simple extensibility** | Different models or execution environments can be substituted without rewriting the central loop. |
+| **Inspectability** | The message trajectory is sufficient to reconstruct the agent's conversational execution history. |
+| **Model portability** | No fundamental behavior depends on one provider's proprietary orchestration capabilities. |
+| **Useful simplicity** | Complexity is permitted when it demonstrably improves the tool. It is not permitted merely to anticipate possible future needs. |
+
+**Single action interface, not necessarily one command per response.** The Lean model interface exposes a single tool named `bash`. Its native-tool parser can accept multiple calls to that tool. The alternative text parser requires exactly one action. These are two supported formats for the same fundamental execution capability.
+
+**No persistent shell, but persistent workspace.** Commands are independently executed. A directory change or exported variable does not automatically persist into the next command. Filesystem changes do. Docker environments may preserve a container and its filesystem while starting a new command execution for each action.
+
+**Model statelessness is not total agent statelessness.** The model adapter receives messages and produces a response. The agent still tracks cost, call count, elapsed time, and history. The environment may retain workspace state. Minimality means making the state explicit, not pretending state does not exist.
+
+**Models own action parsing and observation formatting.** In Lean, these responsibilities live with model adapters. The agent remains largely indifferent to whether the provider uses native tool calls or text-based commands.
+
+**Errors are part of the observable execution history.** Malformed model output, submitted results, exhausted limits, and interruptions have explicit handling. Failures must not silently become successful completions.
+
+**Safety is configurable, not synonymous with autonomy.** Lean's interactive CLI defaults to confirming actions. Unattended execution is an explicit alternative.
+
+**The code should remain easy to replace.** Lean uses structural protocols and interchangeable classes rather than demanding one elaborate inheritance hierarchy.
 
 # Vitest testing instructions
 

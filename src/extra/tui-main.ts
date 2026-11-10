@@ -12,18 +12,19 @@ Options:
   --help                 Show this help
   --demo                 Run the same UI without credentials, tools, or saved history
   --model <name>         Model to use
-  --session <path>       Session file, default .lean/history.json
-  --trace                Enable metadata-only tracing
-  --provider <provider>  Use a saved openai or anthropic subscription
+  --output <path>        Latest task trajectory, default .lean/last-tui-run.traj.json
+
+Each task starts fresh model context. The screen history is kept in memory only.
+Use --model or MSWEA_MODEL_NAME and provider API-key environment variables.
+Saved chat sessions, subscription login, and SDK tracing are not supported.
+Cancellation waits for the active request or command before stopping later actions.
 `;
 
 type ParsedArgs = {
   help: boolean;
   demo: boolean;
   model?: string;
-  provider?: string;
-  session?: string;
-  trace: boolean;
+  output?: string;
 };
 
 function parseArgv(argv: readonly string[]): ParsedArgs {
@@ -33,6 +34,7 @@ function parseArgv(argv: readonly string[]): ParsedArgs {
     model?: string;
     provider?: string;
     session?: string;
+    output?: string;
     trace?: boolean;
   };
   let positionals: string[];
@@ -45,6 +47,7 @@ function parseArgv(argv: readonly string[]): ParsedArgs {
         model: { type: "string" },
         provider: { type: "string" },
         session: { type: "string" },
+        output: { type: "string" },
         trace: { type: "boolean" },
       },
       strict: true,
@@ -56,7 +59,7 @@ function parseArgv(argv: readonly string[]): ParsedArgs {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(message, { cause: error });
   }
-  if (values.help) return { help: true, demo: false, trace: false };
+  if (values.help) return { help: true, demo: false };
   if (positionals.length > 0) {
     throw new Error(
       "The TUI does not take a message. Start it, then type at the prompt.",
@@ -75,24 +78,44 @@ function parseArgv(argv: readonly string[]): ParsedArgs {
     values.demo &&
     (values.provider !== undefined ||
       values.session !== undefined ||
+      values.output !== undefined ||
       values.trace === true)
   ) {
-    throw new Error("--demo does not use --provider, --session, or --trace.");
+    throw new Error(
+      "--demo does not use --provider, --session, --output, or --trace.",
+    );
+  }
+  if (values.session !== undefined) {
+    throw new Error(
+      "Saved chat sessions are not supported by the new loop. Existing session files are left unchanged. Use --output to save a native task trajectory, not resumable chat history.",
+    );
+  }
+  if (values.provider !== undefined) {
+    throw new Error(
+      "Subscription login is not supported by the new loop. Use --model openai/<name> or anthropic/<name> and OPENAI_API_KEY or ANTHROPIC_API_KEY. Saved subscription credentials are not read.",
+    );
+  }
+  if (values.trace) {
+    throw new Error(
+      "SDK tracing is not supported by the new loop. Use --output to save a native task trajectory.",
+    );
   }
   return {
     help: false,
     demo: values.demo === true,
     model: values.model,
-    provider: values.provider,
-    session: values.session,
-    trace: values.trace === true,
+    output: values.output,
   };
 }
 
 function redactStartup(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
-  const key = process.env.OPENAI_API_KEY;
-  return key ? message.split(key).join("[redacted]") : message;
+  let redacted = message;
+  for (const name of ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"]) {
+    const key = process.env[name];
+    if (key) redacted = redacted.split(key).join("[redacted]");
+  }
+  return redacted;
 }
 
 async function runScreen(
@@ -215,78 +238,52 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     }
   }
 
-  const [{ runTurn }, { openSession }, { createSubscriptions }] =
-    await Promise.all([
-      import("../agent.ts"),
-      import("../session.ts"),
-      import("./auth.ts"),
-    ]);
-  const subscriptions = createSubscriptions();
-  let opened: Awaited<ReturnType<typeof openSession>> | undefined;
   try {
-    const model = await subscriptions.resolveModel({
-      provider: args.provider,
-      model: args.model,
+    const [
+      { getConfigFromSpec, builtinConfigDir },
+      { LocalEnvironment },
+      { getModel, getModelName },
+      { createTuiSession },
+    ] = await Promise.all([
+      import("../config/index.ts"),
+      import("../environments/local.ts"),
+      import("../models/index.ts"),
+      import("./tui-agent.ts"),
+    ]);
+    const config = getConfigFromSpec(
+      resolve(builtinConfigDir, "mini.yaml"),
+    ) as {
+      agent: Record<string, unknown>;
+      model: Record<string, unknown>;
+      environment: Record<string, unknown>;
+    };
+    const modelLabel = getModelName(args.model, config.model);
+    const output = resolve(cwd, args.output ?? ".lean/last-tui-run.traj.json");
+    const session = createTuiSession({
+      environment: new LocalEnvironment({ ...config.environment, cwd }),
+      agentConfig: config.agent,
+      output,
     });
-    const modelLabel =
-      typeof model === "string" ? model : (args.model ?? "subscription");
-    opened = await openSession({
-      file: resolve(cwd, args.session ?? ".lean/history.json"),
-      cwd,
-    });
-    const session = opened;
     const controller = await createTuiController({
       noColor,
       cwd,
-      model,
+      model: getModel(modelLabel, config.model),
       modelLabel,
-      providerLabel: args.provider ?? "default",
-      sessionLabel: args.session ?? ".lean/history.json",
+      providerLabel: "API key (model-selected)",
+      sessionLabel: `memory only; latest task trajectory: ${output}`,
       demo: false,
-      trace: args.trace,
-      history: {
-        getItems: () => session.session.getItems(),
-        restore: async (items) => {
-          const snapshot = structuredClone(items) as Parameters<
-            typeof session.session.addItems
-          >[0];
-          await session.session.clearSession();
-          if (snapshot.length > 0) await session.session.addItems(snapshot);
-        },
-        save: () => session.save(),
-        close: () => session.close(),
-      },
-      redact: subscriptions.redact,
-      resolveModel: (name) =>
-        subscriptions.resolveModel({ provider: args.provider, model: name }),
-      driver: async (input) => {
-        await runTurn({
-          cwd,
-          input: input.text,
-          session: session.session,
-          signal: input.signal,
-          model: input.model,
-          trace: args.trace,
-          onText: input.onText,
-          approve: input.approve,
-        });
-      },
+      boundary:
+        "Each task starts fresh model context. Screen history is memory-only; the latest task replaces the saved trajectory. Responses appear after each model call. Cancellation waits for the active request or command; no later action executes. /clear hides the screen, not the trajectory. Subscription login and SDK tracing are unavailable.",
+      history: session.history,
+      driver: session.driver,
+      redact: redactStartup,
+      resolveModel: async (name) => getModel(name, config.model),
     });
     await runScreen(controller, noColor);
     return 0;
   } catch (error) {
-    process.stderr.write(`${subscriptions.redact(error)}\n`);
+    process.stderr.write(`${redactStartup(error)}\n`);
     return 1;
-  } finally {
-    try {
-      await opened?.close();
-    } finally {
-      await subscriptions.close();
-      if (args.trace) {
-        const { getGlobalTraceProvider } = await import("@openai/agents");
-        await getGlobalTraceProvider().forceFlush();
-      }
-    }
   }
 }
 

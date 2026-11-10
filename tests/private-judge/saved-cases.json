@@ -1,0 +1,206 @@
+{
+  "actual": [
+    {
+      "name": "node-normal",
+      "provenance": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal",
+      "stdout": "{\"seq\":1,\"kind\":\"runner-start\",\"pid\":34910,\"execPath\":\"/Users/josh-desktop/.local/share/mise/installs/node/26.13.0/bin/node\",\"scenario\":\"normal\",\"helperPath\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs\",\"sourcePath\":\"/Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts\",\"cwd\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/cwd\",\"env\":{\"PATH\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/bin\",\"HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/home\",\"TMPDIR\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/tmp\",\"XDG_CONFIG_HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/config\",\"XDG_CACHE_HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/cache\",\"__CF_USER_TEXT_ENCODING\":\"0x1F5:0x0:0x0\"},\"version\":\"v26.13.0\",\"bun\":null}\n{\"seq\":2,\"kind\":\"hook-install-returned\",\"savedSpawn\":true,\"savedSpawnSync\":true}\n{\"seq\":3,\"kind\":\"source-imported\",\"href\":\"file:///Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts\",\"exportType\":\"function\"}\n{\"seq\":4,\"kind\":\"hook-create\",\"pid\":34911,\"command\":\"/bin/cat\",\"argv\":[],\"handleRetained\":true,\"stdio\":[\"pipe\",\"pipe\",\"ignore\"],\"streams\":{\"stdin\":{\"present\":true,\"readable\":false,\"writable\":true,\"destroyed\":false,\"constructorName\":\"Socket\"},\"stdout\":{\"present\":true,\"readable\":true,\"writable\":true,\"destroyed\":false,\"constructorName\":\"Socket\"},\"stderr\":{\"present\":false}}}\n{\"seq\":5,\"kind\":\"start-callback\",\"phase\":\"before-spawn\",\"threw\":false,\"helperPath\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs\"}\n{\"seq\":6,\"kind\":\"hook-create\",\"pid\":34912,\"command\":\"/Users/josh-desktop/.local/share/mise/installs/node/26.13.0/bin/node\",\"argv\":[\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs\"],\"handleRetained\":true,\"stdio\":[\"ignore\",\"stream\",\"stream\"],\"streams\":{\"stdin\":{\"present\":false},\"stdout\":{\"present\":false},\"stderr\":{\"present\":false}}}\n{\"seq\":7,\"kind\":\"hook-exit\",\"pid\":34912,\"command\":\"/Users/josh-desktop/.local/share/mise/installs/node/26.13.0/bin/node\",\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":8,\"kind\":\"hook-close\",\"command\":\"/Users/josh-desktop/.local/share/mise/installs/node/26.13.0/bin/node\",\"pid\":34912,\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":9,\"kind\":\"hook-exit\",\"pid\":34911,\"command\":\"/bin/cat\",\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":10,\"kind\":\"hook-close\",\"command\":\"/bin/cat\",\"pid\":34911,\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":11,\"kind\":\"api-return\",\"stdout\":\"native-command-observer-bytes\\n\",\"returncode\":0}\n{\"seq\":12,\"kind\":\"hook-joined\",\"count\":2,\"rows\":[{\"pid\":34911,\"command\":\"/bin/cat\",\"alreadySettled\":true,\"code\":0,\"signal\":null},{\"pid\":34912,\"command\":\"/Users/josh-desktop/.local/share/mise/installs/node/26.13.0/bin/node\",\"alreadySettled\":true,\"code\":0,\"signal\":null}]}\n",
+      "stderr": "",
+      "launch": {
+        "label": "node-normal",
+        "synthetic": false,
+        "runtime": "node",
+        "scenario": "normal",
+        "argv": [
+          "/Users/josh-desktop/.local/share/mise/installs/node/26.13.0/bin/node",
+          "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/runner.mjs",
+          "normal",
+          "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs",
+          "/Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts"
+        ],
+        "childStarted": true,
+        "env": {
+          "PATH": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/bin",
+          "HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/home",
+          "TMPDIR": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/tmp",
+          "XDG_CONFIG_HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/config",
+          "XDG_CACHE_HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/cache"
+        },
+        "cwd": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-normal/cwd"
+      },
+      "pid": {
+        "label": "runner",
+        "pid": 34910,
+        "positivePidRecorded": true,
+        "synthetic": false
+      },
+      "outcome": {
+        "waitOutcome": "reaped-runner",
+        "timedOut": false,
+        "signalSent": false,
+        "returncode": 0
+      },
+      "rawSha256": {
+        "stdout": "2b9802cda167e6e7d2cd9f29292bb4e2a81e0baf1a7dc4822c98f8ce52712919",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "node-start-throw",
+      "provenance": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw",
+      "stdout": "{\"seq\":1,\"kind\":\"runner-start\",\"pid\":34913,\"execPath\":\"/Users/josh-desktop/.local/share/mise/installs/node/26.13.0/bin/node\",\"scenario\":\"start-throw\",\"helperPath\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs\",\"sourcePath\":\"/Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts\",\"cwd\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/cwd\",\"env\":{\"PATH\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/bin\",\"HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/home\",\"TMPDIR\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/tmp\",\"XDG_CONFIG_HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/config\",\"XDG_CACHE_HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/cache\",\"__CF_USER_TEXT_ENCODING\":\"0x1F5:0x0:0x0\"},\"version\":\"v26.13.0\",\"bun\":null}\n{\"seq\":2,\"kind\":\"hook-install-returned\",\"savedSpawn\":true,\"savedSpawnSync\":true}\n{\"seq\":3,\"kind\":\"source-imported\",\"href\":\"file:///Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts\",\"exportType\":\"function\"}\n{\"seq\":4,\"kind\":\"hook-create\",\"pid\":34914,\"command\":\"/bin/cat\",\"argv\":[],\"handleRetained\":true,\"stdio\":[\"pipe\",\"pipe\",\"ignore\"],\"streams\":{\"stdin\":{\"present\":true,\"readable\":false,\"writable\":true,\"destroyed\":false,\"constructorName\":\"Socket\"},\"stdout\":{\"present\":true,\"readable\":true,\"writable\":true,\"destroyed\":false,\"constructorName\":\"Socket\"},\"stderr\":{\"present\":false}}}\n{\"seq\":5,\"kind\":\"start-callback\",\"phase\":\"before-spawn\",\"threw\":true,\"spawnCalls\":0}\n{\"seq\":6,\"kind\":\"api-reject\",\"sameObject\":true,\"tokenMatches\":true,\"name\":\"Error\",\"message\":\"owned-start-callback\"}\n{\"seq\":7,\"kind\":\"hook-exit\",\"pid\":34914,\"command\":\"/bin/cat\",\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":8,\"kind\":\"hook-close\",\"command\":\"/bin/cat\",\"pid\":34914,\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":9,\"kind\":\"hook-joined\",\"count\":1,\"rows\":[{\"pid\":34914,\"command\":\"/bin/cat\",\"alreadySettled\":false,\"code\":0,\"signal\":null}]}\n",
+      "stderr": "",
+      "launch": {
+        "label": "node-start-throw",
+        "synthetic": false,
+        "runtime": "node",
+        "scenario": "start-throw",
+        "argv": [
+          "/Users/josh-desktop/.local/share/mise/installs/node/26.13.0/bin/node",
+          "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/runner.mjs",
+          "start-throw",
+          "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs",
+          "/Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts"
+        ],
+        "childStarted": true,
+        "env": {
+          "PATH": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/bin",
+          "HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/home",
+          "TMPDIR": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/tmp",
+          "XDG_CONFIG_HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/config",
+          "XDG_CACHE_HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/cache"
+        },
+        "cwd": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/node-start-throw/cwd"
+      },
+      "pid": {
+        "label": "runner",
+        "pid": 34913,
+        "positivePidRecorded": true,
+        "synthetic": false
+      },
+      "outcome": {
+        "waitOutcome": "reaped-runner",
+        "timedOut": false,
+        "signalSent": false,
+        "returncode": 0
+      },
+      "rawSha256": {
+        "stdout": "70b40549b036d52262002e39d14241b1357cd0a63ddef72b21e48f6edf796f54",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "bun-normal",
+      "provenance": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal",
+      "stdout": "{\"seq\":1,\"kind\":\"runner-start\",\"pid\":34915,\"execPath\":\"/Users/josh-desktop/.local/share/mise/installs/bun/1.4.4/bin/bun\",\"scenario\":\"normal\",\"helperPath\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs\",\"sourcePath\":\"/Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts\",\"cwd\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/cwd\",\"env\":{\"PATH\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/bin\",\"HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/home\",\"TMPDIR\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/tmp\",\"XDG_CONFIG_HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/config\",\"XDG_CACHE_HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/cache\"},\"version\":\"v26.3.0\",\"bun\":\"1.4.4\"}\n{\"seq\":2,\"kind\":\"hook-install-returned\",\"savedSpawn\":true,\"savedSpawnSync\":true}\n{\"seq\":3,\"kind\":\"source-imported\",\"href\":\"file:///Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts\",\"exportType\":\"function\"}\n{\"seq\":4,\"kind\":\"hook-create\",\"pid\":34916,\"command\":\"/bin/cat\",\"argv\":[],\"handleRetained\":true,\"stdio\":[\"pipe\",\"pipe\",\"ignore\"],\"streams\":{\"stdin\":{\"present\":true,\"readable\":false,\"writable\":true,\"destroyed\":false,\"constructorName\":\"WriteStream\"},\"stdout\":{\"present\":true,\"readable\":true,\"writable\":false,\"destroyed\":false,\"constructorName\":\"Readable\"},\"stderr\":{\"present\":false}}}\n{\"seq\":5,\"kind\":\"start-callback\",\"phase\":\"before-spawn\",\"threw\":false,\"helperPath\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs\"}\n{\"seq\":6,\"kind\":\"hook-create\",\"pid\":34917,\"command\":\"/Users/josh-desktop/.local/share/mise/installs/bun/1.4.4/bin/bun\",\"argv\":[\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs\"],\"handleRetained\":true,\"stdio\":[\"ignore\",\"stream\",\"stream\"],\"streams\":{\"stdin\":{\"present\":false},\"stdout\":{\"present\":false},\"stderr\":{\"present\":false}}}\n{\"seq\":7,\"kind\":\"hook-exit\",\"pid\":34917,\"command\":\"/Users/josh-desktop/.local/share/mise/installs/bun/1.4.4/bin/bun\",\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":8,\"kind\":\"hook-close\",\"command\":\"/Users/josh-desktop/.local/share/mise/installs/bun/1.4.4/bin/bun\",\"pid\":34917,\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":9,\"kind\":\"hook-exit\",\"pid\":34916,\"command\":\"/bin/cat\",\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":10,\"kind\":\"hook-close\",\"command\":\"/bin/cat\",\"pid\":34916,\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":11,\"kind\":\"api-return\",\"stdout\":\"native-command-observer-bytes\\n\",\"returncode\":0}\n{\"seq\":12,\"kind\":\"hook-joined\",\"count\":2,\"rows\":[{\"pid\":34916,\"command\":\"/bin/cat\",\"alreadySettled\":true,\"code\":0,\"signal\":null},{\"pid\":34917,\"command\":\"/Users/josh-desktop/.local/share/mise/installs/bun/1.4.4/bin/bun\",\"alreadySettled\":true,\"code\":0,\"signal\":null}]}\n",
+      "stderr": "",
+      "launch": {
+        "label": "bun-normal",
+        "synthetic": false,
+        "runtime": "bun",
+        "scenario": "normal",
+        "argv": [
+          "/Users/josh-desktop/.local/share/mise/installs/bun/1.4.4/bin/bun",
+          "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/runner.mjs",
+          "normal",
+          "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs",
+          "/Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts"
+        ],
+        "childStarted": true,
+        "env": {
+          "PATH": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/bin",
+          "HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/home",
+          "TMPDIR": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/tmp",
+          "XDG_CONFIG_HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/config",
+          "XDG_CACHE_HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/cache"
+        },
+        "cwd": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-normal/cwd"
+      },
+      "pid": {
+        "label": "runner",
+        "pid": 34915,
+        "positivePidRecorded": true,
+        "synthetic": false
+      },
+      "outcome": {
+        "waitOutcome": "reaped-runner",
+        "timedOut": false,
+        "signalSent": false,
+        "returncode": 0
+      },
+      "rawSha256": {
+        "stdout": "1c82aa1258662607db4080d238d8fd994671527f107d14bafc76774e544f9fdb",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "bun-start-throw",
+      "provenance": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw",
+      "stdout": "{\"seq\":1,\"kind\":\"runner-start\",\"pid\":34918,\"execPath\":\"/Users/josh-desktop/.local/share/mise/installs/bun/1.4.4/bin/bun\",\"scenario\":\"start-throw\",\"helperPath\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs\",\"sourcePath\":\"/Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts\",\"cwd\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/cwd\",\"env\":{\"PATH\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/bin\",\"HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/home\",\"TMPDIR\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/tmp\",\"XDG_CONFIG_HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/config\",\"XDG_CACHE_HOME\":\"/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/cache\"},\"version\":\"v26.3.0\",\"bun\":\"1.4.4\"}\n{\"seq\":2,\"kind\":\"hook-install-returned\",\"savedSpawn\":true,\"savedSpawnSync\":true}\n{\"seq\":3,\"kind\":\"source-imported\",\"href\":\"file:///Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts\",\"exportType\":\"function\"}\n{\"seq\":4,\"kind\":\"hook-create\",\"pid\":34919,\"command\":\"/bin/cat\",\"argv\":[],\"handleRetained\":true,\"stdio\":[\"pipe\",\"pipe\",\"ignore\"],\"streams\":{\"stdin\":{\"present\":true,\"readable\":false,\"writable\":true,\"destroyed\":false,\"constructorName\":\"WriteStream\"},\"stdout\":{\"present\":true,\"readable\":true,\"writable\":false,\"destroyed\":false,\"constructorName\":\"Readable\"},\"stderr\":{\"present\":false}}}\n{\"seq\":5,\"kind\":\"start-callback\",\"phase\":\"before-spawn\",\"threw\":true,\"spawnCalls\":0}\n{\"seq\":6,\"kind\":\"api-reject\",\"sameObject\":true,\"tokenMatches\":true,\"name\":\"Error\",\"message\":\"owned-start-callback\"}\n{\"seq\":7,\"kind\":\"hook-exit\",\"pid\":34919,\"command\":\"/bin/cat\",\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":8,\"kind\":\"hook-close\",\"command\":\"/bin/cat\",\"pid\":34919,\"code\":0,\"signal\":null,\"exitCode\":0,\"signalCode\":null}\n{\"seq\":9,\"kind\":\"hook-joined\",\"count\":1,\"rows\":[{\"pid\":34919,\"command\":\"/bin/cat\",\"alreadySettled\":false,\"code\":0,\"signal\":null}]}\n",
+      "stderr": "",
+      "launch": {
+        "label": "bun-start-throw",
+        "synthetic": false,
+        "runtime": "bun",
+        "scenario": "start-throw",
+        "argv": [
+          "/Users/josh-desktop/.local/share/mise/installs/bun/1.4.4/bin/bun",
+          "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/runner.mjs",
+          "start-throw",
+          "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/helper.mjs",
+          "/Users/josh-desktop/src/personal/lean-native-environment-round-four/src/environments/command_run.ts"
+        ],
+        "childStarted": true,
+        "env": {
+          "PATH": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/bin",
+          "HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/home",
+          "TMPDIR": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/tmp",
+          "XDG_CONFIG_HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/config",
+          "XDG_CACHE_HOME": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/cache"
+        },
+        "cwd": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-command-observer-prototype/run-2/bun-start-throw/cwd"
+      },
+      "pid": {
+        "label": "runner",
+        "pid": 34918,
+        "positivePidRecorded": true,
+        "synthetic": false
+      },
+      "outcome": {
+        "waitOutcome": "reaped-runner",
+        "timedOut": false,
+        "signalSent": false,
+        "returncode": 0
+      },
+      "rawSha256": {
+        "stdout": "dcc09e1e4d7d5d84987bfcd1ec4e3d0faac1b11c19f4f806873e58a7598448f7",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "counterexamples": [
+    {
+      "runtime": "node",
+      "mutation": "collector-exit-and-close-code-7",
+      "classification": "observed",
+      "issues": []
+    },
+    {
+      "runtime": "node",
+      "mutation": "missing-collector-exit",
+      "classification": "observed",
+      "issues": []
+    },
+    {
+      "runtime": "bun",
+      "mutation": "collector-exit-and-close-code-7",
+      "classification": "observed",
+      "issues": []
+    },
+    {
+      "runtime": "bun",
+      "mutation": "missing-collector-exit",
+      "classification": "observed",
+      "issues": []
+    }
+  ]
+}

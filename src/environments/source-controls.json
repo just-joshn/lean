@@ -1,0 +1,1971 @@
+{
+  "reference_commit": "04d809ceab9df28f9adaed044884180159172930",
+  "saved_run": "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/results",
+  "historical_paired_matches": 8,
+  "comparisons": 67,
+  "rows": [
+    {
+      "id": "local-eof-success",
+      "record_sha256": "e71db7a603fcb49df664190ecc749b9c368d0f8a38d108cee60fde2feeb1d9d3",
+      "source": {
+        "kind": "observation",
+        "returncode": 0,
+        "output_codes": [112, 97, 114, 116, 105, 97, 108, 76, 65, 84, 69],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open lifetime gate: cannot infer descendant or collector completion from runner exit or markers"
+    },
+    {
+      "id": "local-eof-timeout",
+      "record_sha256": "c829863deb374881a01d6431bc7f474010fe2c9951d3888553ed5119e310ae21",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [112, 97, 114, 116, 105, 97, 108],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect/gate: timeout drain/return ordering differs from source; actual process, collector and descendant lifetime unproven"
+    },
+    {
+      "id": "local-dead-leader",
+      "record_sha256": "417dca822e7a99bd246ae1e71bb59b348c53732e0923b4e6f5d3b62b4248bea4",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect: group-stop errors swallowed; Darwin errno mapping not independently measured"
+    },
+    {
+      "id": "local-sigint-after-exit",
+      "record_sha256": "fe097988706d02e7609bf102e65ccedfb01e5b81acfb6fcde999da4d64d284b8",
+      "source": {
+        "kind": "interrupt",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect: interruption kills local group immediately and Docker lacks interrupt handling; no grace/deadline or lifetime proof"
+    },
+    {
+      "id": "local-sigint-drain",
+      "record_sha256": "a65541f1cef9e41046779211fd991928d21610b06efe2183d584c9cfda9aa79f",
+      "source": {
+        "kind": "interrupt",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect: interruption kills local group immediately and Docker lacks interrupt handling; no grace/deadline or lifetime proof"
+    },
+    {
+      "id": "local-grace-full",
+      "record_sha256": "1be752d542000d1987786c02f2bfea9fa88ff21a3f919475c24541af0631ee26",
+      "source": {
+        "kind": "interrupt",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect: interruption kills local group immediately and Docker lacks interrupt handling; no grace/deadline or lifetime proof"
+    },
+    {
+      "id": "local-grace-remaining",
+      "record_sha256": "172bb56787750267c5356055a309fccdb382cf052256071d3d3b7c6b8181f810",
+      "source": {
+        "kind": "interrupt",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect: interruption kills local group immediately and Docker lacks interrupt handling; no grace/deadline or lifetime proof"
+    },
+    {
+      "id": "local-grace-early",
+      "record_sha256": "48fe2cce8c3c9b80f788edea25bc2b363dfa1e28e962c3b877f79588ba3ca4ab",
+      "source": {
+        "kind": "interrupt",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect: interruption kills local group immediately and Docker lacks interrupt handling; no grace/deadline or lifetime proof"
+    },
+    {
+      "id": "local-sigterm",
+      "record_sha256": "c9f18d15017fd8be44ab45b93764f67cba1494e85e7aef6add83cd48763f0be6",
+      "source": {
+        "kind": "observation",
+        "returncode": -15,
+        "output_codes": [],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "saved output/exit packet replayed through fake public execute; actual process and collector lifetime unproven"
+    },
+    {
+      "id": "local-sigkill",
+      "record_sha256": "7819d5d115f8750b777c5dea0791fe90d7dc3dc408766291a5b7d0ebad427deb",
+      "source": {
+        "kind": "observation",
+        "returncode": -9,
+        "output_codes": [],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "saved output/exit packet replayed through fake public execute; actual process and collector lifetime unproven"
+    },
+    {
+      "id": "local-exit7",
+      "record_sha256": "8c5c6326bf88dfe9a29980458132bc26cd6484b48d43f030d08c98907fb1fb74",
+      "source": {
+        "kind": "observation",
+        "returncode": 7,
+        "output_codes": [],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "saved output/exit packet replayed through fake public execute; actual process and collector lifetime unproven"
+    },
+    {
+      "id": "local-newlines-success",
+      "record_sha256": "97d6415e859b6d66cd4c41898b50824714118850ec7dd19e6f2a468df2862115",
+      "source": {
+        "kind": "observation",
+        "returncode": 0,
+        "output_codes": [
+          79, 85, 84, 10, 97, 10, 98, 10, 112, 97, 114, 116, 105, 97, 108
+        ],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "saved output/exit packet replayed through fake public execute; actual process and collector lifetime unproven"
+    },
+    {
+      "id": "local-newlines-timeout",
+      "record_sha256": "ef28deb95c391d4904233ae961462986096958f4d0fdeff54e48555779f066d5",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [
+          79, 85, 84, 10, 97, 10, 98, 10, 112, 97, 114, 116, 105, 97, 108
+        ],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect/gate: timeout drain/return ordering differs from source; actual process, collector and descendant lifetime unproven"
+    },
+    {
+      "id": "local-missing-cwd",
+      "record_sha256": "115c0cad2220c3b5255a6aff890e77e936c98041afc1ab1d6d181aa41e95e918",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect: native spawn error wording/type not mapped to saved source; early collector closure and unlinked cleanup unproven"
+    },
+    {
+      "id": "local-cwd-file",
+      "record_sha256": "2d9847490c901448144d4ee03f19ffd3bceb007483cc37aac2ee91f0176ad9cf",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect: native spawn error wording/type not mapped to saved source; early collector closure and unlinked cleanup unproven"
+    },
+    {
+      "id": "local-detached-timeout",
+      "record_sha256": "15fdaa1ac3361e43da39b1d03c9f8160da5674179fede11ab5c21818fc374bd1",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [112, 97, 114, 116, 105, 97, 108, 76, 65, 84, 69],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect/gate: timeout drain/return ordering differs from source; actual process, collector and descendant lifetime unproven"
+    },
+    {
+      "id": "docker-eof-success",
+      "record_sha256": "6c09252cdf62bf85809f4cd6dda6e0683ae15dbae78ac122fe5085c9140a1b04",
+      "source": {
+        "kind": "observation",
+        "returncode": 0,
+        "output_codes": [112, 97, 114, 116, 105, 97, 108, 76, 65, 84, 69],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "open lifetime gate: cannot infer descendant or collector completion from runner exit or markers"
+    },
+    {
+      "id": "docker-eof-timeout",
+      "record_sha256": "cc246431f62e8c8aa03d5de9d5ea20043d40080f0768343a625052d090bcba9c",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [112, 97, 114, 116, 105, 97, 108],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "open known defect/gate: timeout drain/return ordering differs from source; actual process, collector and descendant lifetime unproven"
+    },
+    {
+      "id": "docker-direct-kill",
+      "record_sha256": "345a5906a7bfadf52d23ec4358f0fff7de8a5c745dad9a9e5ad05a46d626d07e",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [112, 97, 114, 116, 105, 97, 108],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "open known defect/gate: timeout drain/return ordering differs from source; actual process, collector and descendant lifetime unproven"
+    },
+    {
+      "id": "docker-sigint-collect",
+      "record_sha256": "bc06298874103302746153cf319667e844806205329ebdc18cba5d137bb634bb",
+      "source": {
+        "kind": "interrupt",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "open known defect: interruption kills local group immediately and Docker lacks interrupt handling; no grace/deadline or lifetime proof"
+    },
+    {
+      "id": "docker-grace-full",
+      "record_sha256": "6bb920bef6201c3c235842da44e1684301166e6e015ebc51a18646b46d5aeaa4",
+      "source": {
+        "kind": "interrupt",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "open known defect: interruption kills local group immediately and Docker lacks interrupt handling; no grace/deadline or lifetime proof"
+    },
+    {
+      "id": "docker-grace-remaining",
+      "record_sha256": "e16179a662a1698e891e3abf7fc44e94ba8ff1c9930fd30cf76f5a2b71882b33",
+      "source": {
+        "kind": "interrupt",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "open known defect: interruption kills local group immediately and Docker lacks interrupt handling; no grace/deadline or lifetime proof"
+    },
+    {
+      "id": "docker-grace-early",
+      "record_sha256": "45a550b9c2dc718462521af9b6d2717dbd52bbba15cbfa74e1a13b1554356107",
+      "source": {
+        "kind": "interrupt",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "open known defect: interruption kills local group immediately and Docker lacks interrupt handling; no grace/deadline or lifetime proof"
+    },
+    {
+      "id": "docker-sigterm",
+      "record_sha256": "b3097e29927740f269828641a2fa42f68ecaff7ff0c708b1bbe8ba82d03a4039",
+      "source": {
+        "kind": "observation",
+        "returncode": -15,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "saved output/exit packet replayed through fake public execute; actual process and collector lifetime unproven"
+    },
+    {
+      "id": "docker-sigkill",
+      "record_sha256": "f7c697953c4e959ed8bf175ece9c3e22432601043a6d334d4d624409810a246c",
+      "source": {
+        "kind": "observation",
+        "returncode": -9,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "saved output/exit packet replayed through fake public execute; actual process and collector lifetime unproven"
+    },
+    {
+      "id": "docker-exit7",
+      "record_sha256": "154e868e1d851a1abdd4088c11c641c5fc54787f1383022695ec8d1dac89e264",
+      "source": {
+        "kind": "observation",
+        "returncode": 7,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "saved output/exit packet replayed through fake public execute; actual process and collector lifetime unproven"
+    },
+    {
+      "id": "docker-newlines-success",
+      "record_sha256": "d2ee7f5c6750b67c8778f8055d442cf2c84d5bbb03d64f0a5b3ab649c6251d71",
+      "source": {
+        "kind": "observation",
+        "returncode": 0,
+        "output_codes": [
+          79, 85, 84, 10, 97, 10, 98, 10, 112, 97, 114, 116, 105, 97, 108
+        ],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "saved output/exit packet replayed through fake public execute; actual process and collector lifetime unproven"
+    },
+    {
+      "id": "docker-newlines-timeout",
+      "record_sha256": "8107d59ba0eb589c524013e85afa44d627f6bf366315d239151094b2fb19e815",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [
+          79, 85, 84, 10, 97, 13, 98, 13, 10, 112, 97, 114, 116, 105, 97, 108
+        ],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "open known defect/gate: timeout drain/return ordering differs from source; actual process, collector and descendant lifetime unproven"
+    },
+    {
+      "id": "docker-timeout-closed",
+      "record_sha256": "d42c4aa82192efd4d216c6121bccb8093bf5e5c604c05c5958fae149afc441e1",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "open known defect/gate: timeout drain/return ordering differs from source; actual process, collector and descendant lifetime unproven"
+    },
+    {
+      "id": "docker-missing-exec",
+      "record_sha256": "a993692be2bfad2ab5e7d708f7bc371b1d3c3d55f498deef52b3b8647f268687",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "open known defect: native spawn error wording/type not mapped to saved source; early collector closure and unlinked cleanup unproven"
+    },
+    {
+      "id": "startup-plain",
+      "record_sha256": "db840f9c9c43e75a45eef5380e8a08a6959f0f93130a375d25ebd3553767a71e",
+      "source": {
+        "kind": "constructed",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [99, 105, 100, 45, 111, 119, 110, 101, 100, 10],
+        "stderr": [],
+        "status": 0,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-nonzero-cr",
+      "record_sha256": "f1a5bbd65a4f5bbe840c9b88474f7087580cb57648a1f7e58c66650ceddc86a8",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "CalledProcessError",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-nonzero-cr/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-b4fc6f92', '-w', '/workspace', '--rm', 'img', 'sleep', '2h']' returned non-zero exit status 3.",
+          "returncode": 3,
+          "timeout": null,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-nonzero-cr/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-b4fc6f92",
+            "-w",
+            "/workspace",
+            "--rm",
+            "img",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "str",
+            "value": "nope-out\n",
+            "raw": null
+          },
+          "stderr": {
+            "type": "str",
+            "value": "err\nline",
+            "raw": null
+          },
+          "stdout": {
+            "type": "str",
+            "value": "nope-out\n",
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [110, 111, 112, 101, 45, 111, 117, 116, 13, 10],
+        "stderr": [101, 114, 114, 13, 108, 105, 110, 101],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-unicode",
+      "record_sha256": "9c8e5b795b63fcc6f045ac6be321f20c11d5256a8fed3126d59ad83348f93fcb",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "CalledProcessError",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-unicode/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-14017b1c', '-w', '/workspace', '--rm', 'img', 'sleep', '2h']' returned non-zero exit status 3.",
+          "returncode": 3,
+          "timeout": null,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-unicode/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-14017b1c",
+            "-w",
+            "/workspace",
+            "--rm",
+            "img",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "str",
+            "value": "café\n",
+            "raw": null
+          },
+          "stderr": {
+            "type": "str",
+            "value": "héllo",
+            "raw": null
+          },
+          "stdout": {
+            "type": "str",
+            "value": "café\n",
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [99, 97, 102, 195, 169, 10],
+        "stderr": [104, 195, 169, 108, 108, 111],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-invalid",
+      "record_sha256": "236a4dde11d95e1ff024d31544324417aeded73c72894ce2208172a6f0fb4de2",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [255],
+          "start": 0,
+          "end": 1,
+          "reason": "invalid start byte"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [255],
+        "stderr": [111, 107],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-invalid-zero",
+      "record_sha256": "f56d262367120e4c3831453ee5a1d9ce06fdb600eaeff70042f7eee6cadcec1c",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [255, 10],
+          "start": 0,
+          "end": 1,
+          "reason": "invalid start byte"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [255, 10],
+        "stderr": [],
+        "status": 0,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-repr-quote",
+      "record_sha256": "537141b40b5a51a5f1a7d7a99c6e249f8b4d2e77f9a071f21a0cfc84fa5158b6",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "CalledProcessError",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-repr-quote/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-5ed23b2b', '-w', '/workspace', '--rm', \"a'b\", 'sleep', '2h']' returned non-zero exit status 3.",
+          "returncode": 3,
+          "timeout": null,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-repr-quote/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-5ed23b2b",
+            "-w",
+            "/workspace",
+            "--rm",
+            "a'b",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "str",
+            "value": "cid-owned\n",
+            "raw": null
+          },
+          "stderr": {
+            "type": "str",
+            "value": "",
+            "raw": null
+          },
+          "stdout": {
+            "type": "str",
+            "value": "cid-owned\n",
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "a'b",
+        "timeout": 5,
+        "stdout": [99, 105, 100, 45, 111, 119, 110, 101, 100, 10],
+        "stderr": [],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-repr-unicode",
+      "record_sha256": "c544ca8e37cf168106df414b90b0c62f09464e35a6516f1ab5bd19ec6ed698b3",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "CalledProcessError",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-repr-unicode/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-679770b7', '-w', '/workspace', '--rm', 'café', 'sleep', '2h']' returned non-zero exit status 3.",
+          "returncode": 3,
+          "timeout": null,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-repr-unicode/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-679770b7",
+            "-w",
+            "/workspace",
+            "--rm",
+            "café",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "str",
+            "value": "cid-owned\n",
+            "raw": null
+          },
+          "stderr": {
+            "type": "str",
+            "value": "",
+            "raw": null
+          },
+          "stdout": {
+            "type": "str",
+            "value": "cid-owned\n",
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "café",
+        "timeout": 5,
+        "stdout": [99, 105, 100, 45, 111, 119, 110, 101, 100, 10],
+        "stderr": [],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-repr-slash",
+      "record_sha256": "b5a34c2dc3c12447950b85ccd5748b960f00619572d4161a2bf02dcf44d6a7db",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "CalledProcessError",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-repr-slash/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-853e3a4f', '-w', '/workspace', '--rm', 'a\\\\b', 'sleep', '2h']' returned non-zero exit status 3.",
+          "returncode": 3,
+          "timeout": null,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-repr-slash/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-853e3a4f",
+            "-w",
+            "/workspace",
+            "--rm",
+            "a\\b",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "str",
+            "value": "cid-owned\n",
+            "raw": null
+          },
+          "stderr": {
+            "type": "str",
+            "value": "",
+            "raw": null
+          },
+          "stdout": {
+            "type": "str",
+            "value": "cid-owned\n",
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "a\\b",
+        "timeout": 5,
+        "stdout": [99, 105, 100, 45, 111, 119, 110, 101, 100, 10],
+        "stderr": [],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-repr-control",
+      "record_sha256": "0219819862a03a9aa4c0f95a09230527d5da9608f7e4294d364b949a10218b6c",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "CalledProcessError",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-repr-control/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-43b7c4c0', '-w', '/workspace', '--rm', 'a\\x01b', 'sleep', '2h']' returned non-zero exit status 3.",
+          "returncode": 3,
+          "timeout": null,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-repr-control/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-43b7c4c0",
+            "-w",
+            "/workspace",
+            "--rm",
+            "a\u0001b",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "str",
+            "value": "cid-owned\n",
+            "raw": null
+          },
+          "stderr": {
+            "type": "str",
+            "value": "",
+            "raw": null
+          },
+          "stdout": {
+            "type": "str",
+            "value": "cid-owned\n",
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "a\u0001b",
+        "timeout": 5,
+        "stdout": [99, 105, 100, 45, 111, 119, 110, 101, 100, 10],
+        "stderr": [],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-sigterm",
+      "record_sha256": "bd6dcfe84d8f45ad967dae665c8f8c51709fd387c8b52647e35e098a775f097e",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "CalledProcessError",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-sigterm/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-c32833f1', '-w', '/workspace', '--rm', 'img', 'sleep', '2h']' died with <Signals.SIGTERM: 15>.",
+          "returncode": -15,
+          "timeout": null,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-sigterm/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-c32833f1",
+            "-w",
+            "/workspace",
+            "--rm",
+            "img",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "str",
+            "value": "",
+            "raw": null
+          },
+          "stderr": {
+            "type": "str",
+            "value": "",
+            "raw": null
+          },
+          "stdout": {
+            "type": "str",
+            "value": "",
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [],
+        "stderr": [],
+        "status": null,
+        "signal": "SIGTERM",
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-sigkill",
+      "record_sha256": "a72fa515d7380d8c5cee8751270a24b7835f051e6e2836a05b40c62cbc057481",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "CalledProcessError",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-sigkill/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-e798dfed', '-w', '/workspace', '--rm', 'img', 'sleep', '2h']' died with <Signals.SIGKILL: 9>.",
+          "returncode": -9,
+          "timeout": null,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-sigkill/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-e798dfed",
+            "-w",
+            "/workspace",
+            "--rm",
+            "img",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "str",
+            "value": "",
+            "raw": null
+          },
+          "stderr": {
+            "type": "str",
+            "value": "",
+            "raw": null
+          },
+          "stdout": {
+            "type": "str",
+            "value": "",
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [],
+        "stderr": [],
+        "status": null,
+        "signal": "SIGKILL",
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-timeout-partial",
+      "record_sha256": "6244ddb23d223850e913df3221c9f8570ac6698d54425fd6e2eafa852c125f70",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "TimeoutExpired",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-timeout-partial/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-e616cdad', '-w', '/workspace', '--rm', \"a'b\", 'sleep', '2h']' timed out after 1 seconds",
+          "returncode": null,
+          "timeout": 1,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-timeout-partial/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-e616cdad",
+            "-w",
+            "/workspace",
+            "--rm",
+            "a'b",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "bytes",
+            "value": null,
+            "raw": [
+              112, 97, 114, 116, 105, 97, 108, 45, 115, 116, 97, 114, 116, 10
+            ]
+          },
+          "stderr": {
+            "type": "bytes",
+            "value": null,
+            "raw": [97, 13, 98, 13, 10]
+          },
+          "stdout": {
+            "type": "bytes",
+            "value": null,
+            "raw": [
+              112, 97, 114, 116, 105, 97, 108, 45, 115, 116, 97, 114, 116, 10
+            ]
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "a'b",
+        "timeout": 1,
+        "stdout": [
+          112, 97, 114, 116, 105, 97, 108, 45, 115, 116, 97, 114, 116, 10
+        ],
+        "stderr": [97, 13, 98, 13, 10],
+        "status": null,
+        "signal": null,
+        "error": "ETIMEDOUT"
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-timeout-empty",
+      "record_sha256": "d72a18df658995240dcee3ed1769902b8c1b4fa257ebff7c6a4875b9cd2a7477",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "TimeoutExpired",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-timeout-empty/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-0ccac14c', '-w', '/workspace', '--rm', 'img', 'sleep', '2h']' timed out after 1 seconds",
+          "returncode": null,
+          "timeout": 1,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-timeout-empty/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-0ccac14c",
+            "-w",
+            "/workspace",
+            "--rm",
+            "img",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 1,
+        "stdout": [],
+        "stderr": [],
+        "status": null,
+        "signal": null,
+        "error": "ETIMEDOUT"
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-timeout-stdout",
+      "record_sha256": "c52e2b8072023a618dbeaa76e19216db3eaa1539fa16145d65b93d508e0c4f67",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "TimeoutExpired",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-timeout-stdout/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-ed5b89e7', '-w', '/workspace', '--rm', 'img', 'sleep', '2h']' timed out after 1 seconds",
+          "returncode": null,
+          "timeout": 1,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-timeout-stdout/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-ed5b89e7",
+            "-w",
+            "/workspace",
+            "--rm",
+            "img",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "bytes",
+            "value": null,
+            "raw": [111, 110, 108, 121, 45, 111, 117, 116]
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "bytes",
+            "value": null,
+            "raw": [111, 110, 108, 121, 45, 111, 117, 116]
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 1,
+        "stdout": [111, 110, 108, 121, 45, 111, 117, 116],
+        "stderr": [],
+        "status": null,
+        "signal": null,
+        "error": "ETIMEDOUT"
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-timeout-invalid",
+      "record_sha256": "fc6cf6f3bd021fa332d5ae1605c779d45d124932d18da997491093915ce50526",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "TimeoutExpired",
+          "message": "Command '['/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-timeout-invalid/source/bin/owned.py', 'run', '-d', '--name', 'minisweagent-ed405670', '-w', '/workspace', '--rm', 'img', 'sleep', '2h']' timed out after 1 seconds",
+          "returncode": null,
+          "timeout": 1,
+          "cmd": [
+            "/Users/josh-desktop/.pi/agent/pstack/workspaces/--Users-josh-desktop-src-personal-lean--/store/01a1be1d-6848-73c8-8143-bcde49112b0b/native-environment-round-four-safe-review/run/work/startup-timeout-invalid/source/bin/owned.py",
+            "run",
+            "-d",
+            "--name",
+            "minisweagent-ed405670",
+            "-w",
+            "/workspace",
+            "--rm",
+            "img",
+            "sleep",
+            "2h"
+          ],
+          "output": {
+            "type": "bytes",
+            "value": null,
+            "raw": [255]
+          },
+          "stderr": {
+            "type": "bytes",
+            "value": null,
+            "raw": [97, 13, 98]
+          },
+          "stdout": {
+            "type": "bytes",
+            "value": null,
+            "raw": [255]
+          },
+          "stdout_is_output": true,
+          "encoding": null,
+          "object": null,
+          "start": null,
+          "end": null,
+          "reason": null
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 1,
+        "stdout": [255],
+        "stderr": [97, 13, 98],
+        "status": null,
+        "signal": null,
+        "error": "ETIMEDOUT"
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "local-dead-leader-live-member",
+      "record_sha256": "efb77266b4c8450d123d7b5bbcd3a0200370c88034055d6c0894d96ccaa59378",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [112, 97, 114, 116, 105, 97, 108, 76, 65, 84, 69],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect/gate: timeout drain/return ordering differs from source; actual process, collector and descendant lifetime unproven"
+    },
+    {
+      "id": "local-replace",
+      "record_sha256": "476eec87f965e7133749eccb223de8dbb399e7c1908d894fd7c7df1401d54fe2",
+      "source": {
+        "kind": "observation",
+        "returncode": 0,
+        "output_codes": [65533, 233, 10],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "saved output/exit packet replayed through fake public execute; actual process and collector lifetime unproven"
+    },
+    {
+      "id": "local-replace-timeout",
+      "record_sha256": "907d17ef2159906b91198fd1cf148d35fc7d82a0d93084bcafcfed093dcbe6ef",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [65533],
+        "error": null,
+        "container_id": null
+      },
+      "coverage": "open known defect/gate: timeout drain/return ordering differs from source; actual process, collector and descendant lifetime unproven"
+    },
+    {
+      "id": "docker-replace",
+      "record_sha256": "1212a565974a3ddf4da1541c5ec58dd5a2cca4cad14eafac119d620532a75271",
+      "source": {
+        "kind": "observation",
+        "returncode": 0,
+        "output_codes": [65533, 233],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "saved output/exit packet replayed through fake public execute; actual process and collector lifetime unproven"
+    },
+    {
+      "id": "docker-replace-timeout",
+      "record_sha256": "7d11f697b8498a9bcd387df268db73e3827d38808850383590e1ee4da0ed19fe",
+      "source": {
+        "kind": "observation",
+        "returncode": -1,
+        "output_codes": [65533],
+        "error": null,
+        "container_id": "cid-owned"
+      },
+      "coverage": "open known defect/gate: timeout drain/return ordering differs from source; actual process, collector and descendant lifetime unproven"
+    },
+    {
+      "id": "startup-bad-cont",
+      "record_sha256": "d1f3b232f30b97915d7fb61c5ab60f8cbd71b64d759e1b74dc04ff5a18058fbc",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xc3 in position 0: invalid continuation byte",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [195, 40],
+          "start": 0,
+          "end": 1,
+          "reason": "invalid continuation byte"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [195, 40],
+        "stderr": [111, 107],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-truncated",
+      "record_sha256": "8cfcb3291a6b0a230390c651428cf22d4ffe7bef990444a4a30f344a8ce1b932",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xc3 in position 0: unexpected end of data",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [195],
+          "start": 0,
+          "end": 1,
+          "reason": "unexpected end of data"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [195],
+        "stderr": [111, 107],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-truncated-span",
+      "record_sha256": "5a747af983daf8ac49e81135b1911d4bbfe33378034c4f5184b98c8e7f489d21",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode bytes in position 0-1: unexpected end of data",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [226, 130],
+          "start": 0,
+          "end": 2,
+          "reason": "unexpected end of data"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [226, 130],
+        "stderr": [111, 107],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-overlong",
+      "record_sha256": "3af85e224920ab87f09e9d1bf3991da5aa93d736d32f66e8f09821a41bc2537a",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xc0 in position 0: invalid start byte",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [192, 128],
+          "start": 0,
+          "end": 1,
+          "reason": "invalid start byte"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [192, 128],
+        "stderr": [111, 107],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-surrogate",
+      "record_sha256": "fa2a7cb42b10fa53d37bca4f7525862667c43a5bd65e033f5c6835dad2ff9c45",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xed in position 0: invalid continuation byte",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [237, 160, 128],
+          "start": 0,
+          "end": 1,
+          "reason": "invalid continuation byte"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [237, 160, 128],
+        "stderr": [111, 107],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-out-of-range",
+      "record_sha256": "7f063e8901f81fa78aa213bb84cdd96f2cd0e56bd5455072ca5793d74704a5e1",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xf4 in position 0: invalid continuation byte",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [244, 144, 128, 128],
+          "start": 0,
+          "end": 1,
+          "reason": "invalid continuation byte"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [244, 144, 128, 128],
+        "stderr": [111, 107],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-supplementary",
+      "record_sha256": "28947dd113f136c4de587fe0cd63bb236ba15d3f2c5b9f32e93ab243e15c07c2",
+      "source": {
+        "kind": "constructed",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": "😀"
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [240, 159, 152, 128, 10],
+        "stderr": [],
+        "status": 0,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-bom",
+      "record_sha256": "248acdcd24bc0c681dd56c6d47a23c107abc4ec030a614d0785c2af85e7018ca",
+      "source": {
+        "kind": "constructed",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": "﻿cid"
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [239, 187, 191, 99, 105, 100, 10],
+        "stderr": [],
+        "status": 0,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-nbsp",
+      "record_sha256": "95b93d5984f90e05c925bde2f2a88274157b509f2dd222cb919f261d4cbeab80",
+      "source": {
+        "kind": "constructed",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid"
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [194, 160, 99, 105, 100, 194, 160, 10],
+        "stderr": [],
+        "status": 0,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-zwsp",
+      "record_sha256": "3a3184a05dc5295f348da60516c786cb0e04e27df5bf02ed5942186457ffc79d",
+      "source": {
+        "kind": "constructed",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": "​cid​"
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [226, 128, 139, 99, 105, 100, 226, 128, 139, 10],
+        "stderr": [],
+        "status": 0,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-line-sep",
+      "record_sha256": "133eac4cb425e4f0f42d9b00fb4cf5421ad49cc26d0501f693520922f97774b0",
+      "source": {
+        "kind": "constructed",
+        "returncode": null,
+        "output_codes": [],
+        "error": null,
+        "container_id": "cid"
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [226, 128, 168, 99, 105, 100, 226, 128, 168, 10],
+        "stderr": [],
+        "status": 0,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-stdout-before-stderr",
+      "record_sha256": "fc2c0f13e0c9c95e09176647af97b974c158ec47c6735e7bdedc270dc267d413",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [255],
+          "start": 0,
+          "end": 1,
+          "reason": "invalid start byte"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [255],
+        "stderr": [128],
+        "status": 0,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-stdout-before-stderr-nonzero",
+      "record_sha256": "f23f79ad392327998c1b783c61e3eaf1e78111c00764814e93590212c2b835b6",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [255],
+          "start": 0,
+          "end": 1,
+          "reason": "invalid start byte"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [255],
+        "stderr": [128],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-stderr-only",
+      "record_sha256": "8b14a678a2811e0ec8c405de71b78d30feb730e655e0e90d5ec142a34dbbe0dd",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [255],
+          "start": 0,
+          "end": 1,
+          "reason": "invalid start byte"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [99, 105, 100, 10],
+        "stderr": [255],
+        "status": 0,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-stderr-only-nonzero",
+      "record_sha256": "3fdbf1a4144c6503c753bb76bfd9cf501bf384274a92d848467b0b3378617504",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [255],
+          "start": 0,
+          "end": 1,
+          "reason": "invalid start byte"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [99, 105, 100, 10],
+        "stderr": [255],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-mid-invalid",
+      "record_sha256": "7cea0bb521c99130274f7329f96becd3190682cbd7c7804be32858485ff0ddaa",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xff in position 2: invalid start byte",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [97, 98, 255, 99, 100],
+          "start": 2,
+          "end": 3,
+          "reason": "invalid start byte"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [97, 98, 255, 99, 100],
+        "stderr": [111, 107],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    },
+    {
+      "id": "startup-prefix-truncated",
+      "record_sha256": "2964df35c67fc93b90ff3608f130a1c379969b48a456016f9121cb258a27fd32",
+      "source": {
+        "kind": "raised",
+        "returncode": null,
+        "output_codes": [],
+        "error": {
+          "type": "UnicodeDecodeError",
+          "message": "'utf-8' codec can't decode byte 0xc3 in position 2: unexpected end of data",
+          "returncode": null,
+          "timeout": null,
+          "cmd": null,
+          "output": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stderr": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout": {
+            "type": "null",
+            "value": null,
+            "raw": null
+          },
+          "stdout_is_output": true,
+          "encoding": "utf-8",
+          "object": [111, 107, 195],
+          "start": 2,
+          "end": 3,
+          "reason": "unexpected end of data"
+        },
+        "container_id": null
+      },
+      "input": {
+        "image": "img",
+        "timeout": 5,
+        "stdout": [111, 107, 195],
+        "stderr": [111, 107],
+        "status": 3,
+        "signal": null,
+        "error": null
+      },
+      "coverage": "saved byte/status packet replayed through fake public constructor; real startup timeout and process lifetime unproven"
+    }
+  ],
+  "input_sources": {
+    "native-environment-round-four-safe-review/probes/cases.mjs": "ed78cf6d728a5cddf4466c8d893a0aaa0954f11f20e144d5b9b9381c2b731a5f",
+    "native-environment-round-four-safe-review/probes/owned.py": "93536eb5fef78cc88d51664004ab33bc25c15d66aa05c2b6a1f92c59c96b1202",
+    "native-environment-round-four-safe-review/probes/oracle.py": "2428887556d5cb857a3170b18747a7635e936e7552f00005cdccddc66b8e925d",
+    "native-environment-round-two/oracle-reference.json": "6ace455792180e85c0b6df6961fd404d05dc41fab51f8e8594b9d8711ea73771"
+  },
+  "cleanup_control": {
+    "before": "run\n-d\n--name\nminisweagent-46f26103\n-w\n/\n--rm\nnever-real\nsleep\n2h\n\nrm\n-f\ncid-clean\nrm\n-f\ncid-clean\n\n\n",
+    "decoy": "timeout 60 /var/folders/11/m_kwnqr97632l_cjt0mhytvh0000gn/T/lean-oracle-clean-gzxc2k5j/owned-container-executable stop cid-clean\ntimeout 60 /var/folders/11/m_kwnqr97632l_cjt0mhytvh0000gn/T/lean-oracle-clean-gzxc2k5j/owned-container-executable stop cid-clean\n",
+    "after": "run\n-d\n--name\nminisweagent-46f26103\n-w\n/\n--rm\nnever-real\nsleep\n2h\n\nrm\n-f\ncid-clean\nrm\n-f\ncid-clean\n\n\nstop\ncid-clean\n\n"
+  }
+}

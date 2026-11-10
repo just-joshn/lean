@@ -1,0 +1,83 @@
+--- frozen/controller.py:judge_throw
++++ tests/private-judge/controller.py:judge_throw
+@@ -7,7 +7,9 @@
+         issues.append("runner stderr was not empty")
+         deviations.append({"stderrBytes": len(raw_stderr)})
+     order = order_of(packets)
+-    if outcome["waitOutcome"] != "reaped-runner" or outcome["timedOut"] or outcome["signalSent"]:
++    if type(outcome.get("returncode")) is not int or outcome["returncode"] != 0:
++        issues.append("runner exit disagrees with observed contract")
++    if outcome.get("waitOutcome") != "reaped-runner" or outcome.get("timedOut") is not False or outcome.get("signalSent") is not False:
+         issues.append("runner wait did not reap cleanly")
+         return {
+             "classification": "inconclusive",
+@@ -30,7 +32,8 @@
+         len(callback) == 1
+         and callback[0].get("phase") == "before-spawn"
+         and callback[0].get("threw") is True
+-        and callback[0].get("spawnCalls") == 0
++        and type(callback[0].get("spawnCalls")) is int
++        and callback[0]["spawnCalls"] == 0
+     )
+     if not callback_justifies:
+         issues.append("zero actions is not justified by the callback path")
+@@ -40,17 +43,46 @@
+     cat_pid = cats[0].get("pid") if len(cats) == 1 else None
+     if not positive_pid(cat_pid):
+         issues.append("collector pid missing")
++    cat_exit = close_row(packets, cat_pid, "hook-exit") if positive_pid(cat_pid) else None
+     cat_close = close_row(packets, cat_pid, "hook-close") if positive_pid(cat_pid) else None
+-    if cat_close is None:
+-        issues.append("collector close missing")
+-    if len(rejected) != 1 or rejected[0].get("sameObject") is not True:
++    if cat_exit is None or cat_close is None or len(rows_of(packets, "hook-exit")) != 1 or len(rows_of(packets, "hook-close")) != 1:
++        issues.append("collector exit or close missing or duplicated")
++    for terminal in (cat_exit, cat_close):
++        if terminal is not None and not (
++            type(terminal.get("pid")) is int and terminal["pid"] == cat_pid
++            and terminal.get("command") == "/bin/cat"
++            and type(terminal.get("code")) is int and terminal["code"] == 0
++            and type(terminal.get("exitCode")) is int and terminal["exitCode"] == 0
++            and "signal" in terminal and terminal["signal"] is None
++            and "signalCode" in terminal and terminal["signalCode"] is None
++        ):
++            issues.append("collector terminal status was not natural")
++    if cat_exit is not None and cat_close is not None and not cats[0]["seq"] < cat_exit["seq"] < cat_close["seq"]:
++        issues.append("collector create, exit and close order was invalid")
++    if len(rejected) != 1 or rejected[0].get("sameObject") is not True or rejected[0].get("tokenMatches") is not True:
+         issues.append("rejection was not the owned error object")
++    if len(cats) == 1 and len(callback) == 1 and len(rejected) == 1 and not cats[0]["seq"] < callback[0]["seq"] < rejected[0]["seq"]:
++        issues.append("collector, callback and rejection order was invalid")
+     if rows_of(packets, "api-return"):
+         issues.append("throw branch returned an api result")
+     if len(rejected) == 1 and len(joined) == 1:
+         if not rejected[0]["seq"] < joined[0]["seq"]:
+             issues.append("join was not recorded after rejection")
++        join = joined[0]
++        join_rows = join.get("rows")
++        if not (
++            type(join.get("count")) is int and join["count"] == 1
++            and isinstance(join_rows, list) and len(join_rows) == 1
++            and isinstance(join_rows[0], dict)
++            and type(join_rows[0].get("pid")) is int and join_rows[0]["pid"] == cat_pid
++            and join_rows[0].get("command") == "/bin/cat"
++            and type(join_rows[0].get("code")) is int and join_rows[0]["code"] == 0
++            and "signal" in join_rows[0] and join_rows[0]["signal"] is None
++        ):
++            issues.append("join did not record the natural collector closure")
+         if cat_close is not None:
++            if not cat_close["seq"] < join["seq"]:
++                issues.append("join was not recorded after collector closure")
+             relation = "close-before-reject" if cat_close["seq"] < rejected[0]["seq"] else "reject-before-close"
+             deviations.append({"collectorCloseVersusReject": relation, "closeSeq": cat_close["seq"], "rejectSeq": rejected[0]["seq"]})
+     else:
+@@ -61,9 +93,6 @@
+     if started and started[0].get("pid") != launch.get("recordedPid"):
+         issues.append("runner-start pid disagrees with recorded runner pid")
+     classification = "observed" if not issues else "failed"
+-    if classification == "observed" and outcome["returncode"] != 0:
+-        issues.append("runner exit disagrees with observed contract")
+-        classification = "failed"
+     return {
+         "classification": classification,
+         "issues": issues,

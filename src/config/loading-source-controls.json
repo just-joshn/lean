@@ -1,0 +1,128 @@
+{
+  "reference": "04d809ceab9df28f9adaed044884180159172930",
+  "cases": [
+    {
+      "case": "cwd before env",
+      "path": "choice.yaml",
+      "value": {
+        "from": "cwd"
+      }
+    },
+    {
+      "case": "replaced suffix",
+      "path": "choice.yaml",
+      "value": {
+        "from": "cwd"
+      }
+    },
+    {
+      "case": "env fallback",
+      "path": "<tmp>/env/choice.yaml",
+      "value": {
+        "from": "env"
+      }
+    },
+    {
+      "case": "empty yaml",
+      "text": "",
+      "value": null
+    },
+    {
+      "case": "scalar yaml",
+      "text": "42",
+      "value": 42
+    },
+    {
+      "case": "list yaml",
+      "text": "[a, b]",
+      "value": ["a", "b"]
+    },
+    {
+      "case": "yaml booleans",
+      "text": "enabled: yes\ndisabled: off\n",
+      "value": {
+        "enabled": true,
+        "disabled": false
+      }
+    },
+    {
+      "case": "duplicate yaml",
+      "text": "key: first\nkey: last\n",
+      "value": {
+        "key": "last"
+      }
+    },
+    {
+      "case": "unicode yaml",
+      "text": "key: caf\u00e9\n",
+      "value": {
+        "key": "caf\u00e9"
+      }
+    },
+    {
+      "case": "path bypasses equals",
+      "value": {
+        "loaded": true
+      }
+    },
+    {
+      "case": "a.b=3",
+      "value": {
+        "a": {
+          "b": 3
+        }
+      }
+    },
+    {
+      "case": "a=true",
+      "value": {
+        "a": true
+      }
+    },
+    {
+      "case": "a=null",
+      "value": {
+        "a": null
+      }
+    },
+    {
+      "case": "a=plain=text",
+      "value": {
+        "a": "plain=text"
+      }
+    },
+    {
+      "case": "a=NaN",
+      "value": {
+        "a": {
+          "float": "nan"
+        }
+      }
+    },
+    {
+      "case": "=bad",
+      "error_type": "ValueError",
+      "message": "Invalid config spec '=bad': empty config key"
+    }
+  ],
+  "registry_controls": [
+    {
+      "kind": "directory",
+      "accepted": true,
+      "registry_retained": true
+    },
+    {
+      "kind": "missing",
+      "accepted": true,
+      "registry_retained": true
+    }
+  ],
+  "missing_control": {
+    "error_type": "FileNotFoundError",
+    "message": "Could not find config file for absent.yaml (tried: [PosixPath('absent.yaml'), PosixPath('<tmp>/env/absent.yaml'), PosixPath('<builtin>/absent.yaml'), PosixPath('<builtin>/extra/absent.yaml'), PosixPath('<builtin>/benchmarks/absent.yaml')])"
+  },
+  "missing_model_control": {
+    "error_type": "ValueError",
+    "message": "No default model set. Please run `mini-extra config setup` to set one."
+  }
+}
