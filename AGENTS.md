@@ -120,6 +120,7 @@ Finish the steps in order. Do not change a test file or a Vitest config file bef
 4. Fetch the topic and open the official pages.
    Run `npx ctx7@latest docs <id> "<topic>"` only after you replace `<id>` and `<topic>`. Run one command per topic. Run at most three Context7 commands. Keep the returned text.
    Open [Writing tests with AI](https://vitest.dev/guide/learn/writing-tests-with-ai) for every verb. Open every other page the source index lists for this change.
+   If a vitest.dev page and Context7 disagree, follow the vitest.dev page for the installed major.
    If Context7 returns a quota error, tell the user to run `npx ctx7@latest login` or to set `CONTEXT7_API_KEY`. Official vitest.dev pages are still a source. If Context7 fails and those pages do not load, stop. Do not write the change from memory.
    Reuse fetched text in this session only when the version and the topic are the same. A new topic needs a new fetch.
 
@@ -151,7 +152,7 @@ Finish the steps in order. Do not change a test file or a Vitest config file bef
 
 | Decision | Owner |
 | --- | --- |
-| Which Vitest API a new or changed call may use | The fetched docs for the installed major |
+| Which Vitest API a new or changed call may use | Fetched docs for the installed major. vitest.dev wins over Context7 when they disagree. |
 | The test command, file pattern, import source, and whether a config file exists | The binding table |
 | Temp directories, `vi.hoisted` state, `afterEach` cleanup, and which modules a test mocks | The nearest existing `*.test.ts` for that source |
 | An existing line that differs from the current docs | The current file owns that line until the task edits it. The fetched docs own the edited call. |
