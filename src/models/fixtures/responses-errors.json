@@ -1,0 +1,418 @@
+{
+  "oracle": "LiteLLM 1.108.3 and mini-swe-agent 04d809ce, no sends",
+  "mapping": [
+    {
+      "status": 401,
+      "text": "{\"error\":{\"message\":\"clé invalide\"}}",
+      "name": "AuthenticationError",
+      "message": "litellm.AuthenticationError: AuthenticationError: OpenAIException - {\"error\":{\"message\":\"clé invalide\"}}",
+      "string": "litellm.AuthenticationError: AuthenticationError: OpenAIException - {\"error\":{\"message\":\"clé invalide\"}}",
+      "query_message": "litellm.AuthenticationError: AuthenticationError: OpenAIException - {\"error\":{\"message\":\"clé invalide\"}} You can permanently set your API key with `mini-extra config set KEY VALUE`."
+    },
+    {
+      "status": 403,
+      "text": "forbidden",
+      "name": "APIError",
+      "message": "litellm.APIError: APIError: OpenAIException - forbidden",
+      "string": "litellm.APIError: APIError: OpenAIException - forbidden",
+      "query_message": "litellm.APIError: APIError: OpenAIException - forbidden"
+    },
+    {
+      "status": 404,
+      "text": "missing",
+      "name": "NotFoundError",
+      "message": "litellm.NotFoundError: NotFoundError: OpenAIException - missing",
+      "string": "litellm.NotFoundError: NotFoundError: OpenAIException - missing",
+      "query_message": "litellm.NotFoundError: NotFoundError: OpenAIException - missing"
+    },
+    {
+      "status": 400,
+      "text": "This model's maximum context length is 100 tokens",
+      "name": "ContextWindowExceededError",
+      "message": "litellm.ContextWindowExceededError: litellm.BadRequestError: ContextWindowExceededError: OpenAIException - This model's maximum context length is 100 tokens",
+      "string": "litellm.ContextWindowExceededError: litellm.BadRequestError: ContextWindowExceededError: OpenAIException - This model's maximum context length is 100 tokens",
+      "query_message": "litellm.ContextWindowExceededError: litellm.BadRequestError: ContextWindowExceededError: OpenAIException - This model's maximum context length is 100 tokens"
+    },
+    {
+      "status": 400,
+      "text": "string_above_max_length: This model's maximum context length is 100 tokens",
+      "name": "BadRequestError",
+      "message": "litellm.BadRequestError: OpenAIException - string_above_max_length: This model's maximum context length is 100 tokens",
+      "string": "litellm.BadRequestError: OpenAIException - string_above_max_length: This model's maximum context length is 100 tokens",
+      "query_message": "litellm.BadRequestError: OpenAIException - string_above_max_length: This model's maximum context length is 100 tokens"
+    },
+    {
+      "status": 400,
+      "text": "maximum context length exceeded",
+      "name": "BadRequestError",
+      "message": "litellm.BadRequestError: OpenAIException - maximum context length exceeded",
+      "string": "litellm.BadRequestError: OpenAIException - maximum context length exceeded",
+      "query_message": "litellm.BadRequestError: OpenAIException - maximum context length exceeded"
+    },
+    {
+      "status": 400,
+      "text": "context_length_exceeded",
+      "name": "BadRequestError",
+      "message": "litellm.BadRequestError: OpenAIException - context_length_exceeded",
+      "string": "litellm.BadRequestError: OpenAIException - context_length_exceeded",
+      "query_message": "litellm.BadRequestError: OpenAIException - context_length_exceeded"
+    },
+    {
+      "status": 400,
+      "text": "context unrelated word",
+      "name": "BadRequestError",
+      "message": "litellm.BadRequestError: OpenAIException - context unrelated word",
+      "string": "litellm.BadRequestError: OpenAIException - context unrelated word",
+      "query_message": "litellm.BadRequestError: OpenAIException - context unrelated word"
+    },
+    {
+      "status": 400,
+      "text": "prompt is too long",
+      "name": "BadRequestError",
+      "message": "litellm.BadRequestError: OpenAIException - prompt is too long",
+      "string": "litellm.BadRequestError: OpenAIException - prompt is too long",
+      "query_message": "litellm.BadRequestError: OpenAIException - prompt is too long"
+    },
+    {
+      "status": 400,
+      "text": "unsupported parameter",
+      "name": "BadRequestError",
+      "message": "litellm.BadRequestError: OpenAIException - unsupported parameter",
+      "string": "litellm.BadRequestError: OpenAIException - unsupported parameter",
+      "query_message": "litellm.BadRequestError: OpenAIException - unsupported parameter"
+    },
+    {
+      "status": 429,
+      "text": "rate limit",
+      "name": "RateLimitError",
+      "message": "litellm.RateLimitError: RateLimitError: OpenAIException - rate limit",
+      "string": "litellm.RateLimitError: RateLimitError: OpenAIException - rate limit",
+      "query_message": "litellm.RateLimitError: RateLimitError: OpenAIException - rate limit"
+    },
+    {
+      "status": 500,
+      "text": "server failed",
+      "name": "InternalServerError",
+      "message": "litellm.InternalServerError: InternalServerError: OpenAIException - server failed",
+      "string": "litellm.InternalServerError: InternalServerError: OpenAIException - server failed",
+      "query_message": "litellm.InternalServerError: InternalServerError: OpenAIException - server failed"
+    },
+    {
+      "status": 200,
+      "text": "invalid é JSON\n",
+      "name": "APIError",
+      "message": "litellm.APIError: APIError: OpenAIException - invalid é JSON\n",
+      "string": "litellm.APIError: APIError: OpenAIException - invalid é JSON\n",
+      "query_message": "litellm.APIError: APIError: OpenAIException - invalid é JSON\n"
+    }
+  ],
+  "decoding": [
+    {
+      "name": "utf8",
+      "bytes": [
+        123, 34, 105, 100, 34, 58, 32, 34, 114, 101, 115, 112, 111, 110, 115,
+        101, 34, 44, 32, 34, 99, 114, 101, 97, 116, 101, 100, 95, 97, 116, 34,
+        58, 32, 49, 44, 32, 34, 111, 98, 106, 101, 99, 116, 34, 58, 32, 34, 114,
+        101, 115, 112, 111, 110, 115, 101, 34, 44, 32, 34, 111, 117, 116, 112,
+        117, 116, 34, 58, 32, 91, 93, 44, 32, 34, 108, 97, 98, 101, 108, 34, 58,
+        32, 34, 195, 169, 233, 155, 170, 34, 125
+      ],
+      "headers": {},
+      "text": "{\"id\": \"response\", \"created_at\": 1, \"object\": \"response\", \"output\": [], \"label\": \"é雪\"}",
+      "dump": {
+        "id": "response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": null,
+        "object": "response",
+        "output": [],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": null,
+        "user": null,
+        "store": null,
+        "label": "é雪"
+      }
+    },
+    {
+      "name": "utf8 bom",
+      "bytes": [
+        239, 187, 191, 123, 34, 105, 100, 34, 58, 32, 34, 114, 101, 115, 112,
+        111, 110, 115, 101, 34, 44, 32, 34, 99, 114, 101, 97, 116, 101, 100, 95,
+        97, 116, 34, 58, 32, 49, 44, 32, 34, 111, 98, 106, 101, 99, 116, 34, 58,
+        32, 34, 114, 101, 115, 112, 111, 110, 115, 101, 34, 44, 32, 34, 111,
+        117, 116, 112, 117, 116, 34, 58, 32, 91, 93, 44, 32, 34, 108, 97, 98,
+        101, 108, 34, 58, 32, 34, 195, 169, 233, 155, 170, 34, 125
+      ],
+      "headers": {},
+      "text": "﻿{\"id\": \"response\", \"created_at\": 1, \"object\": \"response\", \"output\": [], \"label\": \"é雪\"}",
+      "dump": {
+        "id": "response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": null,
+        "object": "response",
+        "output": [],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": null,
+        "user": null,
+        "store": null,
+        "label": "é雪"
+      }
+    },
+    {
+      "name": "utf16 bom",
+      "bytes": [
+        255, 254, 123, 0, 34, 0, 105, 0, 100, 0, 34, 0, 58, 0, 32, 0, 34, 0,
+        114, 0, 101, 0, 115, 0, 112, 0, 111, 0, 110, 0, 115, 0, 101, 0, 34, 0,
+        44, 0, 32, 0, 34, 0, 99, 0, 114, 0, 101, 0, 97, 0, 116, 0, 101, 0, 100,
+        0, 95, 0, 97, 0, 116, 0, 34, 0, 58, 0, 32, 0, 49, 0, 44, 0, 32, 0, 34,
+        0, 111, 0, 98, 0, 106, 0, 101, 0, 99, 0, 116, 0, 34, 0, 58, 0, 32, 0,
+        34, 0, 114, 0, 101, 0, 115, 0, 112, 0, 111, 0, 110, 0, 115, 0, 101, 0,
+        34, 0, 44, 0, 32, 0, 34, 0, 111, 0, 117, 0, 116, 0, 112, 0, 117, 0, 116,
+        0, 34, 0, 58, 0, 32, 0, 91, 0, 93, 0, 44, 0, 32, 0, 34, 0, 108, 0, 97,
+        0, 98, 0, 101, 0, 108, 0, 34, 0, 58, 0, 32, 0, 34, 0, 233, 0, 234, 150,
+        34, 0, 125, 0
+      ],
+      "headers": {},
+      "text": "��{\u0000\"\u0000i\u0000d\u0000\"\u0000:\u0000 \u0000\"\u0000r\u0000e\u0000s\u0000p\u0000o\u0000n\u0000s\u0000e\u0000\"\u0000,\u0000 \u0000\"\u0000c\u0000r\u0000e\u0000a\u0000t\u0000e\u0000d\u0000_\u0000a\u0000t\u0000\"\u0000:\u0000 \u00001\u0000,\u0000 \u0000\"\u0000o\u0000b\u0000j\u0000e\u0000c\u0000t\u0000\"\u0000:\u0000 \u0000\"\u0000r\u0000e\u0000s\u0000p\u0000o\u0000n\u0000s\u0000e\u0000\"\u0000,\u0000 \u0000\"\u0000o\u0000u\u0000t\u0000p\u0000u\u0000t\u0000\"\u0000:\u0000 \u0000[\u0000]\u0000,\u0000 \u0000\"\u0000l\u0000a\u0000b\u0000e\u0000l\u0000\"\u0000:\u0000 \u0000\"\u0000�\u0000�\"\u0000}\u0000",
+      "dump": {
+        "id": "response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": null,
+        "object": "response",
+        "output": [],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": null,
+        "user": null,
+        "store": null,
+        "label": "é雪"
+      }
+    },
+    {
+      "name": "utf32 bom",
+      "bytes": [
+        255, 254, 0, 0, 123, 0, 0, 0, 34, 0, 0, 0, 105, 0, 0, 0, 100, 0, 0, 0,
+        34, 0, 0, 0, 58, 0, 0, 0, 32, 0, 0, 0, 34, 0, 0, 0, 114, 0, 0, 0, 101,
+        0, 0, 0, 115, 0, 0, 0, 112, 0, 0, 0, 111, 0, 0, 0, 110, 0, 0, 0, 115, 0,
+        0, 0, 101, 0, 0, 0, 34, 0, 0, 0, 44, 0, 0, 0, 32, 0, 0, 0, 34, 0, 0, 0,
+        99, 0, 0, 0, 114, 0, 0, 0, 101, 0, 0, 0, 97, 0, 0, 0, 116, 0, 0, 0, 101,
+        0, 0, 0, 100, 0, 0, 0, 95, 0, 0, 0, 97, 0, 0, 0, 116, 0, 0, 0, 34, 0, 0,
+        0, 58, 0, 0, 0, 32, 0, 0, 0, 49, 0, 0, 0, 44, 0, 0, 0, 32, 0, 0, 0, 34,
+        0, 0, 0, 111, 0, 0, 0, 98, 0, 0, 0, 106, 0, 0, 0, 101, 0, 0, 0, 99, 0,
+        0, 0, 116, 0, 0, 0, 34, 0, 0, 0, 58, 0, 0, 0, 32, 0, 0, 0, 34, 0, 0, 0,
+        114, 0, 0, 0, 101, 0, 0, 0, 115, 0, 0, 0, 112, 0, 0, 0, 111, 0, 0, 0,
+        110, 0, 0, 0, 115, 0, 0, 0, 101, 0, 0, 0, 34, 0, 0, 0, 44, 0, 0, 0, 32,
+        0, 0, 0, 34, 0, 0, 0, 111, 0, 0, 0, 117, 0, 0, 0, 116, 0, 0, 0, 112, 0,
+        0, 0, 117, 0, 0, 0, 116, 0, 0, 0, 34, 0, 0, 0, 58, 0, 0, 0, 32, 0, 0, 0,
+        91, 0, 0, 0, 93, 0, 0, 0, 44, 0, 0, 0, 32, 0, 0, 0, 34, 0, 0, 0, 108, 0,
+        0, 0, 97, 0, 0, 0, 98, 0, 0, 0, 101, 0, 0, 0, 108, 0, 0, 0, 34, 0, 0, 0,
+        58, 0, 0, 0, 32, 0, 0, 0, 34, 0, 0, 0, 233, 0, 0, 0, 234, 150, 0, 0, 34,
+        0, 0, 0, 125, 0, 0, 0
+      ],
+      "headers": {},
+      "text": "��\u0000\u0000{\u0000\u0000\u0000\"\u0000\u0000\u0000i\u0000\u0000\u0000d\u0000\u0000\u0000\"\u0000\u0000\u0000:\u0000\u0000\u0000 \u0000\u0000\u0000\"\u0000\u0000\u0000r\u0000\u0000\u0000e\u0000\u0000\u0000s\u0000\u0000\u0000p\u0000\u0000\u0000o\u0000\u0000\u0000n\u0000\u0000\u0000s\u0000\u0000\u0000e\u0000\u0000\u0000\"\u0000\u0000\u0000,\u0000\u0000\u0000 \u0000\u0000\u0000\"\u0000\u0000\u0000c\u0000\u0000\u0000r\u0000\u0000\u0000e\u0000\u0000\u0000a\u0000\u0000\u0000t\u0000\u0000\u0000e\u0000\u0000\u0000d\u0000\u0000\u0000_\u0000\u0000\u0000a\u0000\u0000\u0000t\u0000\u0000\u0000\"\u0000\u0000\u0000:\u0000\u0000\u0000 \u0000\u0000\u00001\u0000\u0000\u0000,\u0000\u0000\u0000 \u0000\u0000\u0000\"\u0000\u0000\u0000o\u0000\u0000\u0000b\u0000\u0000\u0000j\u0000\u0000\u0000e\u0000\u0000\u0000c\u0000\u0000\u0000t\u0000\u0000\u0000\"\u0000\u0000\u0000:\u0000\u0000\u0000 \u0000\u0000\u0000\"\u0000\u0000\u0000r\u0000\u0000\u0000e\u0000\u0000\u0000s\u0000\u0000\u0000p\u0000\u0000\u0000o\u0000\u0000\u0000n\u0000\u0000\u0000s\u0000\u0000\u0000e\u0000\u0000\u0000\"\u0000\u0000\u0000,\u0000\u0000\u0000 \u0000\u0000\u0000\"\u0000\u0000\u0000o\u0000\u0000\u0000u\u0000\u0000\u0000t\u0000\u0000\u0000p\u0000\u0000\u0000u\u0000\u0000\u0000t\u0000\u0000\u0000\"\u0000\u0000\u0000:\u0000\u0000\u0000 \u0000\u0000\u0000[\u0000\u0000\u0000]\u0000\u0000\u0000,\u0000\u0000\u0000 \u0000\u0000\u0000\"\u0000\u0000\u0000l\u0000\u0000\u0000a\u0000\u0000\u0000b\u0000\u0000\u0000e\u0000\u0000\u0000l\u0000\u0000\u0000\"\u0000\u0000\u0000:\u0000\u0000\u0000 \u0000\u0000\u0000\"\u0000\u0000\u0000�\u0000\u0000\u0000�\u0000\u0000\"\u0000\u0000\u0000}\u0000\u0000\u0000",
+      "dump": {
+        "id": "response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": null,
+        "object": "response",
+        "output": [],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": null,
+        "user": null,
+        "store": null,
+        "label": "é雪"
+      }
+    },
+    {
+      "name": "latin1 charset",
+      "bytes": [
+        123, 34, 105, 100, 34, 58, 32, 34, 114, 101, 115, 112, 111, 110, 115,
+        101, 34, 44, 32, 34, 99, 114, 101, 97, 116, 101, 100, 95, 97, 116, 34,
+        58, 32, 49, 44, 32, 34, 111, 98, 106, 101, 99, 116, 34, 58, 32, 34, 114,
+        101, 115, 112, 111, 110, 115, 101, 34, 44, 32, 34, 111, 117, 116, 112,
+        117, 116, 34, 58, 32, 91, 93, 44, 32, 34, 108, 97, 98, 101, 108, 34, 58,
+        32, 34, 233, 34, 125
+      ],
+      "headers": {
+        "content-type": "application/json; charset=iso-8859-1"
+      },
+      "text": "{\"id\": \"response\", \"created_at\": 1, \"object\": \"response\", \"output\": [], \"label\": \"é\"}",
+      "error": {
+        "name": "OpenAIError",
+        "message": "{\"id\": \"response\", \"created_at\": 1, \"object\": \"response\", \"output\": [], \"label\": \"é\"}"
+      }
+    },
+    {
+      "name": "invalid utf8",
+      "bytes": [
+        123, 34, 99, 114, 101, 97, 116, 101, 100, 95, 97, 116, 34, 58, 49, 44,
+        34, 108, 97, 98, 101, 108, 34, 58, 34, 255, 34, 125
+      ],
+      "headers": {},
+      "text": "{\"created_at\":1,\"label\":\"�\"}",
+      "error": {
+        "name": "OpenAIError",
+        "message": "{\"created_at\":1,\"label\":\"�\"}"
+      }
+    },
+    {
+      "name": "utf8 declared latin1",
+      "bytes": [
+        123, 34, 105, 100, 34, 58, 32, 34, 114, 101, 115, 112, 111, 110, 115,
+        101, 34, 44, 32, 34, 99, 114, 101, 97, 116, 101, 100, 95, 97, 116, 34,
+        58, 32, 49, 44, 32, 34, 111, 98, 106, 101, 99, 116, 34, 58, 32, 34, 114,
+        101, 115, 112, 111, 110, 115, 101, 34, 44, 32, 34, 111, 117, 116, 112,
+        117, 116, 34, 58, 32, 91, 93, 44, 32, 34, 108, 97, 98, 101, 108, 34, 58,
+        32, 34, 195, 169, 233, 155, 170, 34, 125
+      ],
+      "headers": {
+        "content-type": "application/json; charset=iso-8859-1"
+      },
+      "text": "{\"id\": \"response\", \"created_at\": 1, \"object\": \"response\", \"output\": [], \"label\": \"Ã©éª\"}",
+      "dump": {
+        "id": "response",
+        "created_at": 1,
+        "error": null,
+        "incomplete_details": null,
+        "instructions": null,
+        "metadata": null,
+        "model": null,
+        "object": "response",
+        "output": [],
+        "parallel_tool_calls": null,
+        "temperature": null,
+        "tool_choice": null,
+        "tools": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "previous_response_id": null,
+        "reasoning": null,
+        "status": null,
+        "text": null,
+        "truncation": null,
+        "usage": null,
+        "user": null,
+        "store": null,
+        "label": "é雪"
+      }
+    }
+  ],
+  "arguments": [
+    {
+      "arguments": "",
+      "error": "Error parsing tool call arguments: Expecting value: line 1 column 1 (char 0).Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": "{",
+      "error": "Error parsing tool call arguments: Expecting property name enclosed in double quotes: line 1 column 2 (char 1).Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": "{bad}",
+      "error": "Error parsing tool call arguments: Expecting property name enclosed in double quotes: line 1 column 2 (char 1).Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": "{\"command\":}",
+      "error": "Error parsing tool call arguments: Expecting value: line 1 column 12 (char 11).Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": "{\"command\":\"unterminated}",
+      "error": "Error parsing tool call arguments: Unterminated string starting at: line 1 column 12 (char 11).Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": "{\"command\":\"\\x\"}",
+      "error": "Error parsing tool call arguments: Invalid \\escape: line 1 column 13 (char 12).Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": "{\"command\":\"a\nb\"}",
+      "error": "Error parsing tool call arguments: Invalid control character at: line 1 column 14 (char 13).Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": "{\"command\":\"pwd\"} trailing",
+      "error": "Error parsing tool call arguments: Extra data: line 1 column 19 (char 18).Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": "[1,]",
+      "error": "Error parsing tool call arguments: Illegal trailing comma before end of array: line 1 column 3 (char 2).Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": "null",
+      "error": "Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": 17,
+      "error": "Error parsing tool call arguments: the JSON object must be str, bytes or bytearray, not int.Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": null,
+      "error": "Error parsing tool call arguments: the JSON object must be str, bytes or bytearray, not NoneType.Missing 'command' argument in bash tool call."
+    },
+    {
+      "arguments": "{\"command\":\"pwd\"}",
+      "actions": [
+        {
+          "command": "pwd",
+          "tool_call_id": "call"
+        }
+      ]
+    }
+  ],
+  "interrupt": {
+    "name": "KeyboardInterrupt",
+    "message": ""
+  }
+}

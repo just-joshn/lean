@@ -7,7 +7,8 @@ function expandString(
   content: string,
   pattern: string,
 ): Array<Record<string, unknown>> {
-  const matches = [...content.matchAll(new RegExp(pattern, "gs"))];
+  const source = pattern.startsWith("(?s)") ? pattern.slice(4) : pattern;
+  const matches = [...content.matchAll(new RegExp(source, "gs"))];
   if (matches.length === 0) return [{ type: "text", text: content }];
   const result: Array<Record<string, unknown>> = [];
   let last = 0;

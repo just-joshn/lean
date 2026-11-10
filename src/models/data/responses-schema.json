@@ -1,0 +1,5460 @@
+{
+  "fields": {
+    "output": {
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ResponseOutputMessage"
+          },
+          {
+            "$ref": "#/$defs/ResponseFileSearchToolCall"
+          },
+          {
+            "$ref": "#/$defs/ResponseFunctionToolCall"
+          },
+          {
+            "$ref": "#/$defs/ResponseFunctionToolCallOutputItem"
+          },
+          {
+            "$ref": "#/$defs/ResponseFunctionWebSearch"
+          },
+          {
+            "$ref": "#/$defs/ResponseComputerToolCall"
+          },
+          {
+            "$ref": "#/$defs/ResponseComputerToolCallOutputItem"
+          },
+          {
+            "$ref": "#/$defs/ResponseReasoningItem"
+          },
+          {
+            "$ref": "#/$defs/Program"
+          },
+          {
+            "$ref": "#/$defs/ProgramOutput"
+          },
+          {
+            "$ref": "#/$defs/ResponseToolSearchCall"
+          },
+          {
+            "$ref": "#/$defs/ResponseToolSearchOutputItem"
+          },
+          {
+            "$ref": "#/$defs/AdditionalTools"
+          },
+          {
+            "$ref": "#/$defs/ResponseCompactionItem"
+          },
+          {
+            "$ref": "#/$defs/ImageGenerationCall"
+          },
+          {
+            "$ref": "#/$defs/ResponseCodeInterpreterToolCall"
+          },
+          {
+            "$ref": "#/$defs/LocalShellCall"
+          },
+          {
+            "$ref": "#/$defs/LocalShellCallOutput"
+          },
+          {
+            "$ref": "#/$defs/ResponseFunctionShellToolCall"
+          },
+          {
+            "$ref": "#/$defs/ResponseFunctionShellToolCallOutput"
+          },
+          {
+            "$ref": "#/$defs/ResponseApplyPatchToolCall"
+          },
+          {
+            "$ref": "#/$defs/ResponseApplyPatchToolCallOutput"
+          },
+          {
+            "$ref": "#/$defs/McpCall"
+          },
+          {
+            "$ref": "#/$defs/McpListTools"
+          },
+          {
+            "$ref": "#/$defs/McpApprovalRequest"
+          },
+          {
+            "$ref": "#/$defs/McpApprovalResponse"
+          },
+          {
+            "$ref": "#/$defs/ResponseCustomToolCall"
+          },
+          {
+            "$ref": "#/$defs/ResponseCustomToolCallOutputItem"
+          },
+          {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "tools": {
+      "anyOf": [
+        {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/FunctionTool"
+              },
+              {
+                "$ref": "#/$defs/FileSearchTool"
+              },
+              {
+                "$ref": "#/$defs/ComputerTool"
+              },
+              {
+                "$ref": "#/$defs/ComputerUsePreviewTool"
+              },
+              {
+                "$ref": "#/$defs/WebSearchTool"
+              },
+              {
+                "$ref": "#/$defs/Mcp"
+              },
+              {
+                "$ref": "#/$defs/CodeInterpreter"
+              },
+              {
+                "$ref": "#/$defs/ProgrammaticToolCalling"
+              },
+              {
+                "$ref": "#/$defs/ImageGeneration"
+              },
+              {
+                "$ref": "#/$defs/LocalShell"
+              },
+              {
+                "$ref": "#/$defs/FunctionShellTool"
+              },
+              {
+                "$ref": "#/$defs/CustomTool"
+              },
+              {
+                "$ref": "#/$defs/NamespaceTool"
+              },
+              {
+                "$ref": "#/$defs/ToolSearchTool"
+              },
+              {
+                "$ref": "#/$defs/WebSearchPreviewTool"
+              },
+              {
+                "$ref": "#/$defs/ApplyPatchTool"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/ResponseFunctionToolCall"
+          },
+          "type": "array"
+        },
+        {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "tool_choice": {
+      "anyOf": [
+        {
+          "enum": ["none", "auto", "required"],
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/ToolChoiceAllowedParam"
+        },
+        {
+          "$ref": "#/$defs/ToolChoiceTypesParam"
+        },
+        {
+          "$ref": "#/$defs/ToolChoiceFunctionParam"
+        },
+        {
+          "$ref": "#/$defs/ToolChoiceMcpParam"
+        },
+        {
+          "$ref": "#/$defs/ToolChoiceCustomParam"
+        },
+        {
+          "$ref": "#/$defs/ToolChoiceSpecificProgrammaticToolCallingParam"
+        },
+        {
+          "$ref": "#/$defs/ToolChoiceApplyPatchParam"
+        },
+        {
+          "$ref": "#/$defs/ToolChoiceShellParam"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "text": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ResponseTextConfigParam"
+        },
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "incomplete_details": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/IncompleteDetails"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "models": {
+    "ResponseOutputMessage": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "content": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ResponseOutputText"
+              },
+              {
+                "$ref": "#/$defs/ResponseOutputRefusal"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "role": {
+          "const": "assistant",
+          "type": "string"
+        },
+        "status": {
+          "enum": ["in_progress", "completed", "incomplete"],
+          "type": "string"
+        },
+        "type": {
+          "const": "message",
+          "type": "string"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "enum": ["commentary", "final_answer"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "content", "role", "status", "type"],
+      "type": "object"
+    },
+    "ResponseOutputText": {
+      "additionalProperties": true,
+      "properties": {
+        "annotations": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/AnnotationFileCitation"
+              },
+              {
+                "$ref": "#/$defs/AnnotationURLCitation"
+              },
+              {
+                "$ref": "#/$defs/AnnotationContainerFileCitation"
+              },
+              {
+                "$ref": "#/$defs/AnnotationFilePath"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "text": {
+          "type": "string"
+        },
+        "type": {
+          "const": "output_text",
+          "type": "string"
+        },
+        "logprobs": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Logprob"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["annotations", "text", "type"],
+      "type": "object"
+    },
+    "AnnotationFileCitation": {
+      "additionalProperties": true,
+      "properties": {
+        "file_id": {
+          "type": "string"
+        },
+        "filename": {
+          "type": "string"
+        },
+        "index": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "file_citation",
+          "type": "string"
+        }
+      },
+      "required": ["file_id", "filename", "index", "type"],
+      "type": "object"
+    },
+    "AnnotationURLCitation": {
+      "additionalProperties": true,
+      "properties": {
+        "end_index": {
+          "type": "integer"
+        },
+        "start_index": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "const": "url_citation",
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": ["end_index", "start_index", "title", "type", "url"],
+      "type": "object"
+    },
+    "AnnotationContainerFileCitation": {
+      "additionalProperties": true,
+      "properties": {
+        "container_id": {
+          "type": "string"
+        },
+        "end_index": {
+          "type": "integer"
+        },
+        "file_id": {
+          "type": "string"
+        },
+        "filename": {
+          "type": "string"
+        },
+        "start_index": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "container_file_citation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "container_id",
+        "end_index",
+        "file_id",
+        "filename",
+        "start_index",
+        "type"
+      ],
+      "type": "object"
+    },
+    "AnnotationFilePath": {
+      "additionalProperties": true,
+      "properties": {
+        "file_id": {
+          "type": "string"
+        },
+        "index": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "file_path",
+          "type": "string"
+        }
+      },
+      "required": ["file_id", "index", "type"],
+      "type": "object"
+    },
+    "Logprob": {
+      "additionalProperties": true,
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "bytes": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "logprob": {
+          "type": "number"
+        },
+        "top_logprobs": {
+          "items": {
+            "$ref": "#/$defs/LogprobTopLogprob"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["token", "bytes", "logprob", "top_logprobs"],
+      "type": "object"
+    },
+    "LogprobTopLogprob": {
+      "additionalProperties": true,
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "bytes": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "logprob": {
+          "type": "number"
+        }
+      },
+      "required": ["token", "bytes", "logprob"],
+      "type": "object"
+    },
+    "ResponseOutputRefusal": {
+      "additionalProperties": true,
+      "properties": {
+        "refusal": {
+          "type": "string"
+        },
+        "type": {
+          "const": "refusal",
+          "type": "string"
+        }
+      },
+      "required": ["refusal", "type"],
+      "type": "object"
+    },
+    "ResponseFileSearchToolCall": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "queries": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "in_progress",
+            "searching",
+            "completed",
+            "incomplete",
+            "failed"
+          ],
+          "type": "string"
+        },
+        "type": {
+          "const": "file_search_call",
+          "type": "string"
+        },
+        "results": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Result"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "queries", "status", "type"],
+      "type": "object"
+    },
+    "Result": {
+      "additionalProperties": true,
+      "properties": {
+        "attributes": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "file_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "filename": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "ResponseFunctionToolCall": {
+      "additionalProperties": true,
+      "properties": {
+        "arguments": {
+          "type": "string"
+        },
+        "call_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "function_call",
+          "type": "string"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "async": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "caller": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallerDirect"
+            },
+            {
+              "$ref": "#/$defs/CallerProgram"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "anyOf": [
+            {
+              "enum": ["in_progress", "completed", "incomplete"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["arguments", "call_id", "name", "type"],
+      "type": "object"
+    },
+    "CallerDirect": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "direct",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "CallerProgram": {
+      "additionalProperties": true,
+      "properties": {
+        "caller_id": {
+          "type": "string"
+        },
+        "type": {
+          "const": "program",
+          "type": "string"
+        }
+      },
+      "required": ["caller_id", "type"],
+      "type": "object"
+    },
+    "ResponseFunctionToolCallOutputItem": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "output": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/ResponseInputText"
+                  },
+                  {
+                    "$ref": "#/$defs/ResponseInputImage"
+                  },
+                  {
+                    "$ref": "#/$defs/ResponseInputFile"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "status": {
+          "enum": ["in_progress", "completed", "incomplete"],
+          "type": "string"
+        },
+        "type": {
+          "const": "function_call_output",
+          "type": "string"
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "caller": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallerDirect"
+            },
+            {
+              "$ref": "#/$defs/CallerProgram"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "output", "status", "type"],
+      "type": "object"
+    },
+    "ResponseInputText": {
+      "additionalProperties": true,
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "type": {
+          "const": "input_text",
+          "type": "string"
+        },
+        "prompt_cache_breakpoint": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PromptCacheBreakpoint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["text", "type"],
+      "type": "object"
+    },
+    "PromptCacheBreakpoint": {
+      "additionalProperties": true,
+      "properties": {
+        "mode": {
+          "const": "explicit",
+          "type": "string"
+        },
+        "ttl": {
+          "anyOf": [
+            {
+              "enum": ["30m", "12h"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["mode"],
+      "type": "object"
+    },
+    "ResponseInputImage": {
+      "additionalProperties": true,
+      "properties": {
+        "detail": {
+          "enum": ["low", "high", "auto", "original"],
+          "type": "string"
+        },
+        "type": {
+          "const": "input_image",
+          "type": "string"
+        },
+        "file_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "image_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "prompt_cache_breakpoint": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PromptCacheBreakpoint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["detail", "type"],
+      "type": "object"
+    },
+    "ResponseInputFile": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "input_file",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "enum": ["auto", "low", "high"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "file_data": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "file_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "file_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "filename": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "prompt_cache_breakpoint": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PromptCacheBreakpoint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ResponseFunctionWebSearch": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "action": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActionSearch"
+            },
+            {
+              "$ref": "#/$defs/ActionOpenPage"
+            },
+            {
+              "$ref": "#/$defs/ActionFind"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "in_progress",
+            "searching",
+            "completed",
+            "failed",
+            "incomplete"
+          ],
+          "type": "string"
+        },
+        "type": {
+          "const": "web_search_call",
+          "type": "string"
+        }
+      },
+      "required": ["id", "action", "status", "type"],
+      "type": "object"
+    },
+    "ActionSearch": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "search",
+          "type": "string"
+        },
+        "queries": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "query": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sources": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ActionSearchSource"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ActionSearchSource": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "url",
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": ["type", "url"],
+      "type": "object"
+    },
+    "ActionOpenPage": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "open_page",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ActionFind": {
+      "additionalProperties": true,
+      "properties": {
+        "pattern": {
+          "type": "string"
+        },
+        "type": {
+          "const": "find_in_page",
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": ["pattern", "type", "url"],
+      "type": "object"
+    },
+    "ResponseComputerToolCall": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "call_id": {
+          "type": "string"
+        },
+        "pending_safety_checks": {
+          "items": {
+            "$ref": "#/$defs/PendingSafetyCheck"
+          },
+          "type": "array"
+        },
+        "status": {
+          "enum": ["in_progress", "completed", "incomplete"],
+          "type": "string"
+        },
+        "type": {
+          "const": "computer_call",
+          "type": "string"
+        },
+        "action": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActionClick"
+            },
+            {
+              "$ref": "#/$defs/ActionDoubleClick"
+            },
+            {
+              "$ref": "#/$defs/ActionDrag"
+            },
+            {
+              "$ref": "#/$defs/ActionKeypress"
+            },
+            {
+              "$ref": "#/$defs/ActionMove"
+            },
+            {
+              "$ref": "#/$defs/ActionScreenshot"
+            },
+            {
+              "$ref": "#/$defs/ActionScroll"
+            },
+            {
+              "$ref": "#/$defs/ActionType"
+            },
+            {
+              "$ref": "#/$defs/ActionWait"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "actions": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Click"
+                  },
+                  {
+                    "$ref": "#/$defs/DoubleClick"
+                  },
+                  {
+                    "$ref": "#/$defs/Drag"
+                  },
+                  {
+                    "$ref": "#/$defs/Keypress"
+                  },
+                  {
+                    "$ref": "#/$defs/Move"
+                  },
+                  {
+                    "$ref": "#/$defs/Screenshot"
+                  },
+                  {
+                    "$ref": "#/$defs/Scroll"
+                  },
+                  {
+                    "$ref": "#/$defs/Type"
+                  },
+                  {
+                    "$ref": "#/$defs/Wait"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "call_id", "pending_safety_checks", "status", "type"],
+      "type": "object"
+    },
+    "PendingSafetyCheck": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id"],
+      "type": "object"
+    },
+    "ActionClick": {
+      "additionalProperties": true,
+      "properties": {
+        "button": {
+          "enum": ["left", "right", "wheel", "back", "forward"],
+          "type": "string"
+        },
+        "type": {
+          "const": "click",
+          "type": "string"
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        },
+        "keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["button", "type", "x", "y"],
+      "type": "object"
+    },
+    "ActionDoubleClick": {
+      "additionalProperties": true,
+      "properties": {
+        "keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "const": "double_click",
+          "type": "string"
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      },
+      "required": ["type", "x", "y"],
+      "type": "object"
+    },
+    "ActionDrag": {
+      "additionalProperties": true,
+      "properties": {
+        "path": {
+          "items": {
+            "$ref": "#/$defs/ActionDragPath"
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "drag",
+          "type": "string"
+        },
+        "keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["path", "type"],
+      "type": "object"
+    },
+    "ActionDragPath": {
+      "additionalProperties": true,
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      },
+      "required": ["x", "y"],
+      "type": "object"
+    },
+    "ActionKeypress": {
+      "additionalProperties": true,
+      "properties": {
+        "keys": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "keypress",
+          "type": "string"
+        }
+      },
+      "required": ["keys", "type"],
+      "type": "object"
+    },
+    "ActionMove": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "move",
+          "type": "string"
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        },
+        "keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type", "x", "y"],
+      "type": "object"
+    },
+    "ActionScreenshot": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "screenshot",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ActionScroll": {
+      "additionalProperties": true,
+      "properties": {
+        "scroll_x": {
+          "type": "integer"
+        },
+        "scroll_y": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "scroll",
+          "type": "string"
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        },
+        "keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["scroll_x", "scroll_y", "type", "x", "y"],
+      "type": "object"
+    },
+    "ActionType": {
+      "additionalProperties": true,
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "type": {
+          "const": "type",
+          "type": "string"
+        }
+      },
+      "required": ["text", "type"],
+      "type": "object"
+    },
+    "ActionWait": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "wait",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "Click": {
+      "additionalProperties": true,
+      "properties": {
+        "button": {
+          "enum": ["left", "right", "wheel", "back", "forward"],
+          "type": "string"
+        },
+        "type": {
+          "const": "click",
+          "type": "string"
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        },
+        "keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["button", "type", "x", "y"],
+      "type": "object"
+    },
+    "DoubleClick": {
+      "additionalProperties": true,
+      "properties": {
+        "keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "const": "double_click",
+          "type": "string"
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      },
+      "required": ["type", "x", "y"],
+      "type": "object"
+    },
+    "Drag": {
+      "additionalProperties": true,
+      "properties": {
+        "path": {
+          "items": {
+            "$ref": "#/$defs/DragPath"
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "drag",
+          "type": "string"
+        },
+        "keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["path", "type"],
+      "type": "object"
+    },
+    "DragPath": {
+      "additionalProperties": true,
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      },
+      "required": ["x", "y"],
+      "type": "object"
+    },
+    "Keypress": {
+      "additionalProperties": true,
+      "properties": {
+        "keys": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "keypress",
+          "type": "string"
+        }
+      },
+      "required": ["keys", "type"],
+      "type": "object"
+    },
+    "Move": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "move",
+          "type": "string"
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        },
+        "keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type", "x", "y"],
+      "type": "object"
+    },
+    "Screenshot": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "screenshot",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "Scroll": {
+      "additionalProperties": true,
+      "properties": {
+        "scroll_x": {
+          "type": "integer"
+        },
+        "scroll_y": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "scroll",
+          "type": "string"
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        },
+        "keys": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["scroll_x", "scroll_y", "type", "x", "y"],
+      "type": "object"
+    },
+    "Type": {
+      "additionalProperties": true,
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "type": {
+          "const": "type",
+          "type": "string"
+        }
+      },
+      "required": ["text", "type"],
+      "type": "object"
+    },
+    "Wait": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "wait",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ResponseComputerToolCallOutputItem": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "call_id": {
+          "type": "string"
+        },
+        "output": {
+          "$ref": "#/$defs/ResponseComputerToolCallOutputScreenshot"
+        },
+        "status": {
+          "enum": ["completed", "incomplete", "failed", "in_progress"],
+          "type": "string"
+        },
+        "type": {
+          "const": "computer_call_output",
+          "type": "string"
+        },
+        "acknowledged_safety_checks": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/AcknowledgedSafetyCheck"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "call_id", "output", "status", "type"],
+      "type": "object"
+    },
+    "ResponseComputerToolCallOutputScreenshot": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "computer_screenshot",
+          "type": "string"
+        },
+        "file_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "image_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "AcknowledgedSafetyCheck": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id"],
+      "type": "object"
+    },
+    "ResponseReasoningItem": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "summary": {
+          "items": {
+            "$ref": "#/$defs/Summary"
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "reasoning",
+          "type": "string"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Content"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "encrypted_content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "anyOf": [
+            {
+              "enum": ["in_progress", "completed", "incomplete"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "summary", "type"],
+      "type": "object"
+    },
+    "Summary": {
+      "additionalProperties": true,
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "type": {
+          "const": "summary_text",
+          "type": "string"
+        }
+      },
+      "required": ["text", "type"],
+      "type": "object"
+    },
+    "Content": {
+      "additionalProperties": true,
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "type": {
+          "const": "reasoning_text",
+          "type": "string"
+        }
+      },
+      "required": ["text", "type"],
+      "type": "object"
+    },
+    "Program": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "call_id": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "fingerprint": {
+          "type": "string"
+        },
+        "type": {
+          "const": "program",
+          "type": "string"
+        }
+      },
+      "required": ["id", "call_id", "code", "fingerprint", "type"],
+      "type": "object"
+    },
+    "ProgramOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "call_id": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string"
+        },
+        "status": {
+          "enum": ["completed", "incomplete"],
+          "type": "string"
+        },
+        "type": {
+          "const": "program_output",
+          "type": "string"
+        }
+      },
+      "required": ["id", "call_id", "result", "status", "type"],
+      "type": "object"
+    },
+    "ResponseToolSearchCall": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "arguments": {},
+        "call_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "execution": {
+          "enum": ["server", "client"],
+          "type": "string"
+        },
+        "status": {
+          "enum": ["in_progress", "completed", "incomplete"],
+          "type": "string"
+        },
+        "type": {
+          "const": "tool_search_call",
+          "type": "string"
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "arguments", "execution", "status", "type"],
+      "type": "object"
+    },
+    "ResponseToolSearchOutputItem": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "execution": {
+          "enum": ["server", "client"],
+          "type": "string"
+        },
+        "status": {
+          "enum": ["in_progress", "completed", "incomplete"],
+          "type": "string"
+        },
+        "tools": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/FunctionTool"
+              },
+              {
+                "$ref": "#/$defs/FileSearchTool"
+              },
+              {
+                "$ref": "#/$defs/ComputerTool"
+              },
+              {
+                "$ref": "#/$defs/ComputerUsePreviewTool"
+              },
+              {
+                "$ref": "#/$defs/WebSearchTool"
+              },
+              {
+                "$ref": "#/$defs/Mcp"
+              },
+              {
+                "$ref": "#/$defs/CodeInterpreter"
+              },
+              {
+                "$ref": "#/$defs/ProgrammaticToolCalling"
+              },
+              {
+                "$ref": "#/$defs/ImageGeneration"
+              },
+              {
+                "$ref": "#/$defs/LocalShell"
+              },
+              {
+                "$ref": "#/$defs/FunctionShellTool"
+              },
+              {
+                "$ref": "#/$defs/CustomTool"
+              },
+              {
+                "$ref": "#/$defs/NamespaceTool"
+              },
+              {
+                "$ref": "#/$defs/ToolSearchTool"
+              },
+              {
+                "$ref": "#/$defs/WebSearchPreviewTool"
+              },
+              {
+                "$ref": "#/$defs/ApplyPatchTool"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "tool_search_output",
+          "type": "string"
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "execution", "status", "tools", "type"],
+      "type": "object"
+    },
+    "FunctionTool": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "parameters": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "strict": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "const": "function",
+          "type": "string"
+        },
+        "allowed_callers": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": ["direct", "programmatic"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "async": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "defer_loading": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "output_schema": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["name", "type"],
+      "type": "object"
+    },
+    "FileSearchTool": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "file_search",
+          "type": "string"
+        },
+        "vector_store_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "filters": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ComparisonFilter"
+            },
+            {
+              "$ref": "#/$defs/CompoundFilter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "max_num_results": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ranking_options": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RankingOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type", "vector_store_ids"],
+      "type": "object"
+    },
+    "ComparisonFilter": {
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "type": {
+          "enum": ["eq", "ne", "gt", "gte", "lt", "lte", "in", "nin"],
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "required": ["key", "type", "value"],
+      "type": "object"
+    },
+    "CompoundFilter": {
+      "additionalProperties": true,
+      "properties": {
+        "filters": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ComparisonFilter"
+              },
+              {}
+            ]
+          },
+          "type": "array"
+        },
+        "type": {
+          "enum": ["and", "or"],
+          "type": "string"
+        }
+      },
+      "required": ["filters", "type"],
+      "type": "object"
+    },
+    "RankingOptions": {
+      "additionalProperties": true,
+      "properties": {
+        "hybrid_search": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RankingOptionsHybridSearch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ranker": {
+          "anyOf": [
+            {
+              "enum": ["auto", "default-2024-11-15"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "score_threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "RankingOptionsHybridSearch": {
+      "additionalProperties": true,
+      "properties": {
+        "embedding_weight": {
+          "type": "number"
+        },
+        "text_weight": {
+          "type": "number"
+        }
+      },
+      "required": ["embedding_weight", "text_weight"],
+      "type": "object"
+    },
+    "ComputerTool": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "computer",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ComputerUsePreviewTool": {
+      "additionalProperties": true,
+      "properties": {
+        "display_height": {
+          "type": "integer"
+        },
+        "display_width": {
+          "type": "integer"
+        },
+        "environment": {
+          "enum": ["windows", "mac", "linux", "ubuntu", "browser"],
+          "type": "string"
+        },
+        "type": {
+          "const": "computer_use_preview",
+          "type": "string"
+        }
+      },
+      "required": ["display_height", "display_width", "environment", "type"],
+      "type": "object"
+    },
+    "WebSearchTool": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "enum": ["web_search", "web_search_2025_08_26"],
+          "type": "string"
+        },
+        "external_web_access": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "filters": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Filters"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "search_context_size": {
+          "anyOf": [
+            {
+              "enum": ["low", "medium", "high"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "user_location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/openai__types__responses__web_search_tool__UserLocation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "Filters": {
+      "additionalProperties": true,
+      "properties": {
+        "allowed_domains": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "openai__types__responses__web_search_tool__UserLocation": {
+      "additionalProperties": true,
+      "properties": {
+        "city": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "country": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "region": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "timezone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "anyOf": [
+            {
+              "const": "approximate",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "Mcp": {
+      "additionalProperties": true,
+      "properties": {
+        "server_label": {
+          "type": "string"
+        },
+        "type": {
+          "const": "mcp",
+          "type": "string"
+        },
+        "allowed_callers": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": ["direct", "programmatic"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "allowed_tools": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/McpAllowedToolsMcpToolFilter"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "authorization": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "connector_id": {
+          "anyOf": [
+            {
+              "enum": [
+                "connector_dropbox",
+                "connector_gmail",
+                "connector_googlecalendar",
+                "connector_googledrive",
+                "connector_microsoftteams",
+                "connector_outlookcalendar",
+                "connector_outlookemail",
+                "connector_sharepoint"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "defer_loading": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "headers": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "require_approval": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/McpRequireApprovalMcpToolApprovalFilter"
+            },
+            {
+              "enum": ["always", "never"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "server_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "server_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tunnel_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["server_label", "type"],
+      "type": "object"
+    },
+    "McpAllowedToolsMcpToolFilter": {
+      "additionalProperties": true,
+      "properties": {
+        "read_only": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tool_names": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "McpRequireApprovalMcpToolApprovalFilter": {
+      "additionalProperties": true,
+      "properties": {
+        "always": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/McpRequireApprovalMcpToolApprovalFilterAlways"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "never": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/McpRequireApprovalMcpToolApprovalFilterNever"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "McpRequireApprovalMcpToolApprovalFilterAlways": {
+      "additionalProperties": true,
+      "properties": {
+        "read_only": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tool_names": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "McpRequireApprovalMcpToolApprovalFilterNever": {
+      "additionalProperties": true,
+      "properties": {
+        "read_only": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tool_names": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "CodeInterpreter": {
+      "additionalProperties": true,
+      "properties": {
+        "container": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/CodeInterpreterContainerCodeInterpreterToolAuto"
+            }
+          ]
+        },
+        "type": {
+          "const": "code_interpreter",
+          "type": "string"
+        },
+        "allowed_callers": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": ["direct", "programmatic"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["container", "type"],
+      "type": "object"
+    },
+    "CodeInterpreterContainerCodeInterpreterToolAuto": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "auto",
+          "type": "string"
+        },
+        "file_ids": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "memory_limit": {
+          "anyOf": [
+            {
+              "enum": ["1g", "4g", "16g", "64g"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "network_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContainerNetworkPolicyDisabled"
+            },
+            {
+              "$ref": "#/$defs/ContainerNetworkPolicyAllowlist"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ContainerNetworkPolicyDisabled": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "disabled",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ContainerNetworkPolicyAllowlist": {
+      "additionalProperties": true,
+      "properties": {
+        "allowed_domains": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "allowlist",
+          "type": "string"
+        },
+        "domain_secrets": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ContainerNetworkPolicyDomainSecret"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["allowed_domains", "type"],
+      "type": "object"
+    },
+    "ContainerNetworkPolicyDomainSecret": {
+      "additionalProperties": true,
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": ["domain", "name", "value"],
+      "type": "object"
+    },
+    "ProgrammaticToolCalling": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "programmatic_tool_calling",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ImageGeneration": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "image_generation",
+          "type": "string"
+        },
+        "action": {
+          "anyOf": [
+            {
+              "enum": ["generate", "edit", "auto"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "background": {
+          "anyOf": [
+            {
+              "enum": ["transparent", "opaque", "auto"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "complexity": {
+          "anyOf": [
+            {
+              "enum": ["low", "medium", "high"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "frame_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "frame_duration_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "input_fidelity": {
+          "anyOf": [
+            {
+              "enum": ["high", "low"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "input_image_mask": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageGenerationInputImageMask"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "enum": [
+                "gpt-image-1",
+                "gpt-image-1-mini",
+                "gpt-image-2",
+                "gpt-image-2-2026-04-21",
+                "gpt-image-2.5-sunburst",
+                "gpt-image-2.5-sunburst-2026-09-08",
+                "gpt-image-2.5-flare",
+                "gpt-image-2.5-flare-2026-09-08",
+                "gpt-image-2.6-sunburst",
+                "gpt-image-2.6-flare",
+                "gpt-image-1.5",
+                "chatgpt-image-latest"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "moderation": {
+          "anyOf": [
+            {
+              "enum": ["auto", "low"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "output_compression": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "output_format": {
+          "anyOf": [
+            {
+              "enum": ["png", "webp", "jpeg", "gif", "svg"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "partial_images": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "quality": {
+          "anyOf": [
+            {
+              "enum": ["low", "medium", "high", "xhigh", "max", "auto"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "size": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "enum": ["1024x1024", "1024x1536", "1536x1024", "auto"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "svg": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageGenerationSvg"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ImageGenerationInputImageMask": {
+      "additionalProperties": true,
+      "properties": {
+        "file_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "image_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "ImageGenerationSvg": {
+      "additionalProperties": true,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reasoning": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageGenerationSvgReasoning"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "ImageGenerationSvgReasoning": {
+      "additionalProperties": true,
+      "properties": {
+        "effort": {
+          "anyOf": [
+            {
+              "enum": [
+                "none",
+                "minimal",
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "LocalShell": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "local_shell",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "FunctionShellTool": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "shell",
+          "type": "string"
+        },
+        "allowed_callers": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": ["direct", "programmatic"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "environment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContainerAuto"
+            },
+            {
+              "$ref": "#/$defs/LocalEnvironment"
+            },
+            {
+              "$ref": "#/$defs/ContainerReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ContainerAuto": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "container_auto",
+          "type": "string"
+        },
+        "file_ids": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "memory_limit": {
+          "anyOf": [
+            {
+              "enum": ["1g", "4g", "16g", "64g"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "network_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContainerNetworkPolicyDisabled"
+            },
+            {
+              "$ref": "#/$defs/ContainerNetworkPolicyAllowlist"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "skills": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/SkillReference"
+                  },
+                  {
+                    "$ref": "#/$defs/InlineSkill"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "SkillReference": {
+      "additionalProperties": true,
+      "properties": {
+        "skill_id": {
+          "type": "string"
+        },
+        "type": {
+          "const": "skill_reference",
+          "type": "string"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["skill_id", "type"],
+      "type": "object"
+    },
+    "InlineSkill": {
+      "additionalProperties": true,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/InlineSkillSource"
+        },
+        "type": {
+          "const": "inline",
+          "type": "string"
+        }
+      },
+      "required": ["description", "name", "source", "type"],
+      "type": "object"
+    },
+    "InlineSkillSource": {
+      "additionalProperties": true,
+      "properties": {
+        "data": {
+          "type": "string"
+        },
+        "media_type": {
+          "const": "application/zip",
+          "type": "string"
+        },
+        "type": {
+          "const": "base64",
+          "type": "string"
+        }
+      },
+      "required": ["data", "media_type", "type"],
+      "type": "object"
+    },
+    "LocalEnvironment": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "local",
+          "type": "string"
+        },
+        "skills": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/LocalSkill"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "LocalSkill": {
+      "additionalProperties": true,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": ["description", "name", "path"],
+      "type": "object"
+    },
+    "ContainerReference": {
+      "additionalProperties": true,
+      "properties": {
+        "container_id": {
+          "type": "string"
+        },
+        "type": {
+          "const": "container_reference",
+          "type": "string"
+        }
+      },
+      "required": ["container_id", "type"],
+      "type": "object"
+    },
+    "CustomTool": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "custom",
+          "type": "string"
+        },
+        "allowed_callers": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": ["direct", "programmatic"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "async": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "defer_loading": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "format": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Text"
+            },
+            {
+              "$ref": "#/$defs/Grammar"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["name", "type"],
+      "type": "object"
+    },
+    "Text": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "text",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "Grammar": {
+      "additionalProperties": true,
+      "properties": {
+        "definition": {
+          "type": "string"
+        },
+        "syntax": {
+          "enum": ["lark", "regex"],
+          "type": "string"
+        },
+        "type": {
+          "const": "grammar",
+          "type": "string"
+        }
+      },
+      "required": ["definition", "syntax", "type"],
+      "type": "object"
+    },
+    "NamespaceTool": {
+      "additionalProperties": true,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "tools": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ToolFunction"
+              },
+              {
+                "$ref": "#/$defs/CustomTool"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "namespace",
+          "type": "string"
+        }
+      },
+      "required": ["description", "name", "tools", "type"],
+      "type": "object"
+    },
+    "ToolFunction": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "function",
+          "type": "string"
+        },
+        "allowed_callers": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": ["direct", "programmatic"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "async": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "defer_loading": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "output_schema": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "parameters": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "strict": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["name", "type"],
+      "type": "object"
+    },
+    "ToolSearchTool": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "tool_search",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "execution": {
+          "anyOf": [
+            {
+              "enum": ["server", "client"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "parameters": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "WebSearchPreviewTool": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "enum": ["web_search_preview", "web_search_preview_2025_03_11"],
+          "type": "string"
+        },
+        "search_content_types": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": ["text", "image"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "search_context_size": {
+          "anyOf": [
+            {
+              "enum": ["low", "medium", "high"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "user_location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/openai__types__responses__web_search_preview_tool__UserLocation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "openai__types__responses__web_search_preview_tool__UserLocation": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "approximate",
+          "type": "string"
+        },
+        "city": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "country": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "region": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "timezone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ApplyPatchTool": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "apply_patch",
+          "type": "string"
+        },
+        "allowed_callers": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": ["direct", "programmatic"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "AdditionalTools": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "unknown",
+            "user",
+            "assistant",
+            "system",
+            "critic",
+            "discriminator",
+            "developer",
+            "tool"
+          ],
+          "type": "string"
+        },
+        "tools": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/FunctionTool"
+              },
+              {
+                "$ref": "#/$defs/FileSearchTool"
+              },
+              {
+                "$ref": "#/$defs/ComputerTool"
+              },
+              {
+                "$ref": "#/$defs/ComputerUsePreviewTool"
+              },
+              {
+                "$ref": "#/$defs/WebSearchTool"
+              },
+              {
+                "$ref": "#/$defs/Mcp"
+              },
+              {
+                "$ref": "#/$defs/CodeInterpreter"
+              },
+              {
+                "$ref": "#/$defs/ProgrammaticToolCalling"
+              },
+              {
+                "$ref": "#/$defs/ImageGeneration"
+              },
+              {
+                "$ref": "#/$defs/LocalShell"
+              },
+              {
+                "$ref": "#/$defs/FunctionShellTool"
+              },
+              {
+                "$ref": "#/$defs/CustomTool"
+              },
+              {
+                "$ref": "#/$defs/NamespaceTool"
+              },
+              {
+                "$ref": "#/$defs/ToolSearchTool"
+              },
+              {
+                "$ref": "#/$defs/WebSearchPreviewTool"
+              },
+              {
+                "$ref": "#/$defs/ApplyPatchTool"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "additional_tools",
+          "type": "string"
+        }
+      },
+      "required": ["id", "role", "tools", "type"],
+      "type": "object"
+    },
+    "ResponseCompactionItem": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "encrypted_content": {
+          "type": "string"
+        },
+        "type": {
+          "const": "compaction",
+          "type": "string"
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "encrypted_content", "type"],
+      "type": "object"
+    },
+    "ImageGenerationCall": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": ["in_progress", "completed", "generating", "failed"],
+          "type": "string"
+        },
+        "type": {
+          "const": "image_generation_call",
+          "type": "string"
+        },
+        "action": {
+          "anyOf": [
+            {
+              "enum": ["generate", "edit", "auto"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "background": {
+          "anyOf": [
+            {
+              "enum": ["transparent", "opaque", "auto"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageGenerationCallError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "output_format": {
+          "anyOf": [
+            {
+              "enum": ["png", "webp", "jpeg", "gif", "svg"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "quality": {
+          "anyOf": [
+            {
+              "enum": ["low", "medium", "high", "xhigh", "max", "auto"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "revised_prompt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "size": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "enum": ["1024x1024", "1024x1536", "1536x1024"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "svg_usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageGenerationCallSvgUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "status", "type"],
+      "type": "object"
+    },
+    "ImageGenerationCallError": {
+      "additionalProperties": true,
+      "properties": {
+        "code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "message": {
+          "type": "string"
+        },
+        "param": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "type": "string"
+        },
+        "moderation_details": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageGenerationCallErrorModerationDetails"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["message", "type"],
+      "type": "object"
+    },
+    "ImageGenerationCallErrorModerationDetails": {
+      "additionalProperties": true,
+      "properties": {
+        "categories": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "moderation_stage": {
+          "enum": ["input", "output", "unknown"],
+          "type": "string"
+        }
+      },
+      "required": ["categories", "moderation_stage"],
+      "type": "object"
+    },
+    "ImageGenerationCallSvgUsage": {
+      "additionalProperties": true,
+      "properties": {
+        "input_tokens": {
+          "type": "integer"
+        },
+        "model": {
+          "type": "string"
+        },
+        "output_tokens": {
+          "type": "integer"
+        },
+        "reasoning_tokens": {
+          "type": "integer"
+        },
+        "total_tokens": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "input_tokens",
+        "model",
+        "output_tokens",
+        "reasoning_tokens",
+        "total_tokens"
+      ],
+      "type": "object"
+    },
+    "ResponseCodeInterpreterToolCall": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "container_id": {
+          "type": "string"
+        },
+        "outputs": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/OutputLogs"
+                  },
+                  {
+                    "$ref": "#/$defs/OutputImage"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": [
+            "in_progress",
+            "completed",
+            "incomplete",
+            "interpreting",
+            "failed"
+          ],
+          "type": "string"
+        },
+        "type": {
+          "const": "code_interpreter_call",
+          "type": "string"
+        }
+      },
+      "required": ["id", "container_id", "status", "type"],
+      "type": "object"
+    },
+    "OutputLogs": {
+      "additionalProperties": true,
+      "properties": {
+        "logs": {
+          "type": "string"
+        },
+        "type": {
+          "const": "logs",
+          "type": "string"
+        }
+      },
+      "required": ["logs", "type"],
+      "type": "object"
+    },
+    "OutputImage": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "image",
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": ["type", "url"],
+      "type": "object"
+    },
+    "LocalShellCall": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/LocalShellCallAction"
+        },
+        "call_id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": ["in_progress", "completed", "incomplete"],
+          "type": "string"
+        },
+        "type": {
+          "const": "local_shell_call",
+          "type": "string"
+        }
+      },
+      "required": ["id", "action", "call_id", "status", "type"],
+      "type": "object"
+    },
+    "LocalShellCallAction": {
+      "additionalProperties": true,
+      "properties": {
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "type": {
+          "const": "exec",
+          "type": "string"
+        },
+        "timeout_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "user": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "working_directory": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["command", "env", "type"],
+      "type": "object"
+    },
+    "LocalShellCallOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        },
+        "type": {
+          "const": "local_shell_call_output",
+          "type": "string"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "enum": ["in_progress", "completed", "incomplete"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "output", "type"],
+      "type": "object"
+    },
+    "ResponseFunctionShellToolCall": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/Action"
+        },
+        "call_id": {
+          "type": "string"
+        },
+        "environment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResponseLocalEnvironment"
+            },
+            {
+              "$ref": "#/$defs/ResponseContainerReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": ["in_progress", "completed", "incomplete"],
+          "type": "string"
+        },
+        "type": {
+          "const": "shell_call",
+          "type": "string"
+        },
+        "caller": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallerDirect"
+            },
+            {
+              "$ref": "#/$defs/CallerProgram"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "action", "call_id", "status", "type"],
+      "type": "object"
+    },
+    "Action": {
+      "additionalProperties": true,
+      "properties": {
+        "commands": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "max_output_length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "timeout_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["commands"],
+      "type": "object"
+    },
+    "ResponseLocalEnvironment": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "local",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "ResponseContainerReference": {
+      "additionalProperties": true,
+      "properties": {
+        "container_id": {
+          "type": "string"
+        },
+        "type": {
+          "const": "container_reference",
+          "type": "string"
+        }
+      },
+      "required": ["container_id", "type"],
+      "type": "object"
+    },
+    "ResponseFunctionShellToolCallOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "call_id": {
+          "type": "string"
+        },
+        "max_output_length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "output": {
+          "items": {
+            "$ref": "#/$defs/Output"
+          },
+          "type": "array"
+        },
+        "status": {
+          "enum": ["in_progress", "completed", "incomplete"],
+          "type": "string"
+        },
+        "type": {
+          "const": "shell_call_output",
+          "type": "string"
+        },
+        "caller": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallerDirect"
+            },
+            {
+              "$ref": "#/$defs/CallerProgram"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "call_id", "output", "status", "type"],
+      "type": "object"
+    },
+    "Output": {
+      "additionalProperties": true,
+      "properties": {
+        "outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputOutcomeTimeout"
+            },
+            {
+              "$ref": "#/$defs/OutputOutcomeExit"
+            }
+          ]
+        },
+        "stderr": {
+          "type": "string"
+        },
+        "stdout": {
+          "type": "string"
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["outcome", "stderr", "stdout"],
+      "type": "object"
+    },
+    "OutputOutcomeTimeout": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "timeout",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
+    "OutputOutcomeExit": {
+      "additionalProperties": true,
+      "properties": {
+        "exit_code": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "exit",
+          "type": "string"
+        }
+      },
+      "required": ["exit_code", "type"],
+      "type": "object"
+    },
+    "ResponseApplyPatchToolCall": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "call_id": {
+          "type": "string"
+        },
+        "operation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OperationCreateFile"
+            },
+            {
+              "$ref": "#/$defs/OperationDeleteFile"
+            },
+            {
+              "$ref": "#/$defs/OperationUpdateFile"
+            }
+          ]
+        },
+        "status": {
+          "enum": ["in_progress", "completed"],
+          "type": "string"
+        },
+        "type": {
+          "const": "apply_patch_call",
+          "type": "string"
+        },
+        "caller": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallerDirect"
+            },
+            {
+              "$ref": "#/$defs/CallerProgram"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "call_id", "operation", "status", "type"],
+      "type": "object"
+    },
+    "OperationCreateFile": {
+      "additionalProperties": true,
+      "properties": {
+        "diff": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "const": "create_file",
+          "type": "string"
+        }
+      },
+      "required": ["diff", "path", "type"],
+      "type": "object"
+    },
+    "OperationDeleteFile": {
+      "additionalProperties": true,
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "const": "delete_file",
+          "type": "string"
+        }
+      },
+      "required": ["path", "type"],
+      "type": "object"
+    },
+    "OperationUpdateFile": {
+      "additionalProperties": true,
+      "properties": {
+        "diff": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "const": "update_file",
+          "type": "string"
+        }
+      },
+      "required": ["diff", "path", "type"],
+      "type": "object"
+    },
+    "ResponseApplyPatchToolCallOutput": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "call_id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": ["completed", "failed"],
+          "type": "string"
+        },
+        "type": {
+          "const": "apply_patch_call_output",
+          "type": "string"
+        },
+        "caller": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallerDirect"
+            },
+            {
+              "$ref": "#/$defs/CallerProgram"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "output": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "call_id", "status", "type"],
+      "type": "object"
+    },
+    "McpCall": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "arguments": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "server_label": {
+          "type": "string"
+        },
+        "type": {
+          "const": "mcp_call",
+          "type": "string"
+        },
+        "approval_request_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/McpProtocolError"
+            },
+            {
+              "$ref": "#/$defs/McpToolExecutionError"
+            },
+            {
+              "$ref": "#/$defs/HTTPError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "output": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "anyOf": [
+            {
+              "enum": [
+                "in_progress",
+                "completed",
+                "incomplete",
+                "calling",
+                "failed"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "arguments", "name", "server_label", "type"],
+      "type": "object"
+    },
+    "McpProtocolError": {
+      "additionalProperties": true,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        },
+        "type": {
+          "const": "mcp_protocol_error",
+          "type": "string"
+        }
+      },
+      "required": ["code", "message", "type"],
+      "type": "object"
+    },
+    "McpToolExecutionError": {
+      "additionalProperties": true,
+      "properties": {
+        "content": {},
+        "type": {
+          "const": "mcp_tool_execution_error",
+          "type": "string"
+        }
+      },
+      "required": ["content", "type"],
+      "type": "object"
+    },
+    "HTTPError": {
+      "additionalProperties": true,
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        },
+        "type": {
+          "const": "http_error",
+          "type": "string"
+        }
+      },
+      "required": ["code", "message", "type"],
+      "type": "object"
+    },
+    "McpListTools": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "server_label": {
+          "type": "string"
+        },
+        "tools": {
+          "items": {
+            "$ref": "#/$defs/McpListToolsTool"
+          },
+          "type": "array"
+        },
+        "type": {
+          "const": "mcp_list_tools",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "server_label", "tools", "type"],
+      "type": "object"
+    },
+    "McpListToolsTool": {
+      "additionalProperties": true,
+      "properties": {
+        "input_schema": {},
+        "name": {
+          "type": "string"
+        },
+        "annotations": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["input_schema", "name"],
+      "type": "object"
+    },
+    "McpApprovalRequest": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "arguments": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "server_label": {
+          "type": "string"
+        },
+        "type": {
+          "const": "mcp_approval_request",
+          "type": "string"
+        }
+      },
+      "required": ["id", "arguments", "name", "server_label", "type"],
+      "type": "object"
+    },
+    "McpApprovalResponse": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "approval_request_id": {
+          "type": "string"
+        },
+        "approve": {
+          "type": "boolean"
+        },
+        "type": {
+          "const": "mcp_approval_response",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["id", "approval_request_id", "approve", "type"],
+      "type": "object"
+    },
+    "ResponseCustomToolCall": {
+      "additionalProperties": true,
+      "properties": {
+        "call_id": {
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "custom_tool_call",
+          "type": "string"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "async": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "caller": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallerDirect"
+            },
+            {
+              "$ref": "#/$defs/CallerProgram"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["call_id", "input", "name", "type"],
+      "type": "object"
+    },
+    "ResponseCustomToolCallOutputItem": {
+      "additionalProperties": true,
+      "properties": {
+        "call_id": {
+          "type": "string"
+        },
+        "output": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/ResponseInputText"
+                  },
+                  {
+                    "$ref": "#/$defs/ResponseInputImage"
+                  },
+                  {
+                    "$ref": "#/$defs/ResponseInputFile"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "type": {
+          "const": "custom_tool_call_output",
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "caller": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallerDirect"
+            },
+            {
+              "$ref": "#/$defs/CallerProgram"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": ["in_progress", "completed", "incomplete"],
+          "type": "string"
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": ["call_id", "output", "type", "id", "status"],
+      "type": "object"
+    },
+    "ToolChoiceAllowedParam": {
+      "additionalProperties": true,
+      "properties": {
+        "mode": {
+          "enum": ["auto", "required"],
+          "type": "string"
+        },
+        "tools": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "type": "array",
+          "iterable": true
+        },
+        "type": {
+          "const": "allowed_tools",
+          "type": "string"
+        }
+      },
+      "required": ["mode", "tools", "type"],
+      "type": "object",
+      "record": true
+    },
+    "ToolChoiceTypesParam": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "enum": [
+            "file_search",
+            "web_search_preview",
+            "computer",
+            "computer_use_preview",
+            "computer_use",
+            "web_search_preview_2025_03_11",
+            "image_generation",
+            "code_interpreter"
+          ],
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object",
+      "record": true
+    },
+    "ToolChoiceFunctionParam": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "function",
+          "type": "string"
+        }
+      },
+      "required": ["name", "type"],
+      "type": "object",
+      "record": true
+    },
+    "ToolChoiceMcpParam": {
+      "additionalProperties": true,
+      "properties": {
+        "server_label": {
+          "type": "string"
+        },
+        "type": {
+          "const": "mcp",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["server_label", "type"],
+      "type": "object",
+      "record": true
+    },
+    "ToolChoiceCustomParam": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "custom",
+          "type": "string"
+        }
+      },
+      "required": ["name", "type"],
+      "type": "object",
+      "record": true
+    },
+    "ToolChoiceSpecificProgrammaticToolCallingParam": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "programmatic_tool_calling",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object",
+      "record": true
+    },
+    "ToolChoiceApplyPatchParam": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "apply_patch",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object",
+      "record": true
+    },
+    "ToolChoiceShellParam": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "shell",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object",
+      "record": true
+    },
+    "ResponseTextConfigParam": {
+      "additionalProperties": true,
+      "properties": {
+        "format": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResponseFormatText"
+            },
+            {
+              "$ref": "#/$defs/ResponseFormatTextJSONSchemaConfigParam"
+            },
+            {
+              "$ref": "#/$defs/ResponseFormatJSONObject"
+            }
+          ]
+        },
+        "verbosity": {
+          "anyOf": [
+            {
+              "enum": ["low", "medium", "high"],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "type": "object",
+      "record": true
+    },
+    "ResponseFormatText": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "text",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object",
+      "record": true
+    },
+    "ResponseFormatTextJSONSchemaConfigParam": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "schema": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "type": {
+          "const": "json_schema",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "strict": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["name", "schema", "type"],
+      "type": "object",
+      "record": true
+    },
+    "ResponseFormatJSONObject": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "const": "json_object",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object",
+      "record": true
+    },
+    "IncompleteDetails": {
+      "additionalProperties": true,
+      "properties": {
+        "reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "max_output_tokens",
+                "max_messages",
+                "content_filter",
+                "steered"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    }
+  }
+}

@@ -5,6 +5,9 @@ import { afterEach, expect, test, vi } from "vitest";
 import { LocalEnvironment } from "../environments/local.ts";
 import { Submitted } from "../exceptions.ts";
 import { LitellmModel } from "../models/litellm-model.ts";
+import { OpenRouterModel } from "../models/provider-models.ts";
+import * as responseTransport from "../models/received-response.ts";
+import { DEFAULT_MULTIMODAL_REGEX } from "../models/utils/multimodal.ts";
 import type { Message } from "../protocols.ts";
 import { createTuiSession } from "./tui-agent.ts";
 import { replayItems } from "./tui-replay.ts";
@@ -99,6 +102,87 @@ test("runs the new loop, asks for each bash action, inspects results, and saves 
       role: "tool",
       tool_call_id: "a",
       extra: expect.objectContaining({ raw_output: "apricot" }),
+    }),
+  );
+});
+
+test("runs a dedicated provider through native TUI observations and saves its identity and billing", async () => {
+  const { output, execute, session, input } = await fixture();
+  const image = "https://example.invalid/image.png";
+  execute.mockResolvedValueOnce({
+    output: `before\n<MSWEA_MULTIMODAL_CONTENT><CONTENT_TYPE>image_url</CONTENT_TYPE>\n${image}\n</MSWEA_MULTIMODAL_CONTENT>\nafter`,
+    returncode: 0,
+    exception_info: "",
+  });
+  const receive = vi.spyOn(responseTransport, "receiveResponse");
+  for (const [id, command] of [
+    ["a", "echo image"],
+    ["b", "submit"],
+  ]) {
+    const text = JSON.stringify({
+      choices: [
+        {
+          finish_reason: "tool_calls",
+          message: {
+            role: "assistant",
+            content: `Running ${command}.`,
+            tool_calls: [
+              {
+                id,
+                type: "function",
+                function: {
+                  name: "bash",
+                  arguments: JSON.stringify({ command }),
+                },
+              },
+            ],
+          },
+        },
+      ],
+      usage: { cost: 0.01 },
+    });
+    receive.mockResolvedValueOnce({
+      status: 200,
+      text,
+      bytes: new TextEncoder().encode(text),
+      statusText: "fixture",
+      ok: true,
+    });
+  }
+  const model = new OpenRouterModel({
+    model_name: "openai/gpt-4o",
+    multimodal_regex: DEFAULT_MULTIMODAL_REGEX,
+  });
+  await session.driver({ ...input, model });
+  await session.history.save();
+  expect(receive).toHaveBeenCalledTimes(2);
+  const request = JSON.parse(String(receive.mock.calls[1]?.[1].body));
+  expect(request.messages).toContainEqual(
+    expect.objectContaining({
+      role: "tool",
+      tool_call_id: "a",
+      content: expect.arrayContaining([
+        { type: "image_url", image_url: { url: image } },
+        { type: "text", text: expect.stringContaining("before") },
+        { type: "text", text: expect.stringContaining("after") },
+      ]),
+    }),
+  );
+  expect(input.onText).toHaveBeenCalledWith(
+    "Running echo image.\n\n```\necho image\n```\n",
+  );
+  expect(input.approve).toHaveBeenCalledTimes(2);
+  const saved = JSON.parse(await readFile(output, "utf8"));
+  expect(saved.info).toMatchObject({
+    exit_status: "Submitted",
+    submission: "done",
+    config: { model_type: OpenRouterModel.typeName },
+    model_stats: { api_calls: 2, instance_cost: 0.02 },
+  });
+  expect(replayItems(await session.history.getItems())).toContainEqual(
+    expect.objectContaining({
+      kind: "action",
+      action: expect.objectContaining({ status: "exit 0" }),
     }),
   );
 });
