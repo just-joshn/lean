@@ -4,6 +4,14 @@ import { hostname, machine, release, type, version } from "node:os";
 import type { Action, ExecutionOutput } from "../protocols.ts";
 import { recursive_merge } from "../utils/serialize.ts";
 import { checkSubmitted } from "./submit.ts";
+import {
+  calledProcessError,
+  commandExitCode,
+  decodeOutput,
+  pythonStrip,
+  strictText,
+  timeoutExpiredError,
+} from "./command-text.ts";
 
 import {
   ConfigModel,
@@ -62,11 +70,13 @@ async function run(
   try {
     const returncode = await new Promise<number>((resolve, reject) => {
       child.once("error", reject);
-      child.once("exit", (status) => resolve(status ?? 1));
+      child.once("exit", (status, signal) =>
+        resolve(commandExitCode(status, signal)),
+      );
     });
     collector.stdin?.end();
     await new Promise((resolve) => collector.once("close", resolve));
-    const out = Buffer.concat(chunks).toString("utf8");
+    const out = decodeOutput(Buffer.concat(chunks), !timedOut);
     if (timedOut) {
       const error = new Error(
         `Command '${args.join(" ")}' timed out after ${timeout} seconds`,
@@ -96,7 +106,6 @@ export class DockerEnvironment {
   readonly config: DockerEnvironmentConfig;
   static typeName = "minisweagent.environments.docker.DockerEnvironment";
   container_id: string | null = null;
-  private cleaned = false;
 
   constructor(
     data: Record<string, unknown> = {},
@@ -123,18 +132,24 @@ export class DockerEnvironment {
       this.config.container_timeout,
     ];
     const result = spawnSync(args[0] ?? "", args.slice(1), {
-      encoding: "utf8",
       timeout: this.config.pull_timeout * 1000,
     });
-    if (result.error) throw result.error;
-    if (result.status !== 0) {
-      throw new Error(
-        result.stderr ||
-          result.stdout ||
-          `docker run failed with ${result.status}`,
-      );
+    if (result.error) {
+      if ("code" in result.error && result.error.code === "ETIMEDOUT") {
+        throw timeoutExpiredError(
+          args,
+          this.config.pull_timeout,
+          result.stdout ?? Buffer.alloc(0),
+          result.stderr ?? Buffer.alloc(0),
+        );
+      }
+      throw result.error;
     }
-    this.container_id = result.stdout.trim();
+    const stdout = strictText(result.stdout);
+    const stderr = strictText(result.stderr);
+    const status = commandExitCode(result.status, result.signal);
+    if (status !== 0) throw calledProcessError(args, status, stdout, stderr);
+    this.container_id = pythonStrip(stdout);
     finalizers.register(
       this,
       { executable: this.config.executable, containerId: this.container_id },
@@ -189,11 +204,9 @@ export class DockerEnvironment {
   }
 
   cleanup(): void {
-    if (this.cleaned || !this.container_id) return;
-    this.cleaned = true;
+    if (this.container_id === null) return;
     const containerId = this.container_id;
     const executable = this.config.executable;
-    finalizers.unregister(this);
     const command = `(timeout 60 ${executable} stop ${containerId} || ${executable} rm -f ${containerId}) >/dev/null 2>&1 &`;
     const child = spawn("/bin/sh", ["-c", command], {
       detached: true,

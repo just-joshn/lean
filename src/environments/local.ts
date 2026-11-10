@@ -4,6 +4,7 @@ import type { Action, ExecutionOutput } from "../protocols.ts";
 import { KeyboardInterrupt } from "../exceptions.ts";
 import { recursive_merge } from "../utils/serialize.ts";
 import { checkSubmitted } from "./submit.ts";
+import { commandExitCode, decodeOutput } from "./command-text.ts";
 
 import {
   ConfigModel,
@@ -59,7 +60,6 @@ export async function runShell(
   env: Record<string, string>,
   timeout: number,
 ): Promise<{ stdout: string; returncode: number }> {
-  const decoder = new TextDecoder("utf-8", { fatal: false });
   const chunks: Buffer[] = [];
   const collector = spawn("/bin/cat", [], {
     stdio: ["pipe", "pipe", "ignore"],
@@ -71,7 +71,7 @@ export async function runShell(
     stdio: ["ignore", collector.stdin, collector.stdin],
   });
   collector.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
-  const output = () => decoder.decode(Buffer.concat(chunks));
+  const output = () => decodeOutput(Buffer.concat(chunks));
   let timedOut = false;
   let interrupted = false;
   const killGroup = () => {
@@ -97,7 +97,9 @@ export async function runShell(
   try {
     const code = await new Promise<number>((resolve, reject) => {
       child.once("error", reject);
-      child.once("exit", (status) => resolve(status ?? 1));
+      child.once("exit", (status, signal) =>
+        resolve(commandExitCode(status, signal)),
+      );
     });
     collector.stdin?.end();
     await new Promise((resolve) => collector.once("close", resolve));
