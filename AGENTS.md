@@ -96,61 +96,152 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **The code should remain easy to replace.** Lean uses structural protocols and interchangeable classes rather than demanding one elaborate inheritance hierarchy.
 
-# Vitest testing instructions
+# Vitest gate
 
-## Before writing tests
+Run this gate before you create, read, update, or delete a Vitest test in Lean. Fetched official Vitest docs for the installed major are the Vitest rules. Training memory is not a source. Do not paste a fetched page into this section later.
 
-- Read the code under test, its relevant dependencies and types, nearby tests, and the Vitest configuration. Follow the project's test layout, naming, imports, fixtures, and environment.
-- Check the installed Vitest version before using an API. Use the project's existing commands and package manager. Vitest APIs and defaults can differ between versions.
-- Test the public contract. Cover expected results, observable side effects, errors, realistic boundaries, and relevant failure paths. Do not assert implementation details unless they are part of the contract.
-- For a bug, first write and run a test that reproduces it. Confirm that the test fails for the reported reason, fix the bug, and run the test again.
+A Vitest API call with no supporting sentence in the fetched docs fails the gate. A Lean binding may close a choice the docs leave open, such as file layout. A Lean binding does not override a fetched correctness rule.
 
-## Write focused tests
+## Run the gate
 
-- Give each test a concise name that describes one behavior. Arrange the inputs, perform the action, and assert the result. Group related tests with `describe` when useful, and keep nesting shallow.
-- Use the project's `test` or `it` convention. Import Vitest APIs from `vitest` unless the project enables globals. Use Vitest's `vi` APIs, not Jest's `jest` APIs.
-- Use parameterized tests for cases that share the same logic. In versions that support it, prefer `test.for` for new tests when it fits the project's conventions.
-- Use `toBe` for primitives or object identity, `toEqual` for structural equality, and `toStrictEqual` when types, sparse arrays, or explicit `undefined` properties matter. Use `toBeCloseTo` for floating-point results when appropriate.
-- Choose assertions that express the contract. For example, use `toMatchObject` for relevant object fields and wrap synchronous calls in a function for `toThrow`. Avoid assertions that pass for nearly any result.
+Finish the steps in order. Do not change a test file or a Vitest config file before step 6. Do not start step 6 until step 4 has fetched text.
 
-## Handle async work and isolation
+1. Name the verb and the file.
+   Pick one verb. The choices are create, read, update, or delete. Name the `*.test.ts` file the task touches. If the task touches no Vitest test file, skip this gate.
 
-- Await or return asynchronous work and assertions. Await `expect(promise).resolves` and `expect(promise).rejects`. Wrap callback APIs in a promise when needed.
-- Use `expect.hasAssertions()` or `expect.assertions(n)` when assertions inside callbacks, loops, or branches might not run.
-- Give tests independent state. Use scoped `beforeEach` and `afterEach` hooks, fixtures, or local setup and cleanup. Use `beforeAll` and `afterAll` for shared expensive resources, and clean up resources even on failure.
-- Use `setupFiles` for setup that must run before each test file, such as custom matchers or polyfills. Avoid adding global configuration when local setup is enough.
-- For concurrent tests, use the test context's `expect` for assertions and snapshots. Do not share mutable state between concurrent tests.
+2. Match `package.json` to the binding table.
+   Read the `vitest` version and the `test` script. If the major is not 5, stop and report the version you read. If the `test` script is not `vitest run`, stop and report the script. Do not guess APIs for another major.
 
-## Mock deliberately
+3. Resolve a Context7 id for that major.
+   Write the library query as Vitest, major 5, and the topic of this change. Mocking, matchers, hooks, async work, and projects are typical topics.
+   Run `npx ctx7@latest library vitest "Vitest 5 <topic>"` only after you replace `<topic>`. Do not send a placeholder.
+   Pick an id under `/vitest-dev/vitest` whose version matches the installed major. Prefer a closer 5.x id when the command returns one. Reject a 4.x id.
 
-- Exercise the real subject under test. Prefer real dependencies when they are fast and reliable. Mock slow or nondeterministic dependencies and side effects that tests cannot safely control.
-- Use `vi.fn()` for a mock function and `vi.spyOn()` for an existing method. A spy calls the original method unless its implementation is replaced. Use `mockResolvedValue` or `mockRejectedValue` for async outcomes.
-- Reset mock state and restore spies between tests as needed. `mockClear` clears history, `mockReset` also resets the implementation, and `mockRestore` restores a spied-on method. Follow existing project configuration.
-- Remember that `vi.mock` is hoisted. Where the installed version supports it, prefer `vi.mock(import('./module.js'), factory)` for module type inference and refactoring support.
-- Mock call arguments are stored by reference. Assert before mutation or capture a copy at call time when the original value matters.
+4. Fetch the topic and open the official pages.
+   Run `npx ctx7@latest docs <id> "<topic>"` only after you replace `<id>` and `<topic>`. Run one command per topic. Run at most three Context7 commands. Keep the returned text.
+   Open [Writing tests with AI](https://vitest.dev/guide/learn/writing-tests-with-ai) for every verb. Open every other page the source index lists for this change.
+   If Context7 returns a quota error, tell the user to run `npx ctx7@latest login` or to set `CONTEXT7_API_KEY`. Official vitest.dev pages are still a source. If Context7 fails and those pages do not load, stop. Do not write the change from memory.
+   Reuse fetched text in this session only when the version and the topic are the same. A new topic needs a new fetch.
 
-## Use snapshots with care
+5. Read the files the Writing tests with AI page names.
+   Read the source under test, its public types, and the nearest existing `*.test.ts` for that source. Lean has no `vitest.config.*`. Read `package.json` and this section in its place.
+   Copy temp directories, `vi.hoisted` state, and `afterEach` cleanup from that nearest test. Take each new or changed Vitest API from the fetched docs. Do not invent Browser Mode, `setupFiles`, globals, or a Vitest snapshot workflow that this suite does not use.
 
-- Prefer targeted assertions for specific properties. Use snapshots for stable, structured output when changes across the whole output matter. Use inline snapshots for small values and file snapshots when the output format benefits from a separate file.
-- Use asymmetric property matchers for volatile fields when appropriate. Await file snapshot assertions. Commit external snapshots alongside the tests.
-- Review every snapshot diff against the intended behavior. Update snapshots only after confirming the new output is correct. Never accept a snapshot update merely to make a test pass.
+6. Apply the fetched docs to the verb.
+   For a bug fix, write and run the failing reproduction test before you change product code. Confirm it fails for the reported reason.
+   For create or update, change only the lines the task needs. Every Vitest API you add or change must appear in the fetched text. If you cannot point at that sentence, remove the call.
+   For read, explain an API from the fetched text and from the file. Do not edit the file.
+   For delete, remove a test only when the task says to remove it, or when the behavior it guards is gone. Do not remove, skip, or weaken a test to make a run pass.
 
-## Run and debug tests
+7. Run the file you changed.
+   If the verb is read and you changed no file, skip this step.
+   Otherwise run `bun run test` and pass the test path. Do not run `bun test`. Do not run `bun run test:tui` as a Vitest substitute. Do not pass a watch flag. The `test` script already runs `vitest run`.
+   Read the assertion, the expected value, the received value, and the stack before you edit a failure.
+   Run `bun run typecheck` when the change affects TypeScript types. A Vitest run does not type-check.
 
-- Run the affected tests with the project's Vitest command in non-watch mode, such as `vitest run path/to/file.test.ts`. Then run the relevant broader checks required by the project. Run type checking separately because a normal Vitest run does not type-check TypeScript.
-- Read the failing assertion, expected and received values, stack trace, and snapshot diff before changing a test. Isolate a failure by file or test name, then rerun the broader suite after fixing it.
-- If a test passes alone but fails in the suite, investigate shared state, mock cleanup, and test order. For timeouts or intermittent failures, inspect awaited work and callbacks. For missing browser globals, check the configured environment or Browser Mode.
-- Remove temporary `.only` modifiers and debugging code before finishing. Do not skip or weaken a failing test merely to make the suite pass. Report checks that could not be run.
+8. Report the gate before you finish.
+   The verb is create, read, update, or delete.
+   The installed Vitest version is the version you read in `package.json`.
+   The fetched sources are the Context7 id and the page URLs.
+   The nearest test is the path you copied cleanup from, or none.
+   The run result is pass, fail, or not run.
+   An empty field means the gate is not finished.
 
-## Official sources
+## Decision owners
 
-- [Writing tests](https://vitest.dev/guide/learn/writing-tests)
-- [Using matchers](https://vitest.dev/guide/learn/matchers)
-- [Testing asynchronous code](https://vitest.dev/guide/learn/async)
-- [Setup and teardown](https://vitest.dev/guide/learn/setup-teardown)
-- [Mock functions](https://vitest.dev/guide/learn/mock-functions)
-- [Snapshot testing](https://vitest.dev/guide/learn/snapshots)
-- [Testing in practice](https://vitest.dev/guide/learn/testing-in-practice)
-- [Debugging failing tests](https://vitest.dev/guide/learn/debugging-tests)
-- [Writing tests with AI](https://vitest.dev/guide/learn/writing-tests-with-ai)
+| Decision | Owner |
+| --- | --- |
+| Which Vitest API a new or changed call may use | The fetched docs for the installed major |
+| The test command, file pattern, import source, and whether a config file exists | The binding table |
+| Temp directories, `vi.hoisted` state, `afterEach` cleanup, and which modules a test mocks | The nearest existing `*.test.ts` for that source |
+| An existing line that differs from the current docs | The current file owns that line until the task edits it. The fetched docs own the edited call. |
 
+## Binding table
+
+These are Lean facts. A mismatch with the repo stops the gate.
+
+| Id | Binding | Lean value |
+| --- | --- | --- |
+| B-VER | Vitest | `5.1.0` in `devDependencies`. Major 5. If `package.json` differs, follow `package.json` and fetch that major. |
+| B-RUN | Command | `bun run test`, with an optional test path. Never `bun test`. Never a watch flag. |
+| B-TYPE | Typecheck | `bun run typecheck` (`bun check`). Separate from Vitest. |
+| B-LAYOUT | Files | Co-located `*.test.ts` under `src/`. Do not add `*.spec.ts`. Do not add a `tests/` tree. |
+| B-IMPORT | Imports | Named imports from `"vitest"`. Use `test`, not `it`. Globals are off. Use `vi`, never `jest`. |
+| B-CONFIG | Config | No `vitest.config.*`. Do not add one as part of a test change. Defaults apply (`environment: node`, `isolate: true`, `pool: forks`, `clearMocks: true`, `restoreMocks: false`). |
+| B-CLEAN | Cleanup | Restore spies and unstub env or globals in the file that uses them. `clearMocks` alone does not restore implementations or stubs. |
+| B-MOCKNEW | New mocks | Prefer `vi.mock(import("../path.ts"), factory)` with the same `.ts` specifier style as production imports. Leave an untouched string-form `vi.mock` alone. |
+| B-PARAM | Parameterize | Use `test.for` for new parameterized tests. Do not rewrite untouched `test.each` calls. |
+| B-ORACLE | Oracles | This suite uses JSON oracles and contract assertions. Do not introduce Vitest snapshot files unless the task explicitly requires them and the fetched Snapshot page governs the edit. |
+| B-SUBJECT | Seams | Prefer real subjects. Mock network, interactive prompt, subprocess, or other slow or unsafe seams. Neighboring tests use `vi.hoisted`, `importOriginal`, protocol fakes, `mkdtemp`, and spawned `bun` for CLI. |
+| B-TUI | Outside Vitest | `bun run test:tui` runs `python3 scripts/verify-tui.py`. It is not a Vitest run. |
+
+## Required shapes
+
+New module mock (import form):
+
+```ts
+vi.mock(import("../models/index.ts"), () => ({
+  getModel,
+}))
+```
+
+Spy or env stub cleanup in the same file:
+
+```ts
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllEnvs()
+})
+```
+
+New parameterized test:
+
+```ts
+test.for(rows)("accepts $label", (row) => {
+  expect(parse(row.input)).toEqual(row.output)
+})
+```
+
+Concurrent test assertions use context `expect`:
+
+```ts
+test.concurrent("counts one action", async ({ expect }) => {
+  expect(actions).toEqual([one])
+})
+```
+
+## Gate failures
+
+The change is not done when any sentence below is true.
+
+- A test file or a Vitest config file changed before step 4 produced fetched text.
+- A new or changed Vitest call has no sentence in that text.
+- The diff violates the binding table.
+- The diff rewrites untouched `test.each` calls or untouched string `vi.mock` calls.
+- The diff deletes, skips, or weakens a test so the suite can pass.
+- The diff leaves `.only` in a test file.
+- Context7 failed and the official pages did not load, and a file still changed.
+- The step 8 report omits a field.
+
+## Source index
+
+The titles are addresses. Open the page and follow the page. Do not treat this index as the text of the docs.
+
+Open [Writing tests with AI](https://vitest.dev/guide/learn/writing-tests-with-ai) for every verb.
+
+Also open the rows that match the change.
+
+| The change uses | Open |
+| --- | --- |
+| Create, update, or delete | [Writing tests](https://vitest.dev/guide/learn/writing-tests) and [Testing in practice](https://vitest.dev/guide/learn/testing-in-practice) |
+| Matchers or assertions | [Using matchers](https://vitest.dev/guide/learn/matchers) |
+| Async work | [Testing asynchronous code](https://vitest.dev/guide/learn/async) |
+| Hooks or fixtures | [Setup and teardown](https://vitest.dev/guide/learn/setup-teardown) |
+| Mocks, spies, or stubs | [Mock functions](https://vitest.dev/guide/learn/mock-functions) and [Mocking](https://vitest.dev/guide/mocking) |
+| Snapshots | [Snapshot testing](https://vitest.dev/guide/learn/snapshots) |
+| A failing run | [Debugging failing tests](https://vitest.dev/guide/learn/debugging-tests) |
+| Config, the pool, or projects | [Getting started](https://vitest.dev/guide/) and [Features](https://vitest.dev/guide/features) |
+| A slow run or pool settings | [Improving performance](https://vitest.dev/guide/improving-performance) |
+| A request to turn isolation off | [Disable isolation](https://vitest.dev/guide/recipes/disable-isolation) |
+
+If a URL does not load, open [Getting started](https://vitest.dev/guide/) and follow the nav to the page with the same title. Record the URL you actually opened. Do not replace the page with memory.
