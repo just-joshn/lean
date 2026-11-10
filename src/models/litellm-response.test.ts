@@ -10,7 +10,11 @@ vi.mock("./received-response.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./received-response.ts")>()),
   receiveResponse: vi.fn(),
 }));
-let requests: Array<{ url?: string; body: Record<string, unknown> }> = [];
+let requests: Array<{
+  url?: string;
+  method?: string;
+  body: Record<string, unknown>;
+}> = [];
 
 beforeEach(() => {
   GLOBAL_MODEL_STATS.reset();
@@ -45,6 +49,55 @@ const functionCall = {
 };
 
 describe("LitellmResponseModel", () => {
+  test("a schemeless api_base does not burn the query retry budget", async () => {
+    const body = {
+      id: "resp_1",
+      object: "response",
+      created_at: 1,
+      status: "completed",
+      output: [functionCall],
+      usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 },
+    };
+    vi.mocked(receiveResponse).mockImplementation(async (url, init) => {
+      requests.push({
+        url,
+        method: init.method,
+        body: JSON.parse(String(init.body)),
+      });
+      const bytes = new TextEncoder().encode(JSON.stringify(body));
+      return {
+        bytes,
+        text: new TextDecoder().decode(bytes),
+        status: 200,
+        statusText: "OK",
+        ok: true,
+      };
+    });
+    const model = new LitellmResponseModel({
+      model_name: "openai/gpt-5.6",
+      model_kwargs: { api_base: "proxy.test/v1", api_key: "fixture" },
+    });
+    const sleeps: number[] = [];
+    model.sleep = async (milliseconds) => {
+      sleeps.push(milliseconds);
+    };
+    await model.query([
+      {
+        role: "user",
+        content: "task",
+        cache_control: { type: "ephemeral" },
+      },
+    ]);
+    expect(vi.mocked(receiveResponse)).toHaveBeenCalledTimes(1);
+    expect(sleeps).toEqual([]);
+    expect(requests[0]?.url).toBe("proxy.test/v1/responses");
+    expect(requests[0]?.method).toBe("POST");
+    expect(requests[0]?.body.model).toBe("gpt-5.6");
+    expect(requests[0]?.body.input).toEqual([
+      { role: "user", content: "task" },
+    ]);
+  });
+
   test("sends the flat bash tool and replays output without extra", async () => {
     await mockResponse({
       id: "resp_1",

@@ -178,12 +178,7 @@ abstract class DictionaryProviderModel extends LitellmModel {
     const choices = record(response).choices;
     const choice = record(Array.isArray(choices) ? choices[0] : undefined);
     const calls = record(choice.message).tool_calls;
-    if (!Array.isArray(calls))
-      throw new ProviderParityGateError(
-        this.#provider,
-        "non-array tool_calls response shape",
-      );
-    return parseToolcallActions(calls, {
+    return parseToolcallActions(Array.isArray(calls) ? calls : [], {
       format_error_template: this.config.format_error_template,
       template_kwargs: { finish_reason: choice.finish_reason },
     });

@@ -26,6 +26,18 @@ import {
 
 export class LitellmResponseModelConfig extends LitellmModelConfig {}
 
+function reprResponse(response: unknown): string {
+  if (
+    response != null &&
+    typeof response === "object" &&
+    !Array.isArray(response)
+  ) {
+    const name = response.constructor?.name;
+    return `<${name || "object"} object>`;
+  }
+  return String(response);
+}
+
 function withoutExtra(message: Message): Message {
   const copy = { ...message };
   delete copy.extra;
@@ -124,7 +136,7 @@ export class LitellmResponseModel extends LitellmModel {
         try {
           extra.response = responsesDump(response, { mode: "json" });
         } catch {
-          extra.response = String(response);
+          extra.response = reprResponse(response);
         }
         if (error.messages[0]) error.messages[0].extra = extra;
       }

@@ -64,12 +64,25 @@ function requestParams(
   const none =
     info?.supports_none_reasoning_effort === true &&
     (effort ?? info.default_reasoning_effort) === "none";
-  if (params.temperature != null && params.temperature !== 1 && !none) {
+  const temperature = params.temperature;
+  if (
+    temperature != null &&
+    temperature !== 1 &&
+    temperature !== true &&
+    !none
+  ) {
     if (drop) delete params.temperature;
-    else
+    else {
+      const shown =
+        params.temperature === true
+          ? "True"
+          : params.temperature === false
+            ? "False"
+            : params.temperature;
       throw new UnsupportedParamsError(
-        `${model} doesn't support temperature=${params.temperature} while reasoning is active. Only temperature=1 is supported unless reasoning.effort resolves to 'none', either set explicitly on the request or declared as the model's default_reasoning_effort. To drop unsupported params set \`litellm.drop_params = True\``,
+        `${model} doesn't support temperature=${shown} while reasoning is active. Only temperature=1 is supported unless reasoning.effort resolves to 'none', either set explicitly on the request or declared as the model's default_reasoning_effort. To drop unsupported params set \`litellm.drop_params = True\``,
       );
+    }
   }
   if (Object.hasOwn(params, "top_p") && !none) {
     if (drop) delete params.top_p;
@@ -151,8 +164,19 @@ function readsBreakpoints(
           (Number(version[1]) === 5 && Number(version[2] ?? 0) >= 6));
   if (!supported) return false;
   if (params.prompt_cache_options != null || !apiBase) return true;
-  const host = new URL(apiBase).hostname;
+  const host = openaiHostname(apiBase);
   return host === "api.openai.com" || host.endsWith(".api.openai.com");
+}
+
+function openaiHostname(apiBase: string): string {
+  if (!/^[a-z][a-z\d+.-]*:\/\//iu.test(apiBase) && !apiBase.startsWith("//"))
+    return "";
+  try {
+    return new URL(apiBase.startsWith("//") ? `https:${apiBase}` : apiBase)
+      .hostname;
+  } catch {
+    return "";
+  }
 }
 
 function toolCallId(item: unknown): unknown {

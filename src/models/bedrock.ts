@@ -55,13 +55,35 @@ export function bedrockConverseBody(
     }
     return { role: message.role, content };
   });
+  const leadingSystem: typeof converted = [];
+  const rest = [...converted];
+  while (rest[0]?.role === "system") {
+    const leading = rest.shift();
+    if (leading) leadingSystem.push(leading);
+  }
+  const note =
+    "Operator note (not from the user): the following was originally a mid-conversation system-role reminder.";
+  const messagesOut: typeof converted = [];
+  for (const message of rest) {
+    const next =
+      message.role === "system"
+        ? {
+            role: "user",
+            content: [{ text: note }, ...message.content],
+          }
+        : message;
+    const previous = messagesOut.at(-1);
+    if (next.role === "user" && previous?.role === "user") {
+      previous.content.push(...next.content);
+    } else {
+      messagesOut.push(next);
+    }
+  }
   const body: Record<string, unknown> = {
-    messages: converted.filter((message) => message.role !== "system"),
+    messages: messagesOut,
     inferenceConfig,
   };
-  const system = converted
-    .filter((message) => message.role === "system")
-    .flatMap((message) => message.content);
+  const system = leadingSystem.flatMap((message) => message.content);
   if (system.length) body.system = system;
   if (tools?.length) {
     body.toolConfig = {
@@ -91,7 +113,60 @@ export function bedrockConverseBody(
   return body;
 }
 
+class PythonNumber {
+  readonly token: string;
+  constructor(token: string) {
+    this.token = token;
+  }
+}
+
+function pythonNumberToken(token: string): string {
+  if (!/[.eE]/u.test(token)) return token;
+  const value = Number(token);
+  if (!Number.isFinite(value)) return token;
+  if (Object.is(value, -0)) return "-0.0";
+  if (Number.isInteger(value) && Math.abs(value) < 1e16) return `${value}.0`;
+  return JSON.stringify(value).replace(
+    /e([+-]?)(\d+)$/u,
+    (_, sign: string, digits: string) =>
+      `e${sign === "-" ? "-" : "+"}${digits.padStart(2, "0")}`,
+  );
+}
+
+function numberSource(context: unknown): string | undefined {
+  if (!record(context)) return undefined;
+  const source = context.source;
+  return typeof source === "string" && source.length > 0 ? source : undefined;
+}
+
+function withPythonNumbers(text: string): unknown {
+  return JSON.parse(text, function (_key, value) {
+    if (typeof value !== "number") return value;
+    // The published reviver type stops at (key, value). The runtime still passes source context.
+    const token = numberSource(arguments[2]);
+    if (!token) throw new Error("Unreadable tool input");
+    return new PythonNumber(token);
+  });
+}
+
+function messageContent(value: unknown): unknown[] {
+  const output = record(value) ? value.output : undefined;
+  const message = record(output) ? output.message : undefined;
+  const content = record(message) ? message.content : undefined;
+  if (!Array.isArray(content)) throw new Error("Unreadable tool input");
+  return content;
+}
+
+function sourcedToolInput(content: unknown[], index: number): unknown {
+  const block = content[index];
+  const tool = record(block) ? block.toolUse : undefined;
+  if (!record(tool) || !Object.hasOwn(tool, "input"))
+    throw new Error("Unreadable tool input");
+  return tool.input;
+}
+
 function toolArguments(value: unknown): string {
+  if (value instanceof PythonNumber) return pythonNumberToken(value.token);
   if (Array.isArray(value)) return `[${value.map(toolArguments).join(", ")}]`;
   if (record(value)) {
     return `{${Object.entries(value)
@@ -104,6 +179,7 @@ function toolArguments(value: unknown): string {
 export function bedrockConverseResponse(
   body: Record<string, unknown>,
   model: string,
+  sourceText?: string,
 ): ResponseResult {
   const gate = (detail: string): never => {
     throw new ProviderParityGateError("bedrock", detail);
@@ -122,6 +198,9 @@ export function bedrockConverseResponse(
     return gate("Converse output message shape");
   let text = "";
   const tools: unknown[] = [];
+  const sourced = sourceText
+    ? messageContent(withPythonNumbers(sourceText))
+    : undefined;
   for (const [index, block] of content.entries()) {
     if (!record(block)) return gate("Converse content block shape");
     if (typeof block.text === "string" && Object.keys(block).length === 1) {
@@ -138,7 +217,12 @@ export function bedrockConverseResponse(
         gate("Converse tool use shape");
       tools.push({
         index,
-        function: { arguments: toolArguments(tool.input), name: tool.name },
+        function: {
+          arguments: toolArguments(
+            sourced ? sourcedToolInput(sourced, index) : tool.input,
+          ),
+          name: tool.name,
+        },
         id: tool.toolUseId,
         type: "function",
       });

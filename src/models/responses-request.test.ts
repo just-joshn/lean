@@ -134,5 +134,46 @@ describe("source-proven Responses requests", () => {
     expect(receive).not.toHaveBeenCalled();
   });
 
+  test("boolean temperature uses Python equality and spelling", async () => {
+    await completeResponses({
+      model: "openai/gpt-5",
+      input: [],
+      modelKwargs: { temperature: true },
+    });
+    expect(receive).toHaveBeenCalledTimes(1);
+    expect(bodies[0]?.temperature).toBe(true);
+
+    const rejected = completeResponses({
+      model: "openai/gpt-5",
+      input: [],
+      modelKwargs: { temperature: false },
+    });
+    await expect(rejected).rejects.toBeInstanceOf(UnsupportedParamsError);
+    await expect(rejected).rejects.toThrow(/temperature=False/u);
+    await expect(rejected).rejects.not.toThrow(/temperature=false/u);
+    expect(receive).toHaveBeenCalledTimes(1);
+  });
+
+  test("a schemeless api_base is a non-OpenAI host instead of an invalid URL", async () => {
+    await completeResponses({
+      model: "openai/gpt-5.6",
+      input: [
+        {
+          role: "user",
+          content: "task",
+          cache_control: { type: "ephemeral" },
+        },
+      ],
+      modelKwargs: { api_base: "proxy.test/v1", num_retries: 8 },
+    });
+    expect(receive).toHaveBeenCalledTimes(1);
+    const [url, init] = receive.mock.calls[0] ?? [];
+    expect(url).toBe("proxy.test/v1/responses");
+    expect(init?.method).toBe("POST");
+    expect(bodies[0]?.model).toBe("gpt-5.6");
+    expect(bodies[0]?.input).toEqual([{ role: "user", content: "task" }]);
+    expect(JSON.stringify(bodies[0]?.input)).not.toContain("cache_control");
+  });
+
   for (const gate of source.gates) test.todo(gate);
 });

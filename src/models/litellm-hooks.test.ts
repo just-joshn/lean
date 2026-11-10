@@ -206,9 +206,6 @@ describe("model hooks", () => {
         expect(options).toEqual({ mode: "json" });
         throw new Error("dump failed");
       }
-      toString() {
-        return "repr-response";
-      }
     }
     class BrokenParser extends FixtureResponses {
       protected override parseActions(_response: unknown): Action[] {
@@ -219,7 +216,7 @@ describe("model hooks", () => {
     await expect(model.query([])).rejects.toBe(original);
     expect(original.messages[0]?.extra).toMatchObject({
       cost: 0.25,
-      response: "repr-response",
+      response: "<ThrowingDump object>",
     });
     expect(model.requests).toBe(1);
     expect(GLOBAL_MODEL_STATS.n_calls).toBe(1);

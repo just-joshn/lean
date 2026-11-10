@@ -304,23 +304,22 @@ function selectTier(
 ): ModelInfo | undefined {
   const table = info.tiered_pricing;
   if (!Array.isArray(table) || promptTokens <= 0) return undefined;
-  const valid = table.filter((tier): tier is ModelInfo => {
-    if (!isRecord(tier) || !tierBounds(tier)) return false;
-    return tier.input_cost_per_token != null;
+  const ranged = table.filter((tier): tier is ModelInfo => {
+    return isRecord(tier) && tierBounds(tier) != null;
   });
-  valid.sort((left, right) => {
+  ranged.sort((left, right) => {
     const leftStart = tierBounds(left)?.[0] ?? 0;
     const rightStart = tierBounds(right)?.[0] ?? 0;
     return leftStart - rightStart;
   });
-  if (valid.length === 0) return undefined;
-  return (
-    valid.find((tier) => {
+  const matched =
+    ranged.find((tier) => {
       const bounds = tierBounds(tier);
       if (!bounds) return false;
       return bounds[0] < promptTokens && promptTokens <= bounds[1];
-    }) ?? valid[valid.length - 1]
-  );
+    }) ?? ranged[ranged.length - 1];
+  if (!matched || matched.input_cost_per_token == null) return undefined;
+  return matched;
 }
 
 interface Rates {
@@ -485,7 +484,19 @@ export function completionCost(response: unknown, model: string): number {
         parts.createdOneHour * priced.cacheCreateOneHour;
   const promptCost =
     regular * priced.input + parts.cached * priced.cacheRead + creation;
+  const usageRecord = isRecord(usage) ? usage : {};
+  const completion = number(
+    usageRecord.completion_tokens ?? usageRecord.output_tokens,
+  );
+  const total = number(usageRecord.total_tokens);
   const outputCost =
-    parts.outputText * priced.output + parts.reasoning * priced.reasoning;
+    info.litellm_provider === "dashscope"
+      ? Math.max(completion - parts.reasoning, 0) * priced.output +
+        parts.reasoning * priced.reasoning
+      : info.litellm_provider === "xai"
+        ? (total !== parts.prompt + completion
+            ? completion + parts.reasoning
+            : completion) * priced.output
+        : parts.outputText * priced.output + parts.reasoning * priced.reasoning;
   return promptCost + outputCost;
 }

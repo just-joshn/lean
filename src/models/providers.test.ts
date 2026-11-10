@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import controls from "./fixtures/providers.json" with { type: "json" };
 import { completeChat } from "./transport.ts";
+import { bedrockConverseBody } from "./bedrock.ts";
 import {
   OpenRouterModel,
   RequestyModel,
@@ -96,6 +97,84 @@ describe("Bedrock complete seam against saved source conversion", () => {
     ).rejects.toMatchObject({ name: "ProviderParityGateError" });
   });
 
+  test("hoists only a leading system prefix", () => {
+    const note =
+      "Operator note (not from the user): the following was originally a mid-conversation system-role reminder.";
+    expect(
+      bedrockConverseBody(
+        [
+          { role: "user", content: "task" },
+          { role: "system", content: "later" },
+        ],
+        undefined,
+        {},
+      ),
+    ).toEqual({
+      messages: [
+        {
+          role: "user",
+          content: [{ text: "task" }, { text: note }, { text: "later" }],
+        },
+      ],
+      inferenceConfig: {},
+    });
+    expect(
+      bedrockConverseBody(
+        [
+          { role: "system", content: "prefix" },
+          { role: "user", content: "task" },
+          { role: "system", content: "later" },
+        ],
+        undefined,
+        {},
+      ),
+    ).toEqual({
+      messages: [
+        {
+          role: "user",
+          content: [{ text: "task" }, { text: note }, { text: "later" }],
+        },
+      ],
+      inferenceConfig: {},
+      system: [{ text: "prefix" }],
+    });
+  });
+
+  test("preserves Python float spelling for whole numeric tool inputs", async () => {
+    const body = JSON.stringify({
+      output: {
+        message: {
+          role: "assistant",
+          content: [
+            {
+              toolUse: {
+                toolUseId: "t1",
+                name: "bash",
+                input: { n: 1, i: 2, command: "true" },
+              },
+            },
+          ],
+        },
+      },
+      stopReason: "tool_use",
+      usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+    }).replace('"n":1', '"n":1.0');
+    const result = await completeChat({
+      model: "bedrock/anthropic.claude-3-haiku-20240307-v1:0",
+      messages: [{ role: "user", content: "task" }],
+      modelKwargs: { api_base: "https://fixture.invalid" },
+      execution: { receive: vi.fn(async () => received(body)) },
+    });
+    const dump = result.model_dump() as {
+      choices: Array<{
+        message: { tool_calls: Array<{ function: { arguments: string } }> };
+      }>;
+    };
+    expect(dump.choices[0]?.message.tool_calls[0]?.function.arguments).toBe(
+      '{"n": 1.0, "i": 2, "command": "true"}',
+    );
+  });
+
   test("AWS endpoint and SigV4 remain a no-send gate", async () => {
     const receive = vi.fn();
     await expect(
@@ -133,6 +212,33 @@ for (const [provider, ModelClass] of [
       expect(JSON.parse(String(init.body))).toEqual(row.request!.body);
       expect(vi.mocked(receiveResponse)).toHaveBeenCalledTimes(1);
     });
+
+    if (provider === "openrouter")
+      test("a prose response with no tool_calls is a FormatError carrying cost", async () => {
+        vi.stubEnv("OPENROUTER_API_KEY", "source-fake-key");
+        const response = {
+          choices: [
+            {
+              finish_reason: "stop",
+              message: { role: "assistant", content: "hello" },
+            },
+          ],
+          usage: { cost: 0.01 },
+        };
+        vi.mocked(receiveResponse).mockResolvedValue(received(response));
+        const model = new ModelClass({ model_name: "openai/gpt-4o" });
+        const error = await model
+          .query([{ role: "user", content: "task" }])
+          .catch((caught: unknown) => caught);
+        expect(error).toBeInstanceOf(FormatError);
+        if (!(error instanceof FormatError)) throw error;
+        expect(String(error.messages[0]?.content)).toContain("No tool calls");
+        expect(error.messages[0]?.extra).toMatchObject({
+          cost: 0.01,
+          response,
+        });
+        expect(vi.mocked(receiveResponse)).toHaveBeenCalledTimes(1);
+      });
 
     test("persists the full raw dictionary and cost on FormatError", async () => {
       const row = source(`${provider} format error`);

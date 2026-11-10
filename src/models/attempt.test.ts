@@ -263,10 +263,15 @@ describe("complete-call attempt policy", () => {
     [400, { "x-should-retry": "true" }, 2, true],
     [500, { "retry-after-ms": "2000" }, 2, true],
     [500, { "retry-after": "121" }, 1, false],
+    [500, { "retry-after": "2026-11-10T00:00:30Z" }, 2, true],
   ] as const)(
     "SDK status/header policy %i %j",
     async (status, headers, calls, waits) => {
       const execution = harness();
+      const isoRetry =
+        "retry-after" in headers &&
+        headers["retry-after"] === "2026-11-10T00:00:30Z";
+      if (isoRetry) execution.now = () => Date.parse("2026-11-10T00:00:00Z");
       execution.receive
         .mockResolvedValueOnce(received(status, {}, headers))
         .mockResolvedValue(success);
@@ -283,8 +288,48 @@ describe("complete-call attempt policy", () => {
       expect(execution.sleep).toHaveBeenCalledTimes(waits ? 1 : 0);
       if ("retry-after-ms" in headers)
         expect(execution.sleep).toHaveBeenCalledWith(2000);
+      if (isoRetry) {
+        expect(execution.sleep.mock.calls[0]?.[0]).toBeCloseTo(
+          470.4430593410507,
+        );
+      }
     },
   );
+
+  test("an IMF Retry-After delays the retry and a far IMF date does not", async () => {
+    const now = Date.parse("2026-11-10T00:00:00Z");
+    const soon = harness();
+    soon.now = () => now;
+    soon.receive
+      .mockResolvedValueOnce(
+        received(500, {}, { "retry-after": "Tue, 10 Nov 2026 00:00:30 GMT" }),
+      )
+      .mockResolvedValue(success);
+    await completeChat({
+      model: "openai/gpt-4o",
+      messages,
+      modelKwargs: { max_retries: 1 },
+      execution: soon,
+    });
+    expect(soon.receive).toHaveBeenCalledTimes(2);
+    expect(soon.sleep).toHaveBeenCalledWith(30000);
+
+    const later = harness();
+    later.now = () => now;
+    later.receive.mockResolvedValue(
+      received(500, {}, { "retry-after": "Tue, 10 Nov 2026 00:03:00 GMT" }),
+    );
+    await expect(
+      completeChat({
+        model: "openai/gpt-4o",
+        messages,
+        modelKwargs: { max_retries: 1 },
+        execution: later,
+      }),
+    ).rejects.toMatchObject({ statusCode: 500 });
+    expect(later.receive).toHaveBeenCalledTimes(1);
+    expect(later.sleep).not.toHaveBeenCalled();
+  });
 });
 
 describe("complete-call routing", () => {

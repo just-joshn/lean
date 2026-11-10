@@ -292,14 +292,7 @@ export async function postResponse(
   throw error;
 }
 
-async function postJson(
-  url: string,
-  headers: Record<string, string>,
-  body: unknown,
-  policy: AttemptPolicy,
-  execution?: AttemptDependencies,
-): Promise<Record<string, unknown>> {
-  const received = await postResponse(url, headers, body, policy, execution);
+function jsonObject(received: ReceivedResponse): Record<string, unknown> {
   let parsed: unknown = {};
   if (received.text) {
     try {
@@ -312,6 +305,16 @@ async function postJson(
     throw new Error("Model response was not a JSON object.");
   }
   return parsed;
+}
+
+async function postJson(
+  url: string,
+  headers: Record<string, string>,
+  body: unknown,
+  policy: AttemptPolicy,
+  execution?: AttemptDependencies,
+): Promise<Record<string, unknown>> {
+  return jsonObject(await postResponse(url, headers, body, policy, execution));
 }
 
 function imageBlock(block: Record<string, unknown>): Record<string, unknown> {
@@ -795,18 +798,20 @@ export async function completeChat(options: {
             "bedrock",
             "Converse extra_body mapping",
           );
-        return bedrockConverseResponse(
-          await postJson(
-            joinUrl(
-              split.apiBase,
-              `/model/${encodeURIComponent(stripProvider(options.model, "bedrock"))}/converse`,
-            ),
-            { "content-type": "application/json", ...split.extraHeaders },
-            bedrockConverseBody(options.messages, options.tools, split.params),
-            wrapperPolicy,
-            options.execution,
+        const received = await postResponse(
+          joinUrl(
+            split.apiBase,
+            `/model/${encodeURIComponent(stripProvider(options.model, "bedrock"))}/converse`,
           ),
+          { "content-type": "application/json", ...split.extraHeaders },
+          bedrockConverseBody(options.messages, options.tools, split.params),
+          wrapperPolicy,
+          options.execution,
+        );
+        return bedrockConverseResponse(
+          jsonObject(received),
           stripProvider(options.model, "bedrock"),
+          received.text,
         );
       },
       unproven: (provider) => async () => {

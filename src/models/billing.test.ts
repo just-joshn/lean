@@ -417,6 +417,141 @@ describe("connected billing", () => {
     },
   );
 
+  test("an unpriced matching tier abandons tiered pricing", () => {
+    registerModel({
+      "parity-tier-gap": {
+        litellm_provider: "openai",
+        input_cost_per_token: 0.000001,
+        output_cost_per_token: 0.000002,
+        tiered_pricing: [
+          { range: [0, 100], output_cost_per_token: 9 },
+          {
+            range: [100, 1000],
+            input_cost_per_token: 0.00001,
+            output_cost_per_token: 0.00002,
+          },
+        ],
+      },
+    });
+    expect(
+      completionCost(
+        { usage: { prompt_tokens: 50, completion_tokens: 10 } },
+        "parity-tier-gap",
+      ),
+    ).toBe(7e-5);
+  });
+
+  test("Dashscope ignores explicit text tokens and bills completion minus reasoning", () => {
+    expect(
+      completionCost(
+        {
+          usage: {
+            prompt_tokens: 100,
+            completion_tokens: 100,
+            completion_tokens_details: {
+              reasoning_tokens: 40,
+              text_tokens: 10,
+            },
+          },
+        },
+        "dashscope/deepseek-v4-flash",
+      ),
+    ).toBe(5.9999999999999995e-5);
+  });
+
+  test("registered Dashscope rates bill reasoning apart from output and ignore text tokens", () => {
+    registerModel({
+      "billing-dashscope-split": {
+        litellm_provider: "dashscope",
+        input_cost_per_token: 0.000003,
+        output_cost_per_token: 0.000002,
+        output_cost_per_reasoning_token: 0.000007,
+      },
+    });
+    expect(
+      completionCost(
+        {
+          usage: {
+            prompt_tokens: 100,
+            completion_tokens: 100,
+            completion_tokens_details: {
+              reasoning_tokens: 40,
+              text_tokens: 10,
+            },
+          },
+        },
+        "billing-dashscope-split",
+      ),
+    ).toBe(0.0007);
+  });
+
+  test("xAI adds unnormalized reasoning into completion and clears detail billing", () => {
+    expect(
+      completionCost(
+        {
+          usage: {
+            prompt_tokens: 10,
+            completion_tokens: 5,
+            total_tokens: 10,
+            completion_tokens_details: { reasoning_tokens: 3 },
+          },
+        },
+        "xai/grok-4.3",
+      ),
+    ).toBe(3.2500000000000004e-5);
+    expect(
+      completionCost(
+        {
+          usage: {
+            prompt_tokens: 10,
+            completion_tokens: 5,
+            total_tokens: 15,
+            completion_tokens_details: { reasoning_tokens: 3 },
+          },
+        },
+        "xai/grok-4.3",
+      ),
+    ).toBe(0.000025);
+  });
+
+  test("registered xAI rates keep raw and normalized usage on the output rate", () => {
+    registerModel({
+      "billing-xai-split": {
+        litellm_provider: "xai",
+        input_cost_per_token: 0.000005,
+        output_cost_per_token: 0.000011,
+        output_cost_per_reasoning_token: 0.000099,
+      },
+    });
+    const details = { reasoning_tokens: 3 };
+    expect(
+      completionCost(
+        {
+          usage: {
+            prompt_tokens: 10,
+            completion_tokens: 5,
+            total_tokens: 10,
+            completion_tokens_details: details,
+          },
+        },
+        "billing-xai-split",
+      ),
+    ).toBe(0.000138);
+    expect(
+      completionCost(
+        {
+          usage: {
+            prompt_tokens: 10,
+            completion_tokens: 5,
+            total_tokens: 15,
+            completion_tokens_details: details,
+          },
+        },
+        "billing-xai-split",
+      ),
+    ).toBe(0.000105);
+  });
+
   test("tier tables keep the selected cache and reasoning rates including explicit zero", async () => {
     registerModel({
       "billing-tier-table": {
