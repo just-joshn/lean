@@ -19,42 +19,36 @@ import { pythonJson } from "../utils/json.ts";
 import { renderStrict } from "../utils/render.ts";
 import { recursive_merge } from "../utils/serialize.ts";
 
-const KNOWN = [
-  "system_template",
-  "instance_template",
-  "step_limit",
-  "cost_limit",
-  "wall_time_limit_seconds",
-  "max_consecutive_format_errors",
-  "output_path",
-] as const;
+import {
+  ConfigModel,
+  constructConfig,
+  type ConfigFactory,
+  type Field,
+  stringField,
+  intField,
+  floatField,
+  pathField,
+  PosixPath,
+} from "../config/fields.ts";
+import { componentIdentity } from "../utils/load.ts";
 
-export class AgentConfig {
-  system_template = "";
-  instance_template = "";
-  step_limit = 0;
-  cost_limit = 3;
-  wall_time_limit_seconds = 0;
-  max_consecutive_format_errors = 3;
-  output_path: string | null = null;
-
-  constructor(data: Record<string, unknown> = {}) {
-    for (const key of KNOWN) {
-      if (data[key] !== undefined) Reflect.set(this, key, data[key]);
-    }
-  }
-
-  model_dump(): Record<string, unknown> {
-    return {
-      system_template: this.system_template,
-      instance_template: this.instance_template,
-      step_limit: this.step_limit,
-      cost_limit: this.cost_limit,
-      wall_time_limit_seconds: this.wall_time_limit_seconds,
-      max_consecutive_format_errors: this.max_consecutive_format_errors,
-      output_path: this.output_path,
-    };
-  }
+export class AgentConfig extends ConfigModel {
+  static override fields: Record<string, Field> = {
+    system_template: stringField(),
+    instance_template: stringField(),
+    step_limit: intField(0),
+    cost_limit: floatField(3),
+    wall_time_limit_seconds: intField(0),
+    max_consecutive_format_errors: intField(3),
+    output_path: pathField(),
+  };
+  declare system_template: string;
+  declare instance_template: string;
+  declare step_limit: number;
+  declare cost_limit: number;
+  declare wall_time_limit_seconds: number;
+  declare max_consecutive_format_errors: number;
+  declare output_path: PosixPath | null;
 }
 
 async function settled<T>(value: T | Promise<T>): Promise<T> {
@@ -63,7 +57,7 @@ async function settled<T>(value: T | Promise<T>): Promise<T> {
 
 export class DefaultAgent implements Agent {
   readonly config: AgentConfig;
-  readonly type_name: string = "minisweagent.agents.default.DefaultAgent";
+  static typeName = "minisweagent.agents.default.DefaultAgent";
   messages: Message[] = [];
   model: Model;
   env: Environment;
@@ -77,11 +71,16 @@ export class DefaultAgent implements Agent {
     model: Model,
     env: Environment,
     data: Record<string, unknown> = {},
-    configClass: typeof AgentConfig = AgentConfig,
+    configClass?: ConfigFactory<AgentConfig>,
   ) {
     this.model = model;
     this.env = env;
-    this.config = new configClass(data);
+    this.config = constructConfig(
+      data,
+      configClass,
+      AgentConfig,
+      "minisweagent.agents.default.DefaultAgent",
+    );
   }
 
   async get_template_vars(
@@ -243,7 +242,10 @@ export class DefaultAgent implements Agent {
     const agentData = {
       info: {
         model_stats: { instance_cost: this.cost, api_calls: this.n_calls },
-        config: { agent: this.config.model_dump(), agent_type: this.type_name },
+        config: {
+          agent: this.config.model_dump("json"),
+          agent_type: componentIdentity(this),
+        },
         mini_version: __version__,
         exit_status: lastExtra.exit_status ?? "",
         submission: lastExtra.submission ?? "",
@@ -260,13 +262,13 @@ export class DefaultAgent implements Agent {
   }
 
   async save(
-    path: string | null,
+    path: string | PosixPath | null,
     ...extra: Array<Record<string, unknown> | null | undefined>
   ): Promise<Record<string, unknown>> {
     const data = await this.serialize(...extra);
     if (path) {
-      await mkdir(dirname(path), { recursive: true });
-      await writeFile(path, pythonJson(data));
+      await mkdir(dirname(String(path)), { recursive: true });
+      await writeFile(String(path), pythonJson(data));
     }
     return data;
   }

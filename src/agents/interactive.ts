@@ -10,33 +10,22 @@ import { getContentString } from "../models/utils/content-string.ts";
 import { AgentConfig, DefaultAgent } from "./default.ts";
 import { readBuiltinLimit, readInteractive } from "./prompt.ts";
 
+import {
+  boolField,
+  listField,
+  literalField,
+  type Field,
+} from "../config/fields.ts";
+
 export class InteractiveAgentConfig extends AgentConfig {
-  mode: "human" | "confirm" | "yolo" = "confirm";
-  whitelist_actions: string[] = [];
-  confirm_exit = true;
-
-  constructor(data: Record<string, unknown> = {}) {
-    super(data);
-    if (
-      data.mode === "human" ||
-      data.mode === "confirm" ||
-      data.mode === "yolo"
-    )
-      this.mode = data.mode;
-    if (Array.isArray(data.whitelist_actions))
-      this.whitelist_actions = data.whitelist_actions.map(String);
-    if (typeof data.confirm_exit === "boolean")
-      this.confirm_exit = data.confirm_exit;
-  }
-
-  override model_dump(): Record<string, unknown> {
-    return {
-      ...super.model_dump(),
-      mode: this.mode,
-      whitelist_actions: this.whitelist_actions,
-      confirm_exit: this.confirm_exit,
-    };
-  }
+  static override fields: Record<string, Field> = {
+    mode: literalField(["human", "confirm", "yolo"], "confirm"),
+    whitelist_actions: listField([]),
+    confirm_exit: boolField(true),
+  };
+  declare mode: "human" | "confirm" | "yolo";
+  declare whitelist_actions: string[];
+  declare confirm_exit: boolean;
 }
 
 const MODE_COMMANDS: Record<string, "human" | "confirm" | "yolo"> = {
@@ -55,8 +44,7 @@ function anchored(pattern: string, text: string): boolean {
 }
 
 export class InteractiveAgent extends DefaultAgent {
-  override readonly type_name =
-    "minisweagent.agents.interactive.InteractiveAgent";
+  static override typeName = "minisweagent.agents.interactive.InteractiveAgent";
   cost_last_confirmed = 0;
   readLine: (lines?: "single" | "multiline") => Promise<string> =
     readInteractive;

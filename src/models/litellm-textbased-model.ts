@@ -6,26 +6,20 @@ import {
 import { LitellmModel, LitellmModelConfig } from "./litellm-model.ts";
 import type { ChatResponse } from "./transport.ts";
 
+import { stringField, type Field } from "../config/fields.ts";
+
 export class LitellmTextbasedModelConfig extends LitellmModelConfig {
-  action_regex = "```mswea_bash_command\\s*\\n(.*?)\\n```";
-  format_error_template =
-    "Please always provide EXACTLY ONE action in triple backticks, found {{actions|length}} actions.";
-
-  constructor(data: Record<string, unknown> = {}) {
-    super(data);
-    if (typeof data.action_regex === "string")
-      this.action_regex = data.action_regex;
-    if (typeof data.format_error_template === "string")
-      this.format_error_template = data.format_error_template;
-  }
-
-  override model_dump(): Record<string, unknown> {
-    return { ...super.model_dump(), action_regex: this.action_regex };
-  }
+  static override fields: Record<string, Field> = {
+    action_regex: stringField("```mswea_bash_command\\s*\\n(.*?)\\n```"),
+    format_error_template: stringField(
+      "Please always provide EXACTLY ONE action in triple backticks, found {{actions|length}} actions.",
+    ),
+  };
+  declare action_regex: string;
 }
 
 export class LitellmTextbasedModel extends LitellmModel {
-  override readonly type_name =
+  static override typeName =
     "minisweagent.models.litellm_textbased_model.LitellmTextbasedModel";
 
   constructor(data: Record<string, unknown> = {}) {

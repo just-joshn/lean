@@ -1,0 +1,367 @@
+{
+  "reference": "04d809ceab9df28f9adaed044884180159172930",
+  "cases": [
+    {
+      "case": "registry supplied string",
+      "accepted": true,
+      "value": {
+        "model_name": "m",
+        "model_kwargs": {},
+        "litellm_model_registry": "reg.json",
+        "set_cache_control": null,
+        "cost_tracking": "default",
+        "format_error_template": "{{ error }}",
+        "observation_template": "{% if output.exception_info %}<exception>{{output.exception_info}}</exception>\n{% endif %}<returncode>{{output.returncode}}</returncode>\n<output>\n{{output.output}}</output>",
+        "multimodal_regex": ""
+      }
+    },
+    {
+      "case": "registry supplied path",
+      "accepted": true,
+      "value": {
+        "model_name": "m",
+        "model_kwargs": {},
+        "litellm_model_registry": {
+          "type": "PosixPath",
+          "text": "reg.json",
+          "parts": ["reg.json"]
+        },
+        "set_cache_control": null,
+        "cost_tracking": "default",
+        "format_error_template": "{{ error }}",
+        "observation_template": "{% if output.exception_info %}<exception>{{output.exception_info}}</exception>\n{% endif %}<returncode>{{output.returncode}}</returncode>\n<output>\n{{output.output}}</output>",
+        "multimodal_regex": ""
+      }
+    },
+    {
+      "case": "empty output path",
+      "accepted": true,
+      "value": {
+        "system_template": "s",
+        "instance_template": "i",
+        "step_limit": 0,
+        "cost_limit": 3.0,
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": {
+          "type": "PosixPath",
+          "text": ".",
+          "parts": []
+        }
+      }
+    },
+    {
+      "case": "bare AgentConfig exact error",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "2 validation errors for AgentConfig\nsystem_template\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\ninstance_template\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing",
+      "details": [
+        {
+          "type": "missing",
+          "loc": ["system_template"],
+          "msg": "Field required",
+          "input": {}
+        },
+        {
+          "type": "missing",
+          "loc": ["instance_template"],
+          "msg": "Field required",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "case": "bare model exact error",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for LitellmModelConfig\nmodel_name\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing",
+      "details": [
+        {
+          "type": "missing",
+          "loc": ["model_name"],
+          "msg": "Field required",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "case": "invalid literal exact error",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for LitellmModelConfig\ncost_tracking\n  Input should be 'default' or 'ignore_errors' [type=literal_error, input_value='bogus', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/literal_error",
+      "details": [
+        {
+          "type": "literal_error",
+          "loc": ["cost_tracking"],
+          "msg": "Input should be 'default' or 'ignore_errors'",
+          "input": "bogus",
+          "ctx": {
+            "expected": "'default' or 'ignore_errors'"
+          }
+        }
+      ]
+    },
+    {
+      "case": "json-mode nonfinite cost",
+      "accepted": true,
+      "value": {
+        "system_template": "s",
+        "instance_template": "i",
+        "step_limit": 0,
+        "cost_limit": {
+          "float": "nan"
+        },
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": null
+      }
+    },
+    {
+      "case": "forward_env string",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for DockerEnvironmentConfig\nforward_env\n  Input should be a valid list [type=list_type, input_value='PATH', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/list_type",
+      "details": [
+        {
+          "type": "list_type",
+          "loc": ["forward_env"],
+          "msg": "Input should be a valid list",
+          "input": "PATH"
+        }
+      ]
+    },
+    {
+      "case": "forward_env tuple",
+      "accepted": true,
+      "value": {
+        "image": "",
+        "cwd": "/",
+        "env": {},
+        "forward_env": ["PATH", "HOME"],
+        "timeout": 30,
+        "executable": "docker",
+        "run_args": ["--rm"],
+        "container_timeout": "2h",
+        "pull_timeout": 120,
+        "interpreter": ["bash", "-lc"]
+      }
+    },
+    {
+      "case": "run_args wrong element",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for DockerEnvironmentConfig\nrun_args.0\n  Input should be a valid string [type=string_type, input_value=2, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+      "details": [
+        {
+          "type": "string_type",
+          "loc": ["run_args", 0],
+          "msg": "Input should be a valid string",
+          "input": 2
+        }
+      ]
+    },
+    {
+      "case": "direct subclass serialization",
+      "accepted": true,
+      "value": {
+        "info": {
+          "config": {
+            "model": {
+              "model_name": "m",
+              "model_kwargs": {},
+              "litellm_model_registry": null,
+              "set_cache_control": null,
+              "cost_tracking": "default",
+              "format_error_template": "{{ error }}",
+              "observation_template": "{% if output.exception_info %}<exception>{{output.exception_info}}</exception>\n{% endif %}<returncode>{{output.returncode}}</returncode>\n<output>\n{{output.output}}</output>",
+              "multimodal_regex": ""
+            },
+            "model_type": "__main__.DirectModel"
+          }
+        }
+      }
+    },
+    {
+      "case": "config class callable factory",
+      "accepted": true,
+      "value": {
+        "model_name": "m",
+        "model_kwargs": {},
+        "litellm_model_registry": null,
+        "set_cache_control": null,
+        "cost_tracking": "default",
+        "format_error_template": "{{ error }}",
+        "observation_template": "{% if output.exception_info %}<exception>{{output.exception_info}}</exception>\n{% endif %}<returncode>{{output.returncode}}</returncode>\n<output>\n{{output.output}}</output>",
+        "multimodal_regex": ""
+      }
+    },
+    {
+      "case": "config class string error",
+      "accepted": false,
+      "error_type": "TypeError",
+      "message": "'str' object is not callable",
+      "details": null
+    },
+    {
+      "case": "text config class collision",
+      "accepted": false,
+      "error_type": "TypeError",
+      "message": "minisweagent.models.litellm_model.LitellmModel.__init__() got multiple values for keyword argument 'config_class'",
+      "details": null
+    },
+    {
+      "case": "supplied dictionary copy identity",
+      "accepted": true,
+      "value": {
+        "top_alias": false,
+        "nested_alias": true,
+        "distinct_defaults": true
+      }
+    },
+    {
+      "case": "decimal integer string",
+      "accepted": true,
+      "value": {
+        "system_template": "s",
+        "instance_template": "i",
+        "step_limit": 3,
+        "cost_limit": 3.0,
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": null
+      }
+    },
+    {
+      "case": "exponent integer string",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for AgentConfig\nstep_limit\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='3e0', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/int_parsing",
+      "details": [
+        {
+          "type": "int_parsing",
+          "loc": ["step_limit"],
+          "msg": "Input should be a valid integer, unable to parse string as an integer",
+          "input": "3e0"
+        }
+      ]
+    },
+    {
+      "case": "fractional integer number",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for AgentConfig\nstep_limit\n  Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=1.1, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.14/v/int_from_float",
+      "details": [
+        {
+          "type": "int_from_float",
+          "loc": ["step_limit"],
+          "msg": "Input should be a valid integer, got a number with a fractional part",
+          "input": 1.1
+        }
+      ]
+    },
+    {
+      "case": "duplicate underscore integer",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for AgentConfig\nstep_limit\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='1__0', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/int_parsing",
+      "details": [
+        {
+          "type": "int_parsing",
+          "loc": ["step_limit"],
+          "msg": "Input should be a valid integer, unable to parse string as an integer",
+          "input": "1__0"
+        }
+      ]
+    },
+    {
+      "case": "boolean t",
+      "accepted": true,
+      "value": {
+        "system_template": "s",
+        "instance_template": "i",
+        "step_limit": 0,
+        "cost_limit": 3.0,
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": null,
+        "mode": "confirm",
+        "whitelist_actions": [],
+        "confirm_exit": true
+      }
+    },
+    {
+      "case": "whitespace boolean",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for InteractiveAgentConfig\nconfirm_exit\n  Input should be a valid boolean, unable to interpret input [type=bool_parsing, input_value=' true ', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/bool_parsing",
+      "details": [
+        {
+          "type": "bool_parsing",
+          "loc": ["confirm_exit"],
+          "msg": "Input should be a valid boolean, unable to interpret input",
+          "input": " true "
+        }
+      ]
+    },
+    {
+      "case": "duplicate underscore float",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for AgentConfig\ncost_limit\n  Input should be a valid number, unable to parse string as a number [type=float_parsing, input_value='1__0', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/float_parsing",
+      "details": [
+        {
+          "type": "float_parsing",
+          "loc": ["cost_limit"],
+          "msg": "Input should be a valid number, unable to parse string as a number",
+          "input": "1__0"
+        }
+      ]
+    },
+    {
+      "case": "UTF8 bytes string input",
+      "accepted": true,
+      "value": {
+        "system_template": "abc",
+        "instance_template": "i",
+        "step_limit": 0,
+        "cost_limit": 3.0,
+        "wall_time_limit_seconds": 0,
+        "max_consecutive_format_errors": 3,
+        "output_path": null
+      }
+    }
+  ],
+  "captured_default": [
+    {
+      "case": "omitted invalid captured cost default",
+      "accepted": true,
+      "value": {
+        "model_name": "m",
+        "model_kwargs": {},
+        "litellm_model_registry": null,
+        "set_cache_control": null,
+        "cost_tracking": "bogus",
+        "format_error_template": "{{ error }}",
+        "observation_template": "{% if output.exception_info %}<exception>{{output.exception_info}}</exception>\n{% endif %}<returncode>{{output.returncode}}</returncode>\n<output>\n{{output.output}}</output>",
+        "multimodal_regex": ""
+      }
+    },
+    {
+      "case": "explicit invalid cost value",
+      "accepted": false,
+      "error_type": "ValidationError",
+      "message": "1 validation error for LitellmModelConfig\ncost_tracking\n  Input should be 'default' or 'ignore_errors' [type=literal_error, input_value='bogus', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/literal_error",
+      "details": [
+        {
+          "type": "literal_error",
+          "loc": ["cost_tracking"],
+          "msg": "Input should be 'default' or 'ignore_errors'",
+          "input": "bogus",
+          "ctx": {
+            "expected": "'default' or 'ignore_errors'"
+          }
+        }
+      ]
+    }
+  ]
+}

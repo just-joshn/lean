@@ -111,7 +111,13 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     const output =
       values.output ?? join(globalConfigDir(), "last_mini_run.traj.json");
     const config = recursive_merge(
-      ...specs.map((spec) => getConfigFromSpec(spec)),
+      ...specs.map((spec) => {
+        const data = getConfigFromSpec(spec);
+        if (data === null) return null;
+        if (typeof data !== "object" || Array.isArray(data))
+          throw new TypeError("Config file must contain a dictionary");
+        return data as Record<string, unknown>;
+      }),
       {
         run: { task: values.task ?? UNSET },
         agent: {

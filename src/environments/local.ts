@@ -5,21 +5,26 @@ import { KeyboardInterrupt } from "../exceptions.ts";
 import { recursive_merge } from "../utils/serialize.ts";
 import { checkSubmitted } from "./submit.ts";
 
-export class LocalEnvironmentConfig {
-  cwd = "";
-  env: Record<string, string> = {};
-  timeout = 30;
+import {
+  ConfigModel,
+  constructConfig,
+  type ConfigFactory,
+  type Field,
+  stringField,
+  dictField,
+  intField,
+} from "../config/fields.ts";
+import { componentIdentity } from "../utils/load.ts";
 
-  constructor(data: Record<string, unknown> = {}) {
-    if (typeof data.cwd === "string") this.cwd = data.cwd;
-    if (data.env && typeof data.env === "object")
-      this.env = { ...(data.env as Record<string, string>) };
-    if (data.timeout !== undefined) this.timeout = Number(data.timeout);
-  }
-
-  model_dump(): Record<string, unknown> {
-    return { cwd: this.cwd, env: this.env, timeout: this.timeout };
-  }
+export class LocalEnvironmentConfig extends ConfigModel {
+  static override fields: Record<string, Field> = {
+    cwd: stringField(""),
+    env: dictField(true),
+    timeout: intField(30),
+  };
+  declare cwd: string;
+  declare env: Record<string, string>;
+  declare timeout: number;
 }
 
 function stringEnv(env: NodeJS.ProcessEnv): Record<string, string> {
@@ -117,13 +122,18 @@ export async function runShell(
 
 export class LocalEnvironment {
   readonly config: LocalEnvironmentConfig;
-  readonly type_name = "minisweagent.environments.local.LocalEnvironment";
+  static typeName = "minisweagent.environments.local.LocalEnvironment";
 
   constructor(
     data: Record<string, unknown> = {},
-    configClass: typeof LocalEnvironmentConfig = LocalEnvironmentConfig,
+    configClass?: ConfigFactory<LocalEnvironmentConfig>,
   ) {
-    this.config = new configClass(data);
+    this.config = constructConfig(
+      data,
+      configClass,
+      LocalEnvironmentConfig,
+      "minisweagent.environments.local.LocalEnvironment",
+    );
   }
 
   async execute(
@@ -184,8 +194,8 @@ export class LocalEnvironment {
     return {
       info: {
         config: {
-          environment: this.config.model_dump(),
-          environment_type: this.type_name,
+          environment: this.config.model_dump("json"),
+          environment_type: componentIdentity(this),
         },
       },
     };

@@ -1,4 +1,16 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
+import {
+  ConfigModel,
+  constructConfig,
+  type ConfigFactory,
+  type Field,
+  stringField,
+  dictField,
+  pathField,
+  literalField,
+  type PosixPath,
+} from "../config/fields.ts";
+import { componentIdentity } from "../utils/load.ts";
 import type { Action, Message, Observation } from "../protocols.ts";
 import { FormatError, KeyboardInterrupt, RuntimeError } from "../exceptions.ts";
 import { expandMultimodalContent } from "./utils/multimodal.ts";
@@ -21,50 +33,33 @@ import {
 import { GLOBAL_MODEL_STATS } from "./stats.ts";
 import { completeChat, type ChatResponse } from "./transport.ts";
 
-const KNOWN = [
-  "model_name",
-  "model_kwargs",
-  "litellm_model_registry",
-  "set_cache_control",
-  "cost_tracking",
-  "format_error_template",
-  "observation_template",
-  "multimodal_regex",
-] as const;
-
-export class LitellmModelConfig {
-  model_name = "";
-  model_kwargs: Record<string, unknown> = {};
-  litellm_model_registry: string | null =
-    process.env.LITELLM_MODEL_REGISTRY_PATH ?? null;
-  set_cache_control: "default_end" | null = null;
-  cost_tracking: "default" | "ignore_errors" =
-    process.env.MSWEA_COST_TRACKING === "ignore_errors"
-      ? "ignore_errors"
-      : "default";
-  format_error_template = "{{ error }}";
-  observation_template =
-    "{% if output.exception_info %}<exception>{{output.exception_info}}</exception>\n{% endif %}<returncode>{{output.returncode}}</returncode>\n<output>\n{{output.output}}</output>";
-  multimodal_regex = "";
-
-  constructor(data: Record<string, unknown> = {}) {
-    for (const key of KNOWN) {
-      if (data[key] !== undefined) Reflect.set(this, key, data[key]);
-    }
-  }
-
-  model_dump(): Record<string, unknown> {
-    return {
-      model_name: this.model_name,
-      model_kwargs: this.model_kwargs,
-      litellm_model_registry: this.litellm_model_registry,
-      set_cache_control: this.set_cache_control,
-      cost_tracking: this.cost_tracking,
-      format_error_template: this.format_error_template,
-      observation_template: this.observation_template,
-      multimodal_regex: this.multimodal_regex,
-    };
-  }
+export class LitellmModelConfig extends ConfigModel {
+  static override fields: Record<string, Field> = {
+    model_name: stringField(),
+    model_kwargs: dictField(),
+    litellm_model_registry: pathField(
+      true,
+      process.env.LITELLM_MODEL_REGISTRY_PATH ?? null,
+    ),
+    set_cache_control: literalField(["default_end"], null, true),
+    cost_tracking: literalField(
+      ["default", "ignore_errors"],
+      process.env.MSWEA_COST_TRACKING ?? "default",
+    ),
+    format_error_template: stringField("{{ error }}"),
+    observation_template: stringField(
+      "{% if output.exception_info %}<exception>{{output.exception_info}}</exception>\n{% endif %}<returncode>{{output.returncode}}</returncode>\n<output>\n{{output.output}}</output>",
+    ),
+    multimodal_regex: stringField(""),
+  };
+  declare model_name: string;
+  declare model_kwargs: Record<string, unknown>;
+  declare litellm_model_registry: PosixPath | string | null;
+  declare set_cache_control: "default_end" | null;
+  declare cost_tracking: string;
+  declare format_error_template: string;
+  declare observation_template: string;
+  declare multimodal_regex: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -73,19 +68,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export class LitellmModel {
   readonly config: LitellmModelConfig;
-  readonly type_name: string = "minisweagent.models.litellm_model.LitellmModel";
+  static typeName = "minisweagent.models.litellm_model.LitellmModel";
   sleep: (milliseconds: number) => Promise<void> = (milliseconds) =>
     new Promise((resolve) => setTimeout(resolve, milliseconds));
 
   constructor(
     data: Record<string, unknown> = {},
-    configClass: typeof LitellmModelConfig = LitellmModelConfig,
+    configClass?: ConfigFactory<LitellmModelConfig>,
   ) {
-    this.config = new configClass(data);
+    this.config = constructConfig(
+      data,
+      configClass,
+      LitellmModelConfig,
+      "minisweagent.models.litellm_model.LitellmModel",
+    );
     const registry = this.config.litellm_model_registry;
-    if (registry) {
+    if (
+      registry &&
+      statSync(String(registry), { throwIfNoEntry: false })?.isFile()
+    ) {
       try {
-        const parsed: unknown = JSON.parse(readFileSync(registry, "utf8"));
+        const parsed: unknown = JSON.parse(
+          readFileSync(String(registry), "utf8"),
+        );
         if (isRecord(parsed))
           registerModel(parsed as Record<string, Record<string, unknown>>);
       } catch (error) {
@@ -246,8 +251,8 @@ export class LitellmModel {
     return {
       info: {
         config: {
-          model: this.config.model_dump(),
-          model_type: this.type_name,
+          model: this.config.model_dump("json"),
+          model_type: componentIdentity(this),
         },
       },
     };

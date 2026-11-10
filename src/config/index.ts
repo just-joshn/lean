@@ -1,23 +1,32 @@
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, extname, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parse as parseYaml, parseDocument } from "yaml";
+import { parseDocument } from "yaml";
+import { PosixPath } from "./fields.ts";
+import { FileNotFoundError, ValueError } from "./errors.ts";
 
 export const builtinConfigDir = dirname(fileURLToPath(import.meta.url));
 
-export function getConfigPath(spec: string): string {
-  const name = spec.endsWith(".yaml") ? spec : `${spec}.yaml`;
+export function getConfigPath(spec: string | PosixPath): string {
+  const text = new PosixPath(String(spec)).text;
+  const suffix = extname(text);
+  const name =
+    suffix === ".yaml"
+      ? text
+      : `${suffix ? text.slice(0, -suffix.length) : text}.yaml`;
   const candidates = [
-    resolve(name),
-    resolve(process.env.MSWEA_CONFIG_DIR || ".", name),
-    join(builtinConfigDir, name),
-    join(builtinConfigDir, "extra", name),
-    join(builtinConfigDir, "benchmarks", name),
+    name,
+    ...[
+      process.env.MSWEA_CONFIG_DIR ?? ".",
+      builtinConfigDir,
+      join(builtinConfigDir, "extra"),
+      join(builtinConfigDir, "benchmarks"),
+    ].map((base) => (isAbsolute(name) ? name : join(base, name))),
   ];
   const found = candidates.find((candidate) => existsSync(candidate));
   if (!found)
-    throw new Error(
-      `Could not find config file for ${spec} (tried: ${candidates.join(", ")})`,
+    throw new FileNotFoundError(
+      `Could not find config file for ${name} (tried: [${candidates.map((candidate) => `PosixPath('${new PosixPath(candidate).text}')`).join(", ")}])`,
     );
   return found;
 }
@@ -30,13 +39,11 @@ function nested(spec: string): Record<string, unknown> {
   try {
     value = JSON.parse(raw);
   } catch {
-    value = raw;
+    value = raw === "NaN" ? NaN : raw;
   }
   const keys = key.split(".");
   if (keys.some((part) => part === ""))
-    throw new Error(
-      `Invalid config spec ${JSON.stringify(spec)}: empty config key`,
-    );
+    throw new ValueError(`Invalid config spec '${spec}': empty config key`);
   const result: Record<string, unknown> = {};
   let current = result;
   for (const part of keys.slice(0, -1)) {
@@ -48,13 +55,12 @@ function nested(spec: string): Record<string, unknown> {
   return result;
 }
 
-export function getConfigFromSpec(spec: string): Record<string, unknown> {
-  if (spec.includes("=")) return nested(spec);
-  const text = readFileSync(getConfigPath(spec), "utf8");
-  const document = parseDocument(text);
+export function getConfigFromSpec(spec: string | PosixPath): unknown {
+  if (typeof spec === "string" && spec.includes("=")) return nested(spec);
+  const text = new TextDecoder("utf-8", { fatal: true }).decode(
+    readFileSync(getConfigPath(spec)),
+  );
+  const document = parseDocument(text, { version: "1.1", uniqueKeys: false });
   if (document.errors.length > 0) throw document.errors[0];
-  const parsed = parseYaml(text);
-  return parsed && typeof parsed === "object"
-    ? (parsed as Record<string, unknown>)
-    : {};
+  return document.toJS();
 }

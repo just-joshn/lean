@@ -5,53 +5,41 @@ import type { Action, ExecutionOutput } from "../protocols.ts";
 import { recursive_merge } from "../utils/serialize.ts";
 import { checkSubmitted } from "./submit.ts";
 
-export class DockerEnvironmentConfig {
-  image = "";
-  cwd = "/";
-  env: Record<string, string> = {};
-  forward_env: string[] = [];
-  timeout = 30;
-  executable = process.env.MSWEA_DOCKER_EXECUTABLE || "docker";
-  run_args = ["--rm"];
-  container_timeout = "2h";
-  pull_timeout = 120;
-  interpreter = ["bash", "-lc"];
+import {
+  ConfigModel,
+  constructConfig,
+  type ConfigFactory,
+  type Field,
+  stringField,
+  dictField,
+  listField,
+  intField,
+} from "../config/fields.ts";
+import { componentIdentity } from "../utils/load.ts";
 
-  constructor(data: Record<string, unknown> = {}) {
-    if (typeof data.image !== "string" || data.image === "") {
-      throw new Error("DockerEnvironment requires image.");
-    }
-    this.image = data.image;
-    if (typeof data.cwd === "string") this.cwd = data.cwd;
-    if (data.env && typeof data.env === "object")
-      this.env = { ...(data.env as Record<string, string>) };
-    if (Array.isArray(data.forward_env))
-      this.forward_env = data.forward_env.map(String);
-    if (data.timeout !== undefined) this.timeout = Number(data.timeout);
-    if (typeof data.executable === "string") this.executable = data.executable;
-    if (Array.isArray(data.run_args)) this.run_args = data.run_args.map(String);
-    if (typeof data.container_timeout === "string")
-      this.container_timeout = data.container_timeout;
-    if (data.pull_timeout !== undefined)
-      this.pull_timeout = Number(data.pull_timeout);
-    if (Array.isArray(data.interpreter))
-      this.interpreter = data.interpreter.map(String);
-  }
-
-  model_dump(): Record<string, unknown> {
-    return {
-      image: this.image,
-      cwd: this.cwd,
-      env: this.env,
-      forward_env: this.forward_env,
-      timeout: this.timeout,
-      executable: this.executable,
-      run_args: this.run_args,
-      container_timeout: this.container_timeout,
-      pull_timeout: this.pull_timeout,
-      interpreter: this.interpreter,
-    };
-  }
+export class DockerEnvironmentConfig extends ConfigModel {
+  static override fields: Record<string, Field> = {
+    image: stringField(),
+    cwd: stringField("/"),
+    env: dictField(true),
+    forward_env: listField([]),
+    timeout: intField(30),
+    executable: stringField(process.env.MSWEA_DOCKER_EXECUTABLE ?? "docker"),
+    run_args: listField(["--rm"]),
+    container_timeout: stringField("2h"),
+    pull_timeout: intField(120),
+    interpreter: listField(["bash", "-lc"]),
+  };
+  declare image: string;
+  declare cwd: string;
+  declare env: Record<string, string>;
+  declare forward_env: string[];
+  declare timeout: number;
+  declare executable: string;
+  declare run_args: string[];
+  declare container_timeout: string;
+  declare pull_timeout: number;
+  declare interpreter: string[];
 }
 
 async function run(
@@ -106,15 +94,20 @@ const finalizers = new FinalizationRegistry<{
 
 export class DockerEnvironment {
   readonly config: DockerEnvironmentConfig;
-  readonly type_name = "minisweagent.environments.docker.DockerEnvironment";
+  static typeName = "minisweagent.environments.docker.DockerEnvironment";
   container_id: string | null = null;
   private cleaned = false;
 
   constructor(
     data: Record<string, unknown> = {},
-    configClass: typeof DockerEnvironmentConfig = DockerEnvironmentConfig,
+    configClass?: ConfigFactory<DockerEnvironmentConfig>,
   ) {
-    this.config = new configClass(data);
+    this.config = constructConfig(
+      data,
+      configClass,
+      DockerEnvironmentConfig,
+      "minisweagent.environments.docker.DockerEnvironment",
+    );
     const name = `minisweagent-${randomBytes(4).toString("hex")}`;
     const args = [
       this.config.executable,
@@ -229,8 +222,8 @@ export class DockerEnvironment {
     return {
       info: {
         config: {
-          environment: this.config.model_dump(),
-          environment_type: this.type_name,
+          environment: this.config.model_dump("json"),
+          environment_type: componentIdentity(this),
         },
       },
     };
