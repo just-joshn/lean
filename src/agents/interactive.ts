@@ -14,6 +14,8 @@ import {
   boolField,
   listField,
   literalField,
+  pythonFloat,
+  pythonInt,
   type Field,
 } from "../config/fields.ts";
 
@@ -28,11 +30,16 @@ export class InteractiveAgentConfig extends AgentConfig {
   declare confirm_exit: boolean;
 }
 
-const MODE_COMMANDS: Record<string, "human" | "confirm" | "yolo"> = {
-  "/u": "human",
-  "/c": "confirm",
-  "/y": "yolo",
-};
+const MODE_COMMANDS: Record<string, "human" | "confirm" | "yolo"> =
+  Object.assign(Object.create(null), {
+    "/u": "human",
+    "/c": "confirm",
+    "/y": "yolo",
+  });
+
+function isModeCommand(command: string): boolean {
+  return Object.hasOwn(MODE_COMMANDS, command);
+}
 
 function visible(text: string): string {
   return text.replace(/\[[^\]]*\]/g, "");
@@ -121,9 +128,9 @@ export class InteractiveAgent extends DefaultAgent {
         `Limits exceeded. Limits: ${this.config.step_limit} steps, $${this.config.cost_limit}.\nCurrent spend: ${this.n_calls} steps, $${this.cost.toFixed(2)}.\n`,
       );
       process.stdout.write("New step limit: ");
-      this.config.step_limit = Number.parseInt(await this.readLimit(), 10);
+      this.config.step_limit = pythonInt(await this.readLimit());
       process.stdout.write("New cost limit: ");
-      this.config.cost_limit = Number.parseFloat(await this.readLimit());
+      this.config.cost_limit = pythonFloat(await this.readLimit());
       return await super.query();
     }
   }
@@ -139,7 +146,7 @@ export class InteractiveAgent extends DefaultAgent {
           "\n\n[bold yellow]Interrupted.[/bold yellow] [green]Type a comment/command[/green] (/h for available commands)\n[bold yellow]>[/bold yellow] ",
         )
       ).trim();
-      if (!message || message in MODE_COMMANDS)
+      if (!message || isModeCommand(message))
         message = "Temporary interruption caught.";
       this.interrupt(`Interrupted by user: ${message}`);
     }
@@ -184,7 +191,7 @@ export class InteractiveAgent extends DefaultAgent {
         )
       ).trim();
       if (userInput === "/u") this.interrupt("Switched to human mode.");
-      if (userInput in MODE_COMMANDS) return this.checkSubmit(error);
+      if (isModeCommand(userInput)) return this.checkSubmit(error);
       if (userInput)
         this.interrupt(
           `The user added a new task: ${userInput}`,
@@ -232,8 +239,8 @@ export class InteractiveAgent extends DefaultAgent {
       );
       return this.prompt(prompt);
     }
-    const next = MODE_COMMANDS[userInput];
-    if (next) {
+    if (isModeCommand(userInput)) {
+      const next = MODE_COMMANDS[userInput];
       if (this.options().mode === next) {
         return this.prompt(
           `[bold red]Already in ${this.options().mode} mode.[/bold red]\n${prompt}`,

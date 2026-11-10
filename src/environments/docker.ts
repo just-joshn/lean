@@ -24,6 +24,7 @@ import {
   intField,
 } from "../config/fields.ts";
 import { componentIdentity } from "../utils/load.ts";
+import { platformProcessor } from "./processor.ts";
 
 export class DockerEnvironmentConfig extends ConfigModel {
   static override fields: Record<string, Field> = {
@@ -226,6 +227,7 @@ export class DockerEnvironment {
         release: release(),
         version: version(),
         machine: machine(),
+        processor: platformProcessor(),
       },
       extra,
     );

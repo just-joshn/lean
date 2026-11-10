@@ -4,6 +4,7 @@ import { parseArgs } from "node:util";
 import { getAgent } from "../agents/index.ts";
 import { readInteractive, readSetup } from "../agents/prompt.ts";
 import { globalConfigDir } from "../utils/global-config-dir.ts";
+import { pythonFloat } from "../config/fields.ts";
 import { builtinConfigDir, getConfigFromSpec } from "../config/index.ts";
 import { getEnvironment } from "../environments/index.ts";
 import { KeyboardInterrupt } from "../exceptions.ts";
@@ -46,22 +47,24 @@ async function setup(): Promise<void> {
     appendFileSync(file, `MSWEA_MODEL_NAME=${model}\n`);
     process.env.MSWEA_MODEL_NAME ??= model;
   }
-  process.stdout.write("Enter an API key (leave blank to skip): ");
-  const key = (await readSetup("")).trim();
-  if (key) {
-    mkdirSync(dirname(file), { recursive: true });
-    const name = key.startsWith("sk-ant-")
-      ? "ANTHROPIC_API_KEY"
-      : "OPENAI_API_KEY";
-    appendFileSync(file, `${name}=${key}\n`);
-    process.env[name] ??= key;
+  process.stdout.write("Enter your API key name (leave blank to skip): ");
+  const keyName = (await readSetup("")).trim();
+  if (keyName) {
+    process.stdout.write("Enter your API key value (leave blank to skip): ");
+    const key = (await readSetup("")).trim();
+    if (key) {
+      mkdirSync(dirname(file), { recursive: true });
+      appendFileSync(file, `${keyName}=${key}\n`);
+      process.env[keyName] ??= key;
+    }
   }
-  process.env.MSWEA_CONFIGURED = "1";
+  mkdirSync(dirname(file), { recursive: true });
+  appendFileSync(file, "MSWEA_CONFIGURED=true\n");
+  process.env.MSWEA_CONFIGURED = "true";
 }
 
 export async function main(argv = process.argv.slice(2)): Promise<number> {
   loadEnvFile(join(globalConfigDir(), ".env"));
-  if (!process.env.MSWEA_CONFIGURED && process.stdin.isTTY) await setup();
   let values: {
     help?: boolean;
     model?: string;
@@ -106,8 +109,11 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     );
     return 0;
   }
+  if (!process.env.MSWEA_CONFIGURED && process.stdin.isTTY) await setup();
   try {
-    const specs = values.config ?? [join(builtinConfigDir, "mini.yaml")];
+    const specs = values.config ?? [
+      process.env.MSWEA_MINI_CONFIG_PATH ?? join(builtinConfigDir, "mini.yaml"),
+    ];
     const output =
       values.output ?? join(globalConfigDir(), "last_mini_run.traj.json");
     const config = recursive_merge(
@@ -125,7 +131,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           mode: values.yolo ? "yolo" : UNSET,
           cost_limit:
             values["cost-limit"] !== undefined
-              ? Number(values["cost-limit"])
+              ? pythonFloat(values["cost-limit"])
               : UNSET,
           confirm_exit: values["exit-immediately"] ? false : UNSET,
           output_path: output,
@@ -141,7 +147,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     );
     const run = config.run as Record<string, unknown> | undefined;
     let task = run?.task;
-    if (typeof task !== "string" || task === "") {
+    if (task === UNSET || task === undefined) {
       process.stdout.write("What do you want to do?\n");
       task = await readInteractive("multiline");
     }

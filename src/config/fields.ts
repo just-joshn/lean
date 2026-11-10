@@ -1,3 +1,5 @@
+import { ValueError } from "./errors.ts";
+
 export class PosixPath {
   readonly text: string;
   readonly parts: string[];
@@ -37,6 +39,7 @@ function inputType(value: unknown): string {
   if (typeof value === "number")
     return Number.isInteger(value) ? "int" : "float";
   if (Array.isArray(value)) return "list";
+  if (value instanceof Uint8Array) return "bytes";
   return "dict";
 }
 
@@ -45,6 +48,17 @@ function repr(value: unknown): string {
     return `'${value.replaceAll("\\", "\\\\").replaceAll("'", "\\'").replaceAll("\n", "\\n")}'`;
   if (value === null) return "None";
   if (typeof value === "boolean") return value ? "True" : "False";
+  if (value instanceof Uint8Array) {
+    const body = Buffer.from(value)
+      .toString("latin1")
+      .replaceAll("\\", "\\\\")
+      .replaceAll("'", "\\'")
+      .replace(
+        /[^\x20-\x7e]/g,
+        (char) => `\\x${char.charCodeAt(0).toString(16).padStart(2, "0")}`,
+      );
+    return `b'${body}'`;
+  }
   if (Array.isArray(value)) return `[${value.map(repr).join(", ")}]`;
   if (typeof value === "object")
     return `{${Object.entries(value)
@@ -99,8 +113,17 @@ export const stringField = (fallback?: string): Field => ({
   ...(fallback === undefined ? {} : { default: fallback }),
   parse(value) {
     if (typeof value === "string") return value;
-    if (value instanceof Uint8Array)
-      return new TextDecoder("utf-8", { fatal: true }).decode(value);
+    if (value instanceof Uint8Array) {
+      try {
+        return new TextDecoder("utf-8", { fatal: true }).decode(value);
+      } catch {
+        return fail(
+          "string_unicode",
+          "Input should be a valid string, unable to parse raw data as a unicode string",
+          value,
+        );
+      }
+    }
     return fail("string_type", "Input should be a valid string", value);
   },
 });
@@ -118,8 +141,19 @@ export const intField = (fallback: number): Field => ({
       );
     }
     if (typeof value === "string") {
-      if (/^[+-]?\d(?:_?\d)*(?:\.0+)?$/.test(value.trim()))
-        return Number(value.replaceAll("_", ""));
+      const trimmed = value.trim();
+      if (/^[+-]?\d(?:_?\d)*(?:\.0+)?$/.test(trimmed)) {
+        const normalized = trimmed.replaceAll("_", "");
+        const parsed = Number(normalized);
+        const digits = normalized.replace(/^\+/, "").replace(/\.0+$/, "");
+        if (!Number.isSafeInteger(parsed) || BigInt(parsed) !== BigInt(digits))
+          return fail(
+            "int_parsing",
+            "Input should be a valid integer, unable to parse string as an integer",
+            value,
+          );
+        return parsed;
+      }
       return fail(
         "int_parsing",
         "Input should be a valid integer, unable to parse string as an integer",
@@ -196,8 +230,23 @@ export const dictField = (strings = false): Field => ({
     if (value === null || typeof value !== "object" || Array.isArray(value))
       return fail("dict_type", "Input should be a valid dictionary", value);
     const copy = { ...value };
-    if (strings)
-      for (const entry of Object.values(copy)) stringField().parse(entry);
+    if (strings) {
+      const errors: ValidationDetail[] = [];
+      for (const [key, entry] of Object.entries(copy)) {
+        try {
+          stringField().parse(entry);
+        } catch (error) {
+          if (!(error instanceof FieldFailure)) throw error;
+          errors.push(
+            ...error.details.map((detail) => ({
+              ...detail,
+              loc: [key, ...detail.loc],
+            })),
+          );
+        }
+      }
+      if (errors.length) throw new FieldFailure(errors);
+    }
     return copy;
   },
 });
@@ -305,6 +354,30 @@ export class ConfigModel {
       }),
     );
   }
+}
+
+export function pythonInt(text: string): number {
+  const raw = text.trim();
+  if (!/^[+-]?\d+(?:_\d+)*$/.test(raw))
+    throw new ValueError(`invalid literal for int() with base 10: '${text}'`);
+  const digits = raw.replaceAll("_", "").replace(/^\+/, "");
+  const parsed = Number(digits);
+  if (!Number.isFinite(parsed) || BigInt(parsed) !== BigInt(digits))
+    throw new ValueError(`invalid literal for int() with base 10: '${text}'`);
+  return parsed;
+}
+
+export function pythonFloat(text: string): number {
+  const raw = text.trim();
+  if (/^[+-]?(?:nan|inf(?:inity)?)$/i.test(raw))
+    throw new ValueError(`Invalid cost limit: ${raw}`);
+  if (
+    !/^[+-]?(?:(?:\d+(?:_\d+)*)(?:\.(?:\d+(?:_\d+)*)?)?|\.\d+(?:_\d+)*)(?:[eE][+-]?\d+(?:_\d+)*)?$/.test(
+      raw,
+    )
+  )
+    throw new ValueError(`could not convert string to float: '${text}'`);
+  return Number(raw.replaceAll("_", ""));
 }
 
 export type ConfigFactory<T> =

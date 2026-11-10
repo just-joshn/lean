@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { arch, hostname, machine, release, type, version } from "node:os";
+import { hostname, machine, release, type, version } from "node:os";
 import type { Action, ExecutionOutput } from "../protocols.ts";
 import { KeyboardInterrupt } from "../exceptions.ts";
 import { recursive_merge } from "../utils/serialize.ts";
@@ -16,6 +16,7 @@ import {
   intField,
 } from "../config/fields.ts";
 import { componentIdentity } from "../utils/load.ts";
+import { platformProcessor } from "./processor.ts";
 
 export class LocalEnvironmentConfig extends ConfigModel {
   static override fields: Record<string, Field> = {
@@ -185,7 +186,7 @@ export class LocalEnvironment {
         release: release(),
         version: version(),
         machine: machine(),
-        processor: arch(),
+        processor: platformProcessor(),
       },
       stringEnv(process.env),
       extra,

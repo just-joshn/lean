@@ -229,4 +229,102 @@ describe("InteractiveAgent", () => {
     ).toBe(false);
     expect(env.commands).toContain("echo after");
   });
+
+  test("does not treat inherited object keys as mode commands", async () => {
+    const run = agent(
+      ["toString", "", ""],
+      [
+        bash("echo first"),
+        bash("echo second"),
+        bash("COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"),
+      ],
+    );
+    await run.interactive.run("t");
+    expect((run.interactive.config as { mode?: unknown }).mode).toBe("confirm");
+    expect(run.env.commands).toEqual([
+      "echo second",
+      "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT",
+    ]);
+    expect(
+      run.interactive.messages.some((message) =>
+        String(message.content).includes("toString"),
+      ),
+    ).toBe(true);
+  });
+
+  test("keeps an object-key interruption instead of swallowing it", async () => {
+    const model = new ScriptModel([
+      bash("echo after"),
+      bash("COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"),
+    ]);
+    const original = model.query.bind(model);
+    let calls = 0;
+    model.query = () => {
+      calls += 1;
+      if (calls === 1) throw new KeyboardInterrupt();
+      return original();
+    };
+    const env = new ScriptEnv();
+    const interactive = new InteractiveAgent(model, env, {
+      system_template: "sys",
+      instance_template: "task",
+      mode: "yolo",
+    });
+    const lines = ["toString", ""];
+    interactive.readLine = async () => lines.shift() ?? "";
+    await interactive.run("t");
+    expect(
+      interactive.messages.some((message) =>
+        String(message.content).includes("Interrupted by user: toString"),
+      ),
+    ).toBe(true);
+    expect(
+      interactive.messages.some((message) =>
+        String(message.content).includes("Temporary interruption caught."),
+      ),
+    ).toBe(false);
+  });
+
+  test("treats an object key on the finish prompt as a new task", async () => {
+    const run = agent(
+      ["toString", ""],
+      [
+        bash("COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"),
+        bash("COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"),
+      ],
+      { mode: "yolo" },
+    );
+    const result = await run.interactive.run("t");
+    expect(
+      run.interactive.messages.some((message) =>
+        String(message.content).includes("The user added a new task: toString"),
+      ),
+    ).toBe(true);
+    expect(result).toMatchObject({ exit_status: "Submitted" });
+  });
+
+  test("accepts underscore limits and rejects truncated or non-finite ones", async () => {
+    const raised = agent(
+      ["100", "1_0", ""],
+      [bash("echo first", 1), bash("COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT")],
+      { mode: "yolo", step_limit: 0, cost_limit: 0.5 },
+    );
+    await raised.interactive.run("t");
+    expect(raised.interactive.config.step_limit).toBe(100);
+    expect(raised.interactive.config.cost_limit).toBe(10);
+    expect(raised.env.commands).toContain(
+      "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT",
+    );
+
+    const rejected = agent(
+      ["0x10", "1"],
+      [bash("echo first"), bash("echo second")],
+      { mode: "yolo", step_limit: 1, cost_limit: 0 },
+    );
+    await expect(rejected.interactive.run("t")).rejects.toThrow(
+      /invalid literal for int\(\) with base 10: '0x10'/,
+    );
+    expect(rejected.env.commands).toEqual(["echo first"]);
+    expect(rejected.interactive.config.step_limit).toBe(1);
+  });
 });

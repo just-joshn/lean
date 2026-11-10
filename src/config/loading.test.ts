@@ -10,7 +10,8 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { getConfigFromSpec, getConfigPath, builtinConfigDir } from "./index.ts";
 import { PosixPath } from "./fields.ts";
-import { LitellmModel } from "../models/litellm-model.ts";
+import { LitellmModel, LitellmModelConfig } from "../models/litellm-model.ts";
+import { ValidationError } from "./fields.ts";
 import { ValueError, FileNotFoundError } from "./errors.ts";
 import controls from "./loading-source-controls.json" with { type: "json" };
 
@@ -105,5 +106,39 @@ describe("pinned config file controls", () => {
   test("rejects malformed yaml rather than returning an empty config", () => {
     writeFileSync("sample.yaml", "key: [unterminated");
     expect(() => getConfigFromSpec("sample")).toThrow();
+  });
+
+  test("keeps PyYAML safe_load strings for 1e2 and y n Y N", () => {
+    writeFileSync(
+      "sample.yaml",
+      "step_limit: 1e2\nmodel_name: 1.0e+2\ndotted: 1.5e2\ny: 1\nn: 2\nY: 3\nN: 4\nenabled: yes\ndisabled: off\n",
+    );
+    expect(getConfigFromSpec("sample")).toEqual({
+      step_limit: "1e2",
+      model_name: 100,
+      dotted: "1.5e2",
+      y: 1,
+      n: 2,
+      Y: 3,
+      N: 4,
+      enabled: true,
+      disabled: false,
+    });
+  });
+
+  test("parses CLI Infinity like Python json.loads so a string field rejects it", () => {
+    expect(getConfigFromSpec("model.model_name=Infinity")).toEqual({
+      model: { model_name: Infinity },
+    });
+    expect(getConfigFromSpec("model.model_name=-Infinity")).toEqual({
+      model: { model_name: -Infinity },
+    });
+    expect(getConfigFromSpec("a= Infinity")).toEqual({ a: Infinity });
+    expect(() => new LitellmModelConfig({ model_name: Infinity })).toThrow(
+      ValidationError,
+    );
+    expect(() => new LitellmModelConfig({ model_name: Infinity })).toThrow(
+      /string_type/,
+    );
   });
 });
