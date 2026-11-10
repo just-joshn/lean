@@ -1,4 +1,4 @@
-import type { Model } from "@openai/agents";
+import type { Model } from "../protocols.ts";
 import type { VNode } from "@rezi-ui/core";
 import { displayText } from "./tui-display.ts";
 import { createPainter } from "./tui-highlight.ts";
@@ -139,6 +139,7 @@ export async function createTuiController(options: {
   noColor?: boolean;
   cols?: number;
   rows?: number;
+  boundary?: string;
   history?: HistoryPort | null;
   redact?: (error: unknown) => string;
   resolveModel?: (name: string) => Promise<string | Model>;
@@ -203,6 +204,15 @@ export async function createTuiController(options: {
     scrollEdge: "top",
     inspector: closedInspector,
   };
+  if (options.boundary) {
+    state = {
+      ...state,
+      transcript: [
+        ...state.transcript,
+        { kind: "notice", tone: "info", text: options.boundary },
+      ],
+    };
+  }
   let stopped = false;
   let busy = false;
   let sink: ScreenSink | null = null;
@@ -631,7 +641,8 @@ export async function createTuiController(options: {
         [
           ...commands.map((command) => `/${command.name}  ${command.summary}`),
           "Enter sends the draft. A trailing backslash then Enter inserts a newline only at the end of a single line.",
-          "/clear hides the screen only. Saved history stays on disk.",
+          options.boundary ??
+            "/clear hides the screen only. Saved history stays on disk.",
           "Ctrl-O opens a saved result after the turn is saved. Tab switches Output and Raw result.",
           "Lines that are not one of these commands are sent to the model.",
         ].join("\n"),
@@ -691,6 +702,7 @@ export async function createTuiController(options: {
           `Theme: ${state.theme}`,
           `Trace: ${state.trace ? "on" : "off"}`,
           `Turn: ${state.phase.kind}`,
+          ...(options.boundary ? [options.boundary] : []),
         ].join("\n"),
       );
       return;
@@ -703,7 +715,9 @@ export async function createTuiController(options: {
           {
             kind: "notice",
             tone: "info",
-            text: "Cleared the screen. Saved history was not deleted.",
+            text: options.boundary
+              ? `Cleared the screen. The saved trajectory was not deleted.\n${options.boundary}`
+              : "Cleared the screen. Saved history was not deleted.",
           },
         ],
       });
@@ -716,18 +730,7 @@ export async function createTuiController(options: {
     if (!history || options.demo || stopped) return;
     const items = await history.getItems();
     if (stopped) return;
-    const offset = replayItems(before).reduce(
-      (count, entry) => count + (entry.kind === "action" ? 1 : 0),
-      0,
-    );
-    const suffix = replayItems(items.slice(before.length)).map((entry) =>
-      entry.kind === "action"
-        ? {
-            kind: "action" as const,
-            action: { ...entry.action, number: entry.action.number + offset },
-          }
-        : entry,
-    );
+    const suffix = replayItems(items).slice(replayItems(before).length);
     patch({
       transcript: [...state.transcript.slice(0, start), ...suffix],
     });

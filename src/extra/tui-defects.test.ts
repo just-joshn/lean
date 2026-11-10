@@ -48,6 +48,7 @@ async function open(options: {
     providerLabel: "default",
     sessionLabel: "session.json",
     demo: false,
+    noColor: false,
     theme: options.theme,
     history:
       options.history === undefined

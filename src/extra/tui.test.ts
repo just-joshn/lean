@@ -1,11 +1,11 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Model } from "@openai/agents";
+import type { Model } from "../protocols.ts";
+import { LitellmModel } from "../models/litellm-model.ts";
 import { createTestRenderer } from "@rezi-ui/core";
 import { themeDefinition } from "./tui-theme.ts";
 import { afterEach, expect, test, vi } from "vitest";
-import { openSession, type OpenedSession } from "../session.ts";
 import { main } from "./tui-main.ts";
 import { replayItems } from "./tui-replay.ts";
 import {
@@ -51,14 +51,11 @@ function frame(controller: TuiController, cols = 80, rows = 24) {
 }
 
 function modelFixture(label: string): Model {
-  return {
-    async getResponse() {
-      throw new Error(label);
-    },
-    getStreamedResponse() {
-      throw new Error(label);
-    },
+  const model = new LitellmModel({ model_name: label });
+  model.query = async () => {
+    throw new Error(label);
   };
+  return model;
 }
 
 async function controllerFor(options: {
@@ -72,6 +69,7 @@ async function controllerFor(options: {
   resolveModel?: (name: string) => Promise<string | Model>;
   sessionLabel?: string;
   noColor?: boolean;
+  boundary?: string;
 }) {
   const controller = await createTuiController({
     driver:
@@ -88,7 +86,8 @@ async function controllerFor(options: {
     history: options.history,
     redact: options.redact,
     resolveModel: options.resolveModel,
-    noColor: options.noColor,
+    noColor: options.noColor ?? false,
+    boundary: options.boundary,
   });
   cleanup.push(() => controller.shutdown());
   return controller;
@@ -245,7 +244,7 @@ test("enter and esc deny an empty approval prompt", async () => {
 test("restores a cancelled turn and saves the next one", async () => {
   const cwd = await directory();
   const file = join(cwd, "session.json");
-  const opened = await openSession({ file, cwd });
+  const opened = await fileHistoryFixture({ file, cwd });
   cleanup.push(() => opened.close());
   await opened.session.addItems([{ role: "user", content: "keep apricot" }]);
   await opened.save();
@@ -502,7 +501,7 @@ test("does not submit over an open turn", async () => {
 test("clear hides the screen and leaves saved items untouched", async () => {
   const cwd = await directory();
   const file = join(cwd, "session.json");
-  const opened = await openSession({ file, cwd });
+  const opened = await fileHistoryFixture({ file, cwd });
   cleanup.push(() => opened.close());
   await opened.session.addItems([{ role: "user", content: "keep apricot" }]);
   await opened.save();
@@ -581,6 +580,53 @@ test("rejects invalid flags and a missing terminal before raw mode", async () =>
     out.mockRestore();
     err.mockRestore();
   }
+});
+
+test.for([
+  [
+    ["--session", "history.json"],
+    "Saved chat sessions are not supported",
+    "--output",
+  ],
+  [
+    ["--provider", "anthropic"],
+    "Subscription login is not supported",
+    "ANTHROPIC_API_KEY",
+  ],
+  [["--trace"], "SDK tracing is not supported", "native task trajectory"],
+] as const)(
+  "explains the unsupported startup boundary for %j",
+  async ([argv, message, guidance]) => {
+    const stderr: string[] = [];
+    vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      stderr.push(String(chunk));
+      return true;
+    });
+    expect(await main([...argv])).toBe(1);
+    expect(stderr.join("")).toContain(message);
+    expect(stderr.join("")).toContain(guidance);
+    expect(stderr.join("")).not.toContain("The TUI needs a terminal");
+  },
+);
+
+test("keeps the task context boundary visible at startup, in help and status, and after clearing", async () => {
+  const boundary =
+    "Each task starts fresh model context. Screen history is memory-only.";
+  const driver = vi.fn(async () => {});
+  const controller = await controllerFor({ boundary, driver });
+  for (const command of [null, "/help", "/status", "/clear"]) {
+    if (command) {
+      controller.editDraft(command);
+      await controller.submit();
+    }
+    const notices = controller.state.transcript
+      .flatMap((entry) => (entry.kind === "notice" ? [entry.text] : []))
+      .join("\n");
+    expect(notices).toContain(boundary);
+    if (command === "/help")
+      expect(notices).not.toContain("Saved history stays on disk");
+  }
+  expect(driver).not.toHaveBeenCalled();
 });
 
 test("shows unicode draft text", async () => {
@@ -827,7 +873,7 @@ test("colors only unified diff lines", async () => {
 test("ctrl+c during approval denies the call and still allows the next save", async () => {
   const cwd = await directory();
   const file = join(cwd, "session.json");
-  const opened = await openSession({ file, cwd });
+  const opened = await fileHistoryFixture({ file, cwd });
   cleanup.push(() => opened.close());
   await opened.session.addItems([{ role: "user", content: "keep apricot" }]);
   await opened.save();
@@ -882,7 +928,28 @@ test("ctrl+c during approval denies the call and still allows the next save", as
   expect(saved).not.toContain("bad turn");
 });
 
-function sessionPort(opened: OpenedSession): HistoryPort {
+async function fileHistoryFixture({ file }: { file: string; cwd: string }) {
+  let items: unknown[] = [];
+  return {
+    session: {
+      getItems: async () => structuredClone(items),
+      addItems: async (next: unknown[]) => {
+        items.push(...structuredClone(next));
+      },
+      clearSession: async () => {
+        items = [];
+      },
+    },
+    save: async () => {
+      await writeFile(file, JSON.stringify(items));
+    },
+    close: async () => {},
+  };
+}
+
+function sessionPort(
+  opened: Awaited<ReturnType<typeof fileHistoryFixture>>,
+): HistoryPort {
   return {
     getItems: () => opened.session.getItems(),
     restore: async (items) => {

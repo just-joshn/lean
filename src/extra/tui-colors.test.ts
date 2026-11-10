@@ -35,7 +35,7 @@ async function controllerFor(options: {
     sessionLabel: "session.json",
     demo: options.demo === true,
     history: options.history,
-    noColor: options.noColor,
+    noColor: options.noColor ?? false,
   });
   controllers.push(controller);
   return controller;
@@ -50,6 +50,7 @@ async function demo() {
     providerLabel: "demo",
     sessionLabel: "synthetic",
     demo: true,
+    noColor: false,
   });
   controllers.push(controller);
   return controller;
