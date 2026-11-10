@@ -75,7 +75,7 @@ describe("anthropic output limits", () => {
   });
 
   test("falls back to 4096 when the anthropic model is not in the catalog", async () => {
-    const body = await anthropicMax("claude-not-a-model");
+    const body = await anthropicMax("anthropic/claude-not-a-model");
     expect(body.max_tokens).toBe(4096);
   });
 
@@ -171,7 +171,7 @@ test.for([
   vi.stubEnv("DEFAULT_ANTHROPIC_CHAT_MAX_TOKENS", "999");
   installFetch();
   await transport.completeChat({
-    model: "claude-not-a-model",
+    model: "anthropic/claude-not-a-model",
     messages: [{ role: "user", content: "task" }],
     modelKwargs: { api_key: "fixture", api_base: "http://anthropic.test" },
   });

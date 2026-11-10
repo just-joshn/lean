@@ -437,16 +437,17 @@ describe("litellm wire", () => {
   test("keeps the module-load cost tracking default", () => {
     const previous = process.env.MSWEA_COST_TRACKING;
     process.env.MSWEA_COST_TRACKING =
-      new LitellmModelConfig({}).cost_tracking === "default"
+      new LitellmModelConfig({ model_name: "gpt-4o" }).cost_tracking ===
+      "default"
         ? "ignore_errors"
         : "default";
     try {
-      expect(new LitellmModelConfig({}).cost_tracking).toBe(
-        new LitellmModel({ model_name: "gpt-4o" }).config.cost_tracking,
-      );
-      expect(new LitellmModelConfig({}).cost_tracking).not.toBe(
-        process.env.MSWEA_COST_TRACKING,
-      );
+      expect(
+        new LitellmModelConfig({ model_name: "gpt-4o" }).cost_tracking,
+      ).toBe(new LitellmModel({ model_name: "gpt-4o" }).config.cost_tracking);
+      expect(
+        new LitellmModelConfig({ model_name: "gpt-4o" }).cost_tracking,
+      ).not.toBe(process.env.MSWEA_COST_TRACKING);
     } finally {
       if (previous === undefined) delete process.env.MSWEA_COST_TRACKING;
       else process.env.MSWEA_COST_TRACKING = previous;

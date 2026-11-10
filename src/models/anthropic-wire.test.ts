@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Message } from "../protocols.ts";
 import { completeChat } from "./transport.ts";
+import {
+  chatChoice,
+  chatDump,
+  chatMessage,
+  dictionaryOrAttribute,
+  messageFromDump,
+} from "./response-access.ts";
 
 const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
 
@@ -311,8 +318,8 @@ describe("anthropic message wire", () => {
       messages: [{ role: "user", content: "task" }],
       modelKwargs: { api_key: "fixture", api_base: "http://anthropic.test" },
     });
-    const message = response.choices[0]?.message;
-    expect(message?.content).toBe("ok");
+    const message = messageFromDump(chatDump(chatMessage(response)));
+    expect(message.content).toBe("ok");
     expect(message?.thinking_blocks).toEqual([
       { type: "thinking", thinking: "hmm", signature: "sig_1" },
       { type: "redacted_thinking", data: "hidden" },
@@ -345,8 +352,35 @@ describe("anthropic message wire", () => {
       completion_tokens: 5,
       cache_read_input_tokens: 4,
       cache_creation_input_tokens: 1,
+      total_tokens: 20,
+      prompt_tokens_details: {
+        audio_tokens: null,
+        cache_creation_token_details: null,
+        cache_creation_tokens: 1,
+        cache_write_tokens: 1,
+        cached_tokens: 4,
+        image_tokens: null,
+        initial_prompt_tokens: null,
+        text_tokens: 10,
+        video_tokens: null,
+      },
+      completion_tokens_details: {
+        accepted_prediction_tokens: null,
+        audio_tokens: null,
+        image_tokens: null,
+        reasoning_tokens: null,
+        rejected_prediction_tokens: null,
+        text_tokens: null,
+        video_tokens: null,
+      },
+      inference_geo: null,
+      iterations: null,
+      service_tier: null,
+      speed: null,
     });
-    expect(response.choices[0]?.finish_reason).toBe("tool_calls");
+    expect(dictionaryOrAttribute(chatChoice(response), "finish_reason")).toBe(
+      "tool_calls",
+    );
   });
 
   test("concatenates multiple thinking blocks without a separator", async () => {
@@ -363,8 +397,9 @@ describe("anthropic message wire", () => {
       messages: [{ role: "user", content: "task" }],
       modelKwargs: { api_key: "fixture", api_base: "http://anthropic.test" },
     });
-    expect(response.choices[0]?.message.reasoning_content).toBe("onetwo");
-    expect(response.choices[0]?.message.content).toBeNull();
+    const message = messageFromDump(chatDump(chatMessage(response)));
+    expect(message.reasoning_content).toBe("onetwo");
+    expect(message.content).toBeNull();
   });
 
   test("returns null content when the reply has thinking and no text", async () => {
@@ -378,8 +413,8 @@ describe("anthropic message wire", () => {
       messages: [{ role: "user", content: "task" }],
       modelKwargs: { api_key: "fixture", api_base: "http://anthropic.test" },
     });
-    const message = response.choices[0]?.message;
-    expect(message?.content).toBeNull();
+    const message = messageFromDump(chatDump(chatMessage(response)));
+    expect(message.content).toBeNull();
     expect(message?.thinking_blocks).toEqual([
       { type: "thinking", thinking: "only" },
     ]);

@@ -484,12 +484,9 @@ describe("complete-call routing", () => {
     (shortcut, ModelClass) => {
       vi.stubEnv("PORTKEY_API_KEY", "source-fake-key");
       expect(getModelClass("openai/gpt-4o", shortcut)).toBe(ModelClass);
-      expect(
-        getModelClass(
-          "openai/gpt-4o",
-          new ModelClass({ litellm_model_registry: null }).type_name,
-        ),
-      ).toBe(ModelClass);
+      expect(getModelClass("openai/gpt-4o", ModelClass.typeName)).toBe(
+        ModelClass,
+      );
       expect(ModelClass).not.toBe(LitellmModel);
       expect(getModelClass(`${shortcut}/model`)).toBe(LitellmModel);
     },

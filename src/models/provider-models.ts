@@ -70,7 +70,7 @@ abstract class DictionaryProviderModel extends LitellmModel {
 
   constructor(data: Record<string, unknown>, provider: DictionaryProvider) {
     super(
-      { ...data, config_class: undefined, litellm_model_registry: null },
+      { ...data, litellm_model_registry: null },
       provider === "openrouter" ? OpenRouterConfig : RequestyConfig,
     );
     this.#provider = provider;
@@ -222,7 +222,7 @@ abstract class DictionaryProviderModel extends LitellmModel {
 }
 
 export class OpenRouterModel extends DictionaryProviderModel {
-  override readonly type_name =
+  static override typeName =
     "minisweagent.models.openrouter_model.OpenRouterModel";
   constructor(data: Record<string, unknown> = {}) {
     super(data, "openrouter");
@@ -230,16 +230,14 @@ export class OpenRouterModel extends DictionaryProviderModel {
 }
 
 export class RequestyModel extends DictionaryProviderModel {
-  override readonly type_name =
-    "minisweagent.models.requesty_model.RequestyModel";
+  static override typeName = "minisweagent.models.requesty_model.RequestyModel";
   constructor(data: Record<string, unknown> = {}) {
     super(data, "requesty");
   }
 }
 
 export class PortkeyModel extends LitellmModel {
-  override readonly type_name =
-    "minisweagent.models.portkey_model.PortkeyModel";
+  static override typeName = "minisweagent.models.portkey_model.PortkeyModel";
 
   constructor(data: Record<string, unknown> = {}) {
     super(data);

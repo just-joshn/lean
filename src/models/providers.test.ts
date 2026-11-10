@@ -9,6 +9,9 @@ import {
 } from "./provider-models.ts";
 import { receiveResponse, type ReceivedResponse } from "./received-response.ts";
 import { FormatError } from "../exceptions.ts";
+import { ValidationError } from "../config/fields.ts";
+import { LitellmModelConfig } from "./litellm-model.ts";
+import { getModel, getModelClass } from "./index.ts";
 
 vi.mock("./received-response.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./received-response.ts")>()),
@@ -187,6 +190,45 @@ describe("Bedrock complete seam against saved source conversion", () => {
     expect(receive).not.toHaveBeenCalled();
   });
 });
+
+test.each([
+  ["openrouter", OpenRouterModel],
+  ["requesty", RequestyModel],
+  ["portkey", PortkeyModel],
+] as const)(
+  "%s preserves validated construction and serialized identity",
+  async (provider, ModelClass) => {
+    vi.stubEnv("PORTKEY_API_KEY", "source-fake-key");
+    expect(() => new ModelClass()).toThrow(ValidationError);
+    expect(() => new ModelClass({ model_name: 123 })).toThrow(ValidationError);
+    const model = getModel("openai/gpt-4o", { model_class: provider });
+    expect(model).toBeInstanceOf(ModelClass);
+    expect(await model.serialize()).toMatchObject({
+      info: {
+        config: {
+          model: { model_name: "openai/gpt-4o" },
+          model_type: ModelClass.typeName,
+        },
+      },
+    });
+    expect(getModelClass("openai/gpt-4o", ModelClass.typeName)).toBe(
+      ModelClass,
+    );
+  },
+);
+
+test.each([OpenRouterModel, RequestyModel])(
+  "%s keeps explicit config_class collisions visible at construction",
+  (ModelClass) => {
+    expect(
+      () =>
+        new ModelClass({
+          model_name: "openai/gpt-4o",
+          config_class: LitellmModelConfig,
+        }),
+    ).toThrow("multiple values for keyword argument 'config_class'");
+  },
+);
 
 for (const [provider, ModelClass] of [
   ["openrouter", OpenRouterModel],
